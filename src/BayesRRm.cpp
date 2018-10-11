@@ -16,21 +16,21 @@
 #include <random>
 
 BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
-    : seed(opt.seed)
-    , data(data)
+    : data(data)
     , opt(opt)
-    , memPageSize(memPageSize)
-    , max_iterations(opt.chainLength)
-    , thinning(opt.thin)
-    , burn_in(opt.burnin)
-    , outputFile(opt.mcmcSampleFile)
     , bedFile(opt.bedFile + ".bed")
+    , memPageSize(memPageSize)
+    , outputFile(opt.mcmcSampleFile)
+    , seed(opt.seed)
+    , max_iterations(opt.chainLength)
+    , burn_in(opt.burnin)
+    , thinning(opt.thin)
     , dist(opt.seed)
     , usePreprocessedData(opt.analysisType == "PPBayes")
     , showDebug(false)
 {
-    float* ptr =(float*)&opt.S[0];
-    cva=(Eigen::Map<Eigen::VectorXf>(ptr,opt.S.size())).cast<double>();
+    float* ptr =static_cast<float*>(&opt.S[0]);
+    cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
 }
 
 BayesRRm::~BayesRRm()
@@ -111,9 +111,9 @@ int BayesRRm::runGibbs()
     // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
     VectorXd components(M);
     components.setZero();
-    for (int iteration = 0; iteration < max_iterations; iteration++) {
+    for (unsigned int iteration = 0; iteration < max_iterations; iteration++) {
         // Output progress
-        if (iteration > 0 && iteration % int(std::ceil(max_iterations / 10)) == 0)
+        if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration: " << iteration << std::endl;
 
         epsilon = epsilon.array() + mu;//  we substract previous value

@@ -21,10 +21,10 @@ class BayesRRm
     const string    bedFile; // bed file
     const long      memPageSize; // size of memory
     const string    outputFile;
-    const int       seed;
-    const int       max_iterations;
-    const int		burn_in;
-    const int       thinning;
+    const unsigned int seed;
+    const unsigned int max_iterations;
+    const unsigned int burn_in;
+    const unsigned int thinning;
     const double	sigma0  = 0.0001;
     const double	v0E     = 0.0001;
     const double    s02E    = 0.0001;
