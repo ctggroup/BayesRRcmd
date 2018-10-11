@@ -33,14 +33,44 @@ class BayesRRm
     Eigen::VectorXd cva;
     Distributions_boost dist;
     bool usePreprocessedData;
+    bool showDebug;
+
+    // Component variables
+    VectorXd priorPi;   // prior probabilities for each component
+    VectorXd pi;        // mixture probabilities
+    VectorXd cVa;       // component-specific variance
+    VectorXd logL;      // log likelihood of component
+    VectorXd muk;       // mean of k-th component marker effect size
+    VectorXd denom;     // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
+    int m0;             // total num ber of markes in model
+    VectorXd v;         // variable storing the component assignment
+    VectorXd cVaI;      // inverse of the component variances
+
+    // Mean and residual variables
+    double mu;          // mean or intercept
+    double sigmaG;      // genetic variance
+    double sigmaE;      // residuals variance
+
+    // Linear model variables
+    VectorXd beta;       // effect sizes
+    VectorXd y_tilde;    // variable containing the adjusted residuals to exclude the effects of a given marker
+    VectorXd epsilon;    // variable containing the residuals
+
+    VectorXd y;
+    VectorXd Cx;
 
 public:
     BayesRRm(Data &data, Options &opt, const long memPageSize);
     virtual ~BayesRRm();
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
 
+    void setDebugEnabled(bool enabled) { showDebug = enabled; }
+    bool isDebugEnabled() const { return showDebug; }
+
 private:
+    void init(int K, unsigned int markerCount, unsigned int individualCount);
     VectorXd getSnpData(unsigned int marker) const;
+    void printDebugInfo() const;
 };
 
 #endif /* SRC_BAYESRRM_H_ */

@@ -27,6 +27,7 @@ BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
     , bedFile(opt.bedFile + ".bed")
     , dist(opt.seed)
     , usePreprocessedData(opt.analysisType == "PPBayes")
+    , showDebug(false)
 {
     float* ptr =(float*)&opt.S[0];
     cva=(Eigen::Map<Eigen::VectorXf>(ptr,opt.S.size())).cast<double>();
@@ -36,15 +37,62 @@ BayesRRm::~BayesRRm()
 {
 }
 
+void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCount)
+{
+    // Component variables
+    priorPi = VectorXd(K);      // prior probabilities for each component
+    pi = VectorXd(K);           // mixture probabilities
+    cVa = VectorXd(K);          // component-specific variance
+    logL = VectorXd(K);         // log likelihood of component
+    muk = VectorXd (K);         // mean of k-th component marker effect size
+    denom = VectorXd(K - 1);    // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
+    m0 = 0;                     // total num ber of markes in model
+    v = VectorXd(K);            // variable storing the component assignment
+    cVaI = VectorXd(K);         // inverse of the component variances
+
+    // Mean and residual variables
+    mu = 0.0;       // mean or intercept
+    sigmaG = 0.0;   // genetic variance
+    sigmaE = 0.0;   // residuals variance
+
+    // Linear model variables
+    beta = VectorXd(markerCount);           // effect sizes
+    y_tilde = VectorXd(individualCount);    // variable containing the adjusted residuals to exclude the effects of a given marker
+    epsilon = VectorXd(individualCount);    // variable containing the residuals
+
+    y = VectorXd();
+    Cx = VectorXd();
+
+    // Init the working variables
+    const int km1 = K - 1;
+    cVa[0] = 0;
+    cVa.segment(1, km1) = cva;
+    priorPi[0] = 0.5;
+    priorPi.segment(1, km1) = priorPi[0] * cVa.segment(1, km1).array() / cVa.segment(1, km1).sum();
+    y_tilde.setZero();
+
+    cVaI[0] = 0;
+    cVaI.segment(1, km1) = cVa.segment(1, km1).cwiseInverse();
+    beta.setZero();
+    sigmaG = dist.beta_rng(1,1);
+
+    pi = priorPi;
+
+    y = (data.y.cast<double>().array() - data.y.cast<double>().mean());
+    y /= sqrt(y.squaredNorm() / (double(individualCount - 1)));
+
+    epsilon = (y).array() - mu;
+    sigmaE = epsilon.squaredNorm() / individualCount * 0.5;
+}
+
 int BayesRRm::runGibbs()
 {
     const unsigned int M(data.numIncdSnps);
     const unsigned int N(data.numKeptInds);
     const int K(int(cva.size()) + 1);
     const int km1 = K - 1;
-    VectorXd components(M);
 
-    std::cout << "Running Gibbs sampling" << endl;
+    init(K, M, N);
 
     SampleWriter writer;
     writer.setFileName(outputFile);
@@ -52,61 +100,17 @@ int BayesRRm::runGibbs()
     writer.setIndividualCount(N);
     writer.open();
 
-    //mean and residual variables
-    double mu; // mean or intercept
-    double sigmaG; //genetic variance
-    double sigmaE; // residuals variance
-
-    //component variables
-    VectorXd priorPi(K); // prior probabilities for each component
-    VectorXd pi(K); // mixture probabilities
-    VectorXd cVa(K); //component-specific variance
-    VectorXd logL(K); // log likelihood of component
-    VectorXd muk(K); // mean of k-th component marker effect size
-    VectorXd denom(km1); // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
-    double num;//storing dot product
-    int m0; // total num ber of markes in model
-    VectorXd v(K); //variable storing the component assignment
-    VectorXd cVaI(K);// inverse of the component variances
-
-    //linear model variables
-    VectorXd beta(M); // effect sizes
-    VectorXd y_tilde(N); // variable containing the adjusted residuals to exclude the effects of a given marker
-    VectorXd epsilon(N); // variable containing the residuals
-
-    //sampler variables
+    // Sampler variables
     VectorXd sample(2*M+4+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
     std::vector<unsigned int> markerI(M);
     std::iota(markerI.begin(), markerI.end(), 0);
 
-    double acum;
-
-    VectorXd y;
-    VectorXd Cx;
-    priorPi[0] = 0.5;
-
-    priorPi.segment(1, km1) = priorPi[0] * cVa.segment(1, km1).array() / cVa.segment(1, km1).sum();
-    y_tilde.setZero();
-    cVa[0] = 0;
-    cVa.segment(1, km1) = cva;
-
-    cVaI[0] = 0;
-    cVaI.segment(1, km1) = cVa.segment(1, km1).cwiseInverse();
-    beta.setZero();
-    mu=0;
-    sigmaG = dist.beta_rng(1,1);
-
-    pi = priorPi;
-
-    components.setZero();
+    std::cout << "Running Gibbs sampling" << endl;
     const auto t1 = std::chrono::high_resolution_clock::now();
-    y = (data.y.cast<double>().array() - data.y.cast<double>().mean());
-    y /= sqrt(y.squaredNorm() / (double(N - 1)));
-
-    epsilon = (y).array() - mu;
-    sigmaE = epsilon.squaredNorm() / N * 0.5;
 
     // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
+    VectorXd components(M);
+    components.setZero();
     for (int iteration = 0; iteration < max_iterations; iteration++) {
 
         if (iteration > 0) {
@@ -125,6 +129,7 @@ int BayesRRm::runGibbs()
 
         // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
         for (unsigned int j = 0; j < M; j++) {
+            double acum = 0.0;
             const auto marker = markerI[j];
 
             Cx = getSnpData(marker);
@@ -136,7 +141,7 @@ int BayesRRm::runGibbs()
             //we compute the denominator in the variance expression to save computations
             denom = (double(N - 1)) + (sigmaE / sigmaG) * cVaI.segment(1, km1).array();
             //we compute the dot product to save computations
-            num = (Cx.cwiseProduct(y_tilde)).sum();
+            const double num = (Cx.cwiseProduct(y_tilde)).sum();
             //muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
 
@@ -179,15 +184,10 @@ int BayesRRm::runGibbs()
         }
 
         m0 = int(M) - int(v[0]);
-        //cout<< "inv scaled parameters "<< v0G+m0 << "__"<<(beta.squaredNorm()*m0+v0G*s02G)/(v0G+m0);
-        //cout<< "num components"<< opt.S.size();
-        //cout<< "\nMixture components : "<<cva[0]<<""<<cva[1]<<" "<<cva[2]<<"\n";
         sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
-        //cout<<"sigmaG: "<<sigmaG<<"\n";
-        //cout<<"y mean: "<<y.mean()<<"\n";
-        // cout<<"y sd: "<< sqrt(y.squaredNorm()/((double)N-1.0))<< "\n";
-        //cout<<"x mean "<<Cx.mean()<<"\n";
-        //cout<<"x sd "<<sqrt(Cx.squaredNorm()/((double)N-1.0))<<"\n";
+
+        if (showDebug)
+            printDebugInfo();
 
         sigmaE = dist.inv_scaled_chisq_rng(v0E + N, ((epsilon).squaredNorm() + v0E * s02E) / (v0E + N));
         pi = dist.dirichilet_rng(v.array() + 1.0);
@@ -220,4 +220,17 @@ VectorXd BayesRRm::getSnpData(unsigned int marker) const
     } else {
         return data.mappedZ.col(marker).cast<double>();
     }
+}
+
+void BayesRRm::printDebugInfo() const
+{
+    const unsigned int N(data.numKeptInds);
+    cout << "inv scaled parameters " << v0G + m0 << "__" << (beta.squaredNorm() * m0 + v0G * s02G) / (v0G + m0);
+    cout << "num components: " << opt.S.size();
+    cout << "\nMixture components: " << cva[0] << " " << cva[1] << " " << cva[2] << "\n";
+    cout << "sigmaG: " << sigmaG << "\n";
+    cout << "y mean: " << y.mean() << "\n";
+    cout << "y sd: " << sqrt(y.squaredNorm() / (double(N - 1))) << "\n";
+    cout << "x mean " << Cx.mean() << "\n";
+    cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
 }
