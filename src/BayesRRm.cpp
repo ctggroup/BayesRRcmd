@@ -26,6 +26,7 @@ BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
     , outputFile(opt.mcmcSampleFile)
     , bedFile(opt.bedFile + ".bed")
     , dist(opt.seed)
+    , usePreprocessedData(opt.analysisType == "PPBayes")
 {
     float* ptr =(float*)&opt.S[0];
     cva=(Eigen::Map<Eigen::VectorXf>(ptr,opt.S.size())).cast<double>();
@@ -44,15 +45,9 @@ int BayesRRm::runGibbs()
     const int K(int(cva.size()) + 1);
     const int km1 = K - 1;
     VectorXd components(M);
-    VectorXf normedSnpData(data.numKeptInds);
-    const bool usePreprocessedData = (opt.analysisType == "PPBayes");
-
     flag = 0;
 
     std::cout << "Running Gibbs sampling" << endl;
-
-    // Compute the SNP data length in bytes
-    size_t snpLenByt = (data.numInds % 4) ? data.numInds / 4 + 1 : data.numInds / 4;
 
     SampleWriter writer;
     writer.setFileName(outputFile);
@@ -84,10 +79,10 @@ int BayesRRm::runGibbs()
 
     //sampler variables
     VectorXd sample(2*M+4+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
-    std::vector<int> markerI(M);
+    std::vector<unsigned int> markerI(M);
     std::iota(markerI.begin(), markerI.end(), 0);
 
-    int marker;
+    unsigned int marker;
     double acum;
 
     VectorXd y;
@@ -136,14 +131,7 @@ int BayesRRm::runGibbs()
         for (unsigned int j = 0; j < M; j++) {
             marker = markerI[j];
 
-            if (!usePreprocessedData) {
-                data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
-                //I use a temporal variable to do the cast, there should be better ways to do this.
-                Cx = normedSnpData.cast<double>();
-            }
-            else{
-                Cx = data.mappedZ.col(marker).cast<double>();
-            }
+            Cx = getSnpData(marker);
 
             y_tilde = epsilon.array() + (Cx * beta(marker)).array(); //now y_tilde = Y-mu-X*beta+ X.col(marker)*beta(marker)_old
 
@@ -159,7 +147,9 @@ int BayesRRm::runGibbs()
             logL = pi.array().log(); //first component probabilities remain unchanged
 
             //update the log likelihood for each component
-            logL.segment(1, km1) = logL.segment(1, km1).array() - 0.5 * ((((sigmaG / sigmaE) * (((double)N-1))) * cVa.segment(1, km1).array() + 1).array().log()) + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
+            logL.segment(1, km1) = logL.segment(1, km1).array()
+                    - 0.5 * ((((sigmaG / sigmaE) * ((double(N - 1)))) * cVa.segment(1, km1).array() + 1).array().log())
+                    + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
 
             double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
 
@@ -220,4 +210,19 @@ int BayesRRm::runGibbs()
     flag = 1;
 
     return 0;
+}
+
+VectorXd BayesRRm::getSnpData(unsigned int marker) const
+{
+    if (!usePreprocessedData) {
+        // Compute the SNP data length in bytes
+        const size_t snpLenByt = (data.numInds % 4) ? data.numInds / 4 + 1 : data.numInds / 4;
+
+        // I use a temporary variable to do the cast, there should be better ways to do this.
+        VectorXf normedSnpData(data.numKeptInds);
+        data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
+        return normedSnpData.cast<double>();
+    } else {
+        return data.mappedZ.col(marker).cast<double>();
+    }
 }

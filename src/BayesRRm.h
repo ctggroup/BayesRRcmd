@@ -32,11 +32,15 @@ class BayesRRm
     const double    s02G    = 0.0001;
     Eigen::VectorXd cva;
     Distributions_boost dist;
+    bool usePreprocessedData;
 
 public:
     BayesRRm(Data &data, Options &opt, const long memPageSize);
     virtual ~BayesRRm();
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
+
+private:
+    VectorXd getSnpData(unsigned int marker) const;
 };
 
 #endif /* SRC_BAYESRRM_H_ */
