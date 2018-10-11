@@ -100,7 +100,7 @@ int BayesRRm::runGibbs()
     pi = priorPi;
 
     components.setZero();
-    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+    const auto t1 = std::chrono::high_resolution_clock::now();
     y = (data.y.cast<double>().array() - data.y.cast<double>().mean());
     y /= sqrt(y.squaredNorm() / (double(N - 1)));
 
@@ -201,9 +201,9 @@ int BayesRRm::runGibbs()
         }
     }
 
-    std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    std::cout << "duration: "<<duration << "s\n";
+    const auto t2 = std::chrono::high_resolution_clock::now();
+    const auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    std::cout << "duration: " << duration << "s" << std::endl;
 
     return 0;
 }
