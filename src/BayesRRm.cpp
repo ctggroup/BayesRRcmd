@@ -112,11 +112,9 @@ int BayesRRm::runGibbs()
     VectorXd components(M);
     components.setZero();
     for (int iteration = 0; iteration < max_iterations; iteration++) {
-
-        if (iteration > 0) {
-            if (iteration % int(std::ceil(max_iterations / 10)) == 0)
-                std::cout << "iteration: " << iteration << std::endl;
-        }
+        // Output progress
+        if (iteration > 0 && iteration % int(std::ceil(max_iterations / 10)) == 0)
+            std::cout << "iteration: " << iteration << std::endl;
 
         epsilon = epsilon.array() + mu;//  we substract previous value
         mu = dist.norm_rng(epsilon.sum() / double(N), sigmaE / double(N)); //update mu
@@ -192,11 +190,9 @@ int BayesRRm::runGibbs()
         sigmaE = dist.inv_scaled_chisq_rng(v0E + N, ((epsilon).squaredNorm() + v0E * s02E) / (v0E + N));
         pi = dist.dirichilet_rng(v.array() + 1.0);
 
-        if (iteration >= burn_in) {
-            if (iteration % thinning == 0) {
-                sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
-                writer.write(sample);
-            }
+        if (iteration >= burn_in && iteration % thinning == 0) {
+            sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
+            writer.write(sample);
         }
     }
 
