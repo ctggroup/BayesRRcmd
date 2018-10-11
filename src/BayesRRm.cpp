@@ -10,6 +10,7 @@
 #include "concurrentqueue.h"
 #include "options.hpp"
 #include "BayesRRm.h"
+#include "samplewriter.h"
 
 #include <numeric>
 #include <random>
@@ -48,7 +49,7 @@ int BayesRRm::runGibbs()
 
     flag = 0;
 
-    std::cout<<"Running Gibbs sampling";
+    std::cout << "Running Gibbs sampling" << endl;
 
     // Compute the SNP data length in bytes
     size_t snpLenByt = (data.numInds % 4) ? data.numInds / 4 + 1 : data.numInds / 4;
@@ -123,7 +124,7 @@ int BayesRRm::runGibbs()
 
                     if (iteration > 0) {
                         if (iteration % (int)std::ceil(max_iterations / 10) == 0)
-                            std::cout << "iteration: "<<iteration <<"\n";
+                            std::cout << "iteration: " << iteration << std::endl;
                     }
 
                     epsilon = epsilon.array() + mu;//  we substract previous value
@@ -228,28 +229,17 @@ int BayesRRm::runGibbs()
             {
                 bool queueFull;
                 queueFull = 0;
-                std::ofstream outFile;
-                outFile.open(outputFile);
-                VectorXd sampleq(2 * M + 4 + N);
-                IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", "", "");
-                outFile<< "iteration," << "mu,";
-                for (unsigned int i = 0; i < M; ++i) {
-                    outFile << "beta[" << (i+1) << "],";
-                }
-                outFile << "sigmaE," << "sigmaG,";
-                for (unsigned int i = 0; i < M; ++i) {
-                    outFile << "comp[" << (i+1) << "],";
-                }
-                unsigned int i;
-                for (i = 0; i < (N-1); ++i) {
-                    outFile << "epsilon[" << (i+1) << "],";
-                }
-                outFile << "epsilon[" << (i+1) << "]";
-                outFile << "\n";
+
+                SampleWriter writer;
+                writer.setFileName(outputFile);
+                writer.setMarkerCount(M);
+                writer.setIndividualCount(N);
+                writer.open();
 
                 while (!flag) {
+                    VectorXd sampleq(2 * M + 4 + N);
                     if (q.try_dequeue(sampleq))
-                        outFile << sampleq.transpose().format(CommaInitFmt) << "\n";
+                        writer.write(sampleq);
                 }
             }
         }
