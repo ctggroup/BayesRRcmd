@@ -7,11 +7,11 @@
 
 #include "data.hpp"
 #include "distributions_boost.hpp"
-#include "concurrentqueue.h"
 #include "options.hpp"
 #include "BayesRRm.h"
 #include "samplewriter.h"
 
+#include <chrono>
 #include <numeric>
 #include <random>
 
@@ -38,14 +38,11 @@ BayesRRm::~BayesRRm()
 
 int BayesRRm::runGibbs()
 {
-    int flag;
-    moodycamel::ConcurrentQueue<Eigen::VectorXd> q;//lock-free queue
     const unsigned int M(data.numIncdSnps);
     const unsigned int N(data.numKeptInds);
     const int K(int(cva.size()) + 1);
     const int km1 = K - 1;
     VectorXd components(M);
-    flag = 0;
 
     std::cout << "Running Gibbs sampling" << endl;
 
@@ -207,7 +204,6 @@ int BayesRRm::runGibbs()
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
     std::cout << "duration: "<<duration << "s\n";
-    flag = 1;
 
     return 0;
 }
