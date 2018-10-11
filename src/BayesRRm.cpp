@@ -79,7 +79,6 @@ int BayesRRm::runGibbs()
     std::vector<unsigned int> markerI(M);
     std::iota(markerI.begin(), markerI.end(), 0);
 
-    unsigned int marker;
     double acum;
 
     VectorXd y;
@@ -126,7 +125,7 @@ int BayesRRm::runGibbs()
 
         // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
         for (unsigned int j = 0; j < M; j++) {
-            marker = markerI[j];
+            const auto marker = markerI[j];
 
             Cx = getSnpData(marker);
 
