@@ -19,7 +19,7 @@ using namespace std;
 
 
 int main(int argc, const char * argv[]) {
-
+  Eigen::initParallel();
   MPI_Init(NULL, NULL);
 
   MPI_Comm_size(MPI_COMM_WORLD, &myMPI::clusterSize);
