@@ -110,7 +110,7 @@ int BayesRRm::runGibbs()
     components.setZero();
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
     y = (data.y.cast<double>().array() - data.y.cast<double>().mean());
-    y /= sqrt(y.squaredNorm() / ((double)N - 1.0));
+    y /= sqrt(y.squaredNorm() / (double(N - 1)));
 
     epsilon = (y).array() - mu;
     sigmaE = epsilon.squaredNorm() / N * 0.5;
@@ -119,12 +119,12 @@ int BayesRRm::runGibbs()
     for (int iteration = 0; iteration < max_iterations; iteration++) {
 
         if (iteration > 0) {
-            if (iteration % (int)std::ceil(max_iterations / 10) == 0)
+            if (iteration % int(std::ceil(max_iterations / 10)) == 0)
                 std::cout << "iteration: " << iteration << std::endl;
         }
 
         epsilon = epsilon.array() + mu;//  we substract previous value
-        mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
+        mu = dist.norm_rng(epsilon.sum() / double(N), sigmaE / double(N)); //update mu
         epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
 
         std::random_shuffle(markerI.begin(), markerI.end());
@@ -133,7 +133,7 @@ int BayesRRm::runGibbs()
         v.setZero();
 
         // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
-        for (int j = 0; j < M; j++) {
+        for (unsigned int j = 0; j < M; j++) {
             marker = markerI[j];
 
             if (!usePreprocessedData) {
@@ -150,7 +150,7 @@ int BayesRRm::runGibbs()
             muk[0] = 0.0;//muk for the zeroth component=0
 
             //we compute the denominator in the variance expression to save computations
-            denom = ((double)N-1) + (sigmaE/sigmaG) * cVaI.segment(1, km1).array();
+            denom = (double(N - 1)) + (sigmaE / sigmaG) * cVaI.segment(1, km1).array();
             //we compute the dot product to save computations
             num = (Cx.cwiseProduct(y_tilde)).sum();
             //muk for the other components is computed according to equaitons
@@ -192,7 +192,7 @@ int BayesRRm::runGibbs()
             epsilon = y_tilde - Cx * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
         }
 
-        m0 = M - v[0];
+        m0 = int(M) - int(v[0]);
         //cout<< "inv scaled parameters "<< v0G+m0 << "__"<<(beta.squaredNorm()*m0+v0G*s02G)/(v0G+m0);
         //cout<< "num components"<< opt.S.size();
         //cout<< "\nMixture components : "<<cva[0]<<""<<cva[1]<<" "<<cva[2]<<"\n";
