@@ -11,6 +11,8 @@
 #include "BayesRRm.h"
 #include "samplewriter.h"
 
+#include <tbb/tbb.h>
+
 #include <chrono>
 #include <numeric>
 #include <random>
