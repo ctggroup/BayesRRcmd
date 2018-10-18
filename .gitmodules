@@ -1,0 +1,3 @@
+[submodule "tbb"]
+	path = tbb
+	url = git@github.com:01org/tbb.git
