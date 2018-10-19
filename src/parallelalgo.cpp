@@ -2,7 +2,7 @@
 #include "distributions_boost.hpp"
 #include <tbb/tbb.h>
 
-const size_t grainSize = 2000;
+const size_t grainSize = 10000;
 
 
 using namespace tbb;
