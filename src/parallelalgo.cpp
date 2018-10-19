@@ -78,7 +78,7 @@ void parallelCastDouble(const VectorXf &in, VectorXd &out)
     } );
 }
 
-void parallelUpdateYTilde(VectorXd &y_tilde, const VectorXd &epsilon, const VectorXd &Cx, double beta)
+void parallelUpdateYTilde(VectorXd &y_tilde, const VectorXd &epsilon, const VectorXf &Cx, double beta)
 {
     const unsigned long startIndex = 0;
     const unsigned long endIndex = static_cast<unsigned long>(y_tilde.size());
@@ -86,11 +86,11 @@ void parallelUpdateYTilde(VectorXd &y_tilde, const VectorXd &epsilon, const Vect
     parallel_for(blocked_range<unsigned long>(startIndex, endIndex, grainSize), [&](const blocked_range<size_t>& r) {
         const long start = static_cast<long>(r.begin());
         const long count = static_cast<long>(r.end() - r.begin());
-        y_tilde.segment(start, count) = epsilon.segment(start, count) + Cx.segment(start, count) * beta;
+        y_tilde.segment(start, count) = epsilon.segment(start, count) + Cx.segment(start, count).cast<double>() * beta;
     } );
 }
 
-void parallelUpdateEpsilon(VectorXd &epsilon, const VectorXd &y_tilde, const VectorXd &Cx, double beta)
+void parallelUpdateEpsilon(VectorXd &epsilon, const VectorXd &y_tilde, const VectorXf &Cx, double beta)
 {
     const unsigned long startIndex = 0;
     const unsigned long endIndex = static_cast<unsigned long>(y_tilde.size());
@@ -98,11 +98,11 @@ void parallelUpdateEpsilon(VectorXd &epsilon, const VectorXd &y_tilde, const Vec
     parallel_for(blocked_range<unsigned long>(startIndex, endIndex, grainSize), [&](const blocked_range<size_t>& r) {
         const long start = static_cast<long>(r.begin());
         const long count = static_cast<long>(r.end() - r.begin());
-        epsilon.segment(start, count) = y_tilde.segment(start, count) - Cx.segment(start, count) * beta;
+        epsilon.segment(start, count) = y_tilde.segment(start, count) - Cx.segment(start, count).cast<double>() * beta;
     } );
 }
 
-double parallelDotProduct(const VectorXd &Cx, const VectorXd &y_tilde)
+double parallelDotProduct(const VectorXf &Cx, const VectorXd &y_tilde)
 {
     const unsigned long startIndex = 0;
     const unsigned long endIndex = static_cast<unsigned long>(y_tilde.size());
@@ -110,7 +110,7 @@ double parallelDotProduct(const VectorXd &Cx, const VectorXd &y_tilde)
     auto apply = [&](const blocked_range<size_t>& r, double initialValue) {
         const long start = static_cast<long>(r.begin());
         const long count = static_cast<long>(r.end() - r.begin());
-        const auto sum = initialValue + (Cx.segment(start, count) * y_tilde.segment(start, count)).sum();
+        const auto sum = initialValue + (Cx.segment(start, count).cast<double>() * y_tilde.segment(start, count)).sum();
         return sum;
     };
 

@@ -131,7 +131,9 @@ int BayesRRm::runGibbs()
             double acum = 0.0;
             const auto marker = markerI[j];
 
-            Cx = getSnpData(marker);
+            // TODO: Can we improve things by decompressing a compressed mmap datafile?
+            //Cx = getSnpData(marker);
+            const VectorXf &Cx = data.mappedZ.col(marker);
 
             // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
             parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
