@@ -5,13 +5,12 @@
  *      Author: admin
  */
 
+#include "BayesRRm.h"
 #include "data.hpp"
 #include "distributions_boost.hpp"
 #include "options.hpp"
-#include "BayesRRm.h"
+#include "parallelalgo.h"
 #include "samplewriter.h"
-
-#include <tbb/tbb.h>
 
 #include <chrono>
 #include <numeric>
@@ -91,6 +90,7 @@ int BayesRRm::runGibbs()
 {
     const unsigned int M(data.numIncdSnps);
     const unsigned int N(data.numKeptInds);
+    const double NM1 = double(N - 1);
     const int K(int(cva.size()) + 1);
     const int km1 = K - 1;
 
@@ -118,9 +118,8 @@ int BayesRRm::runGibbs()
         if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration: " << iteration << std::endl;
 
-        epsilon = epsilon.array() + mu;//  we substract previous value
-        mu = dist.norm_rng(epsilon.sum() / double(N), sigmaE / double(N)); //update mu
-        epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+        const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
+        parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
 
         std::random_shuffle(markerI.begin(), markerI.end());
 
@@ -134,22 +133,27 @@ int BayesRRm::runGibbs()
 
             Cx = getSnpData(marker);
 
-            y_tilde = epsilon.array() + (Cx * beta(marker)).array(); //now y_tilde = Y-mu-X*beta+ X.col(marker)*beta(marker)_old
+            // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
+            parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 
-            muk[0] = 0.0;//muk for the zeroth component=0
+            // muk for the zeroth component=0
+            muk[0] = 0.0;
 
-            //we compute the denominator in the variance expression to save computations
-            denom = (double(N - 1)) + (sigmaE / sigmaG) * cVaI.segment(1, km1).array();
-            //we compute the dot product to save computations
-            const double num = (Cx.cwiseProduct(y_tilde)).sum();
-            //muk for the other components is computed according to equaitons
+            // We compute the denominator in the variance expression to save computations
+            const double sigmaEOverSigmaG = sigmaE / sigmaG;
+            denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
+
+            // We compute the dot product to save computations
+            const double num = parallelDotProduct(Cx, y_tilde);
+
+            // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
 
-            logL = pi.array().log(); //first component probabilities remain unchanged
-
-            //update the log likelihood for each component
+            // Update the log likelihood for each component
+            const double logLScale = sigmaG / sigmaE * NM1;
+            logL = pi.array().log(); // First component probabilities remain unchanged
             logL.segment(1, km1) = logL.segment(1, km1).array()
-                    - 0.5 * ((((sigmaG / sigmaE) * ((double(N - 1)))) * cVa.segment(1, km1).array() + 1).array().log())
+                    - 0.5 * ((logLScale * cVa.segment(1, km1).array() + 1).array().log())
                     + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
 
             double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
@@ -180,7 +184,9 @@ int BayesRRm::runGibbs()
                     }
                 }
             }
-            epsilon = y_tilde - Cx * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+
+            // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+            parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
         }
 
         m0 = int(M) - int(v[0]);
@@ -189,7 +195,8 @@ int BayesRRm::runGibbs()
         if (showDebug)
             printDebugInfo();
 
-        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, ((epsilon).squaredNorm() + v0E * s02E) / (v0E + N));
+        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
+        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
         pi = dist.dirichilet_rng(v.array() + 1.0);
 
         if (iteration >= burn_in && iteration % thinning == 0) {
@@ -216,7 +223,10 @@ VectorXd BayesRRm::getSnpData(unsigned int marker) const
         data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
         return normedSnpData.cast<double>();
     } else {
-        return data.mappedZ.col(marker).cast<double>();
+        const VectorXf &sourceData = data.mappedZ.col(marker);
+        VectorXd result(sourceData.size());
+        parallelCastDouble(sourceData, result);
+        return result;
     }
 }
 

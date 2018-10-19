@@ -43,6 +43,7 @@ add_executable(${PROJECT_NAME}
     gctb.cpp
     mympi.cpp
     options.cpp
+    parallelalgo.cpp
     samplewriter.cpp
 )
 
