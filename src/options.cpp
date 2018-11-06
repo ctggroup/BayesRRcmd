@@ -175,15 +175,20 @@ void Options::inputOptions(const int argc, const char* argv[]){
         else if (!strcmp(argv[i], "--mS")) {
 			Gadget::Tokenizer strvec;
 			Gadget::Tokenizer strT;
-			strvec.getTokens(argv[++i], " ;");
+			strvec.getTokens(argv[++i], ";");
+			cout << strvec[0] << endl;
+			cout << strvec[1] << endl;
+			cout << strvec[2] << endl;
 			strT.getTokens(strvec[0],",");
 			mS=Eigen::MatrixXd(strvec.size(),strT.size());
 			numGroups=strvec.size();
+
 			for (unsigned j=0; j<strvec.size(); ++j) {
 				strT.getTokens(strvec[j],",");
 				for(unsigned k=0;k<strT.size();++k)
 					mS(j,k) = stod(strT[k]);
 			}
+
 			ss << "--mS " << argv[i] << "\n";
 		}
         //Daniel group assignment file
@@ -191,6 +196,7 @@ void Options::inputOptions(const int argc, const char* argv[]){
         	groupFile = argv[++i];
         	ss << "--group " << argv[i] << "\n";
 		}
+
 
 
 

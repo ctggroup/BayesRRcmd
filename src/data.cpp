@@ -1488,7 +1488,35 @@ void Data::readGroupFile(const string &groupFile) {
 
     if (myMPI::rank==0)
         cout << "Groups read from file" << endl;
+
 }
+
+
+void Data::readGroupFile2(const string& groupFile){
+
+	ifstream input(groupFile);
+	vector<int> tmp;
+	string col1;
+	int col2;
+
+	if(!input.is_open()){
+		cout<<"Error opening the file"<< endl;
+		return;
+		}
+
+	while(true){
+			input >> col1 >> col2;
+			if(input.eof()) break;
+			tmp.push_back(col2);
+			}
+
+	G=Eigen::VectorXi::Map(tmp.data(), tmp.size());
+
+//	for(size_t i(0); i<G.size(); ++i){cout << "group vector element " << i << " : " << G[i] << endl;}
+
+	}
+
+
 
 
 //void Data::readMultiLDmatBinFile(const string &mldmatFile){

@@ -216,6 +216,7 @@ public:
     void buildSparseMME(void);
     void readMultiLDmatInfoFile(const string &mldmatFile);
     void readGroupFile(const string &groupFile);
+    void readGroupFile2(const string &groupFile);
 };
 
 #endif /* data_hpp */
