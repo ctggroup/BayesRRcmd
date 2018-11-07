@@ -97,7 +97,10 @@ int BayesRRm::runGibbs()
                 VectorXd Cx;
                 priorPi[0] = 0.5;
 
+                //Thanasis and Marion: dividing by zero??
                 priorPi.segment(1, km1) = priorPi[0] * cVa.segment(1, km1).array() / cVa.segment(1, km1).sum();
+
+
                 y_tilde.setZero();
                 cVa[0] = 0;
                 cVa.segment(1, km1) = cva;
@@ -160,6 +163,7 @@ int BayesRRm::runGibbs()
                         muk.segment(1, km1) = num / denom.array();
 
                         logL = pi.array().log(); //first component probabilities remain unchanged
+
 
                         //update the log likelihood for each component
                         logL.segment(1, km1) = logL.segment(1, km1).array() - 0.5 * ((((sigmaG / sigmaE) * (((double)N-1))) * cVa.segment(1, km1).array() + 1).array().log()) + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;

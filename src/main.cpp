@@ -103,10 +103,9 @@ int main(int argc, const char * argv[]) {
     	  BayesRRhp mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
           mmapToy.runGibbs();
       } else if (opt.bayesType == "gbayes") {
-    	  cout << opt.groupFile << endl;
-    	  data.readGroupFile2(opt.groupFile);
-    	  Eigen::VectorXi G=data.G;
-    	  BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+    	  //data.readGroupFile2(opt.groupFile);
+    	  //Eigen::VectorXi G=data.G;
+    	  BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
     	  mmapToy.runGibbs();
       }
 

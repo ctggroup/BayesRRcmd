@@ -176,9 +176,6 @@ void Options::inputOptions(const int argc, const char* argv[]){
 			Gadget::Tokenizer strvec;
 			Gadget::Tokenizer strT;
 			strvec.getTokens(argv[++i], ";");
-			cout << strvec[0] << endl;
-			cout << strvec[1] << endl;
-			cout << strvec[2] << endl;
 			strT.getTokens(strvec[0],",");
 			mS=Eigen::MatrixXd(strvec.size(),strT.size());
 			numGroups=strvec.size();

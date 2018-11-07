@@ -44,7 +44,8 @@ HDR =  gctb.hpp \
       distributions_boost.hpp \
       data.hpp \
       BayesRRpp.h \
-	  BayesRRhp.h
+	  BayesRRhp.h \
+	  BayesRRg.h
  
 SRC = gctb.cpp \
       gadgets.cpp \
@@ -55,7 +56,8 @@ SRC = gctb.cpp \
       distributions_boost.cpp \
       data.cpp \
       BayesRRpp.cpp \
-	  BayesRRhp.cpp
+	  BayesRRhp.cpp \
+	  BayesRRg.cpp
 
 OBJ = $(SRC:.cpp=.o)
 
