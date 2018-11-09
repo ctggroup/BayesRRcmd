@@ -48,7 +48,7 @@ int BayesRRm::runGibbs()
 
     flag = 0;
 
-    std::cout<<"Running Gibbs sampling";
+    std::cout<<"Running Gibbs sampling"<<endl;
 
     // Compute the SNP data length in bytes
     size_t snpLenByt = (data.numInds % 4) ? data.numInds / 4 + 1 : data.numInds / 4;
@@ -121,6 +121,7 @@ int BayesRRm::runGibbs()
                 epsilon = (y).array() - mu;
                 sigmaE = epsilon.squaredNorm() / N * 0.5;
 
+
                 // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
                 for (int iteration = 0; iteration < max_iterations; iteration++) {
 
@@ -137,6 +138,7 @@ int BayesRRm::runGibbs()
 
                     m0 = 0;
                     v.setZero();
+
 
                     // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
                     for (int j = 0; j < M; j++) {

@@ -305,9 +305,10 @@ void BayesRRg::runGibbs() {
 	  for(unsigned int i = 0; i < numberGroups; ++i){
 	    outFile << "sigmaG[" << (i+1) << "],";
 	  }
-	  for(unsigned int i = 0; i < N; ++i){
+	  for(unsigned int i = 0; i < (N-1); ++i){
 	    outFile << "epsilon[" << (i+1) << "],";
 	  }
+      outFile << "epsilon[" << N << "]";
 	  outFile<<"\n";
 
 	  while(!flag ){

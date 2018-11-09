@@ -1,18 +1,17 @@
-PLINK v1.90b3.38 64-bit (7 Jun 2016)
+PLINK v1.90b6.6 64-bit (10 Oct 2018)
 Options in effect:
-  --bfile ../uk10k_qced_u05_chr1
-  --chr 1
-  --from-bp 1000000
-  --make-bed
+  --bfile uk10k_chr1_1mb
   --out uk10k_chr1_1mb
-  --to-bp 2000000
+  --recode
+  --tab
 
-Hostname: tinaroo1.local
-Working directory: /gpfs1/scratch/group30days/cnsg_park/jzeng/data/UK10K/example
-Start time: Fri Sep  8 21:55:59 2017
+Hostname: Ci32117
+Working directory: /Users/mpatxotb/git/BayesRRcmd/test/data
+Start time: Wed Nov  7 18:01:09 2018
 
-Random number seed: 1504871759
-129088 MB RAM detected; reserving 64544 MB for main workspace.
+Note: --tab flag deprecated.  Use '--recode tab ...'.
+Random number seed: 1541610069
+16384 MB RAM detected; reserving 8192 MB for main workspace.
 6717 variants loaded from .bim file.
 3642 people (0 males, 0 females, 3642 ambiguous) loaded from .fam.
 Ambiguous sex IDs written to uk10k_chr1_1mb.nosex .
@@ -21,7 +20,6 @@ Before main variant filters, 3642 founders and 0 nonfounders present.
 Calculating allele frequencies... done.
 6717 variants and 3642 people pass filters and QC.
 Note: No phenotypes present.
---make-bed to uk10k_chr1_1mb.bed + uk10k_chr1_1mb.bim + uk10k_chr1_1mb.fam ...
-done.
+--recode ped to uk10k_chr1_1mb.ped + uk10k_chr1_1mb.map ... done.
 
-End time: Fri Sep  8 21:56:00 2017
+End time: Wed Nov  7 18:01:10 2018

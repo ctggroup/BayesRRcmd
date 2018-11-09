@@ -11,11 +11,7 @@ out=$dataset.mmap
 
 echo Running mmap solution on dataset $dataset. Output in $out
 
-./brr --bayes bayesMmap --bfile ../test/data/$dataset --group /Users/mpatxotb/Desktop/read.groupsCpp.C/groupfile.txt --pheno ../test/data/test.phen --chain-length 1000 --burn-in 500 --thin 2 --mcmc-samples ./bayesOutput_bayesm.csv --S 0.01,0.001,0.0001 
-
-
-#./brr --bayes gbayes --bfile ../test/data/$dataset --group /Users/mpatxotb/Desktop/read.groupsCpp.C/groupfile.txt --mS '0.0001,0.001,0.01;0.0002,0.002,0.02;0.0005,0.005,0.05' --pheno ../test/data/test.phen --chain-length 1000 --burn-in 500 --thin 2 --mcmc-samples ./bayesOutput_bayesg.csv
-
+./brr --bayes bayesMmap --bfile ../test/data/$dataset --pheno ../test/data/test.phen --chain-length 10 --burn-in 5 --thin 2 --mcmc-samples ./bayesOutput.csv --S 0.01,0.001,0.0001 > $out
 
 out=$dataset.pp
 echo Running preprocessing solution on dataset $dataset. Output in $out
