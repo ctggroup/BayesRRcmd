@@ -114,7 +114,10 @@ int main(int argc, const char * argv[])
 
             cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
             clock_t start_bed = clock();
-            data.preprocessBedFile(opt.bedFile + ".bed", opt.bedFile + ".ppbed", opt.bedFile + ".sqnorm");
+            data.preprocessBedFile(opt.bedFile + ".bed",
+                                   opt.bedFile + ".ppbed",
+                                   opt.bedFile + ".sqnorm",
+                                   opt.compress);
             clock_t end = clock();
             printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
             cout << endl;

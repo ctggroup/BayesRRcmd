@@ -8,6 +8,7 @@
 // most read file methods are adopted from GCTA with modification
 
 #include "data.hpp"
+#include "compression.h"
 #include <mpi.h>
 #include <Eigen/Eigen>
 #include <sys/mman.h>
@@ -29,9 +30,9 @@ Data::Data()
 {
 }
 
-void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &sqNormFile)
+void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &sqNormFile, bool compress)
 {
-    cout << "Preprocessing bed file: " << bedFile << endl;
+    cout << "Preprocessing bed file: " << bedFile << ", Compress data = " << (compress ? "yes" : "no") << endl;
     if (numIncdSnps == 0)
         throw ("Error: No SNP is retained for analysis.");
     if (numKeptInds == 0)
@@ -122,11 +123,19 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         snpData.array() -= snpData.mean();
         //sqNorm = snpData.squaredNorm();
         float sqn = snpData.squaredNorm();
-        float std_ = 1.f / (sqrt(sqn / (float(numKeptInds)-1.0)));
+        float std_ = 1.0f / (sqrt(sqn / (float(numKeptInds - 1))));
         snpData.array() *= std_;
+
         // Write out the preprocessed data
-        ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(float));
-        sqNormOutput.write(reinterpret_cast<char *>(&sqNorm), sizeof(float));
+        if (!compress) {
+            ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(float));
+            sqNormOutput.write(reinterpret_cast<char *>(&sqNorm), sizeof(float));
+        } else {
+            const auto compressedSnpData = compressData(snpData);
+            ppBedOutput.write(reinterpret_cast<char *>(compressedSnpData.data),
+                              static_cast<const long>(compressedSnpData.size));
+            delete[] compressedSnpData.data;
+        }
 
         // Compute allele frequency and any other required data and write out to file
         //snpInfo->af = 0.5f * float(mean);

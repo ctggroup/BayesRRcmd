@@ -45,7 +45,14 @@ add_executable(${PROJECT_NAME}
     options.cpp
     parallelalgo.cpp
     samplewriter.cpp
+    compression.cpp
 )
+
+find_package(ZLIB REQUIRED)
+if(ZLIB_FOUND)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
+endif(ZLIB_FOUND)
 
 set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../tbb)
 include(${TBB_ROOT}/cmake/TBBBuild.cmake)
