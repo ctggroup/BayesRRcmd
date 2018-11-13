@@ -30,7 +30,7 @@ class BayesRRg {
 	  Eigen::MatrixXd cva;
 	  //TODO maybe it is better to leave the group assignment to be handled by Data
 	  //Eigen::VectorXi groupAssignment;
-	  const int numberGroups;
+	  unsigned int numberGroups;
 	  Distributions_boost dist;
 
 public:

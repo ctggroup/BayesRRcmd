@@ -1474,7 +1474,8 @@ void Data::readMultiLDmatInfoFile(const string &mldmatFile){
 
 
 //TODO Finish function to read the group file
-void Data::readGroupFile(const string &groupFile) {
+/*
+void Data::readGroupFile(const string &groupFile){
     // NA: missing phenotype
     ifstream in(groupFile.c_str());
     if (!in) throw ("Error: can not open the group file [" + groupFile + "] to read.");
@@ -1490,9 +1491,9 @@ void Data::readGroupFile(const string &groupFile) {
         cout << "Groups read from file" << endl;
 
 }
+*/
 
-
-void Data::readGroupFile2(const string& groupFile){
+void Data::readGroupFile(const string& groupFile){
 
 	ifstream input(groupFile);
 	vector<int> tmp;
@@ -1516,7 +1517,33 @@ void Data::readGroupFile2(const string& groupFile){
 
 	}
 
+void Data::readmSFile(const string& mSfile){
 
+	ifstream in(mSfile);
+
+	if(!in.is_open()){
+		cout<<"Error opening the file"<< endl;
+		return;
+	}
+
+	else if(in.is_open()){
+
+		string whole_text{ istreambuf_iterator<char>(in), istreambuf_iterator<char>() };
+
+		Gadget::Tokenizer strvec;
+		Gadget::Tokenizer strT;
+		strvec.getTokens(whole_text, ";");
+		strT.getTokens(strvec[0],",");
+		mS=Eigen::MatrixXd(strvec.size(),strT.size());
+		numGroups=strvec.size();
+
+		for (unsigned j=0; j<strvec.size(); ++j) {
+			strT.getTokens(strvec[j],",");
+			for(unsigned k=0;k<strT.size();++k)
+				mS(j,k) = stod(strT[k]);
+		}
+	}
+}
 
 
 //void Data::readMultiLDmatBinFile(const string &mldmatFile){

@@ -13,17 +13,16 @@
 #include "BayesRRg.h"
 
 BayesRRg::BayesRRg(Data &data,Options &opt, const long memPageSize):seed(opt.seed),
-																	data(data),
-																	opt(opt),
-																	memPageSize(memPageSize),
-																	max_iterations(opt.chainLength),
-																	thinning(opt.thin),
-																	burn_in(opt.burnin),
-																	outputFile(opt.mcmcSampleFile),
-																	bedFile(opt.bedFile + ".bed"),
-																	dist(opt.seed),
-																	cva(opt.mS) ,
-																	numberGroups(opt.numGroups){
+data(data),
+opt(opt),
+memPageSize(memPageSize),
+max_iterations(opt.chainLength),
+thinning(opt.thin),
+burn_in(opt.burnin),
+outputFile(opt.mcmcSampleFile),
+bedFile(opt.bedFile + ".bed"),
+dist(opt.seed)
+{
 	// TODO Auto-generated constructor stub
 
 }
@@ -40,11 +39,15 @@ void BayesRRg::runGibbs() {
 	  int M(data.numIncdSnps);
 	  VectorXd components(M);
 	  VectorXf normedSnpData(data.numKeptInds);
-	  data.readGroupFile2(opt.groupFile);
+	  data.readGroupFile(opt.groupFile);
+	  data.readmSFile(opt.mSfile);
+	  cva=data.mS;
+	  numberGroups=data.numGroups;
 	  // TO FINISH
 	  const bool usePreprocessedData = (opt.analysisType == "PPBayes");
 
-	  int K(cva.cols()+1);
+
+	  int K(data.mS.cols()+1);
 	  ////////////validate inputs
 
 	  if(max_iterations < burn_in || max_iterations<1 || burn_in<1) //validations related to mcmc burnin and iterations

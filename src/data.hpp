@@ -125,7 +125,9 @@ public:
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
-    VectorXi G; 			 //groups
+    VectorXi G; 			 // groups
+    MatrixXd mS;			 // cva groups
+    unsigned int numGroups;	 // number of groups
 
     //SparseMatrix<float> ZPZ; // sparse Z'Z because LE is assumed for distant SNPs
     vector<VectorXf> ZPZ;
@@ -215,8 +217,9 @@ public:
     void summarizeSnpResults(const SparseMatrix<float> &snpEffects, const string &filename) const;
     void buildSparseMME(void);
     void readMultiLDmatInfoFile(const string &mldmatFile);
+   // void readGroupFile(const string &groupFile);
     void readGroupFile(const string &groupFile);
-    void readGroupFile2(const string &groupFile);
+    void readmSFile(const string& mSfile);
 };
 
 #endif /* data_hpp */
