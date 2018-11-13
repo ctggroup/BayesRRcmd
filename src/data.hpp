@@ -178,7 +178,7 @@ public:
     unsigned numKeptInds;
     unsigned numChroms;
 
-    void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &sqNormFile, bool compress);
+    void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, const string &sqNormFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile, const string &sqNormFile);
     void unmapPreprocessedBedFile();
 

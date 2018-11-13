@@ -30,7 +30,7 @@ Data::Data()
 {
 }
 
-void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &sqNormFile, bool compress)
+void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, const string &sqNormFile, bool compress)
 {
     cout << "Preprocessing bed file: " << bedFile << ", Compress data = " << (compress ? "yes" : "no") << endl;
     if (numIncdSnps == 0)
@@ -45,6 +45,9 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
     ofstream ppBedOutput(preprocessedBedFile.c_str(), ios::binary);
     if (!ppBedOutput)
         throw("Error: Unable to open the preprocessed bed file [" + preprocessedBedFile + "] for writing.");
+    ofstream ppBedIndexOutput(preprocessedBedIndexFile.c_str(), ios::binary);
+    if (!ppBedIndexOutput)
+        throw("Error: Unable to open the preprocessed bed index file [" + preprocessedBedIndexFile + "] for writing.");
     ofstream sqNormOutput(sqNormFile.c_str(), ios::binary);
     if (!sqNormOutput)
         throw("Error: Unable to open the preprocessed square norm file [" + sqNormFile + "] for writing.");
@@ -54,6 +57,13 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
     BIT.read(header, 3);
     if (!BIT || header[0] != 0x6c || header[1] != 0x1b || header[2] != 0x01)
         throw ("Error: Incorrect first three bytes of bed file: " + bedFile);
+
+    // How much space do we need to compress the data (if requested)
+    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize(numKeptInds) : 0;
+    unsigned char *compressedBuffer = nullptr;
+    unsigned long pos = 0;
+    if (compress)
+        compressedBuffer = new unsigned char[maxCompressedOutputSize];
 
     // Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
     for (unsigned int j = 0, snp = 0; j < numSnps; j++) {
@@ -129,13 +139,16 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         // Write out the preprocessed data
         if (!compress) {
             ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(float));
-            sqNormOutput.write(reinterpret_cast<char *>(&sqNorm), sizeof(float));
         } else {
-            const auto compressedSnpData = compressData(snpData);
-            ppBedOutput.write(reinterpret_cast<char *>(compressedSnpData.data),
-                              static_cast<const long>(compressedSnpData.size));
-            delete[] compressedSnpData.data;
+            const unsigned long compressedSize = compressData(snpData, compressedBuffer, maxCompressedOutputSize);
+            ppBedOutput.write(reinterpret_cast<char *>(compressedBuffer), long(compressedSize));
+
+            // Calculate the index data for this column
+            ppBedIndexOutput.write(reinterpret_cast<char *>(&pos), sizeof(unsigned long));
+            ppBedIndexOutput.write(reinterpret_cast<const char *>(&compressedSize), sizeof(unsigned long));
+            pos += compressedSize;
         }
+        sqNormOutput.write(reinterpret_cast<char *>(&sqNorm), sizeof(float));
 
         // Compute allele frequency and any other required data and write out to file
         //snpInfo->af = 0.5f * float(mean);
@@ -144,6 +157,10 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         if (++snp == numIncdSnps)
             break;
     }
+
+    if (compress)
+        delete[] compressedBuffer;
+
     BIT.clear();
     BIT.close();
 

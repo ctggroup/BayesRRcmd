@@ -5,11 +5,10 @@
 
 using namespace Eigen;
 
-struct DataAndSize {
-    unsigned char *data = nullptr;
-    long size = 0;
-};
+unsigned long maxCompressedDataSize(const unsigned int numFloats);
 
-DataAndSize compressData(const VectorXf &snpData);
+unsigned long compressData(const VectorXf &snpData,
+                           unsigned char *outputBuffer,
+                           unsigned long outputSize);
 
 #endif // COMPRESSION_H

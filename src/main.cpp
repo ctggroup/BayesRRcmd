@@ -116,6 +116,7 @@ int main(int argc, const char * argv[])
             clock_t start_bed = clock();
             data.preprocessBedFile(opt.bedFile + ".bed",
                                    opt.bedFile + ".ppbed",
+                                   opt.bedFile + ".ppbedindex",
                                    opt.bedFile + ".sqnorm",
                                    opt.compress);
             clock_t end = clock();
