@@ -114,6 +114,7 @@ int main(int argc, const char * argv[]) {
 
     } else if (opt.analysisType == "Preprocess") {
         readGenotypes = false;
+        //Thanasis and Marion: do we really need the phen file for the preprocessing?
         gctb.inputIndInfo(data, opt.bedFile, opt.phenotypeFile, opt.keepIndFile, opt.keepIndMax,
                           opt.mphen, opt.covariateFile);
         gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
@@ -142,8 +143,19 @@ int main(int argc, const char * argv[]) {
         cout << endl;
 
         // Run analysis using mapped data files
-        BayesRRm toy(data, opt,sysconf(_SC_PAGE_SIZE));
-        toy.runGibbs();
+
+        if (opt.bayesType == "bayesMmap") {
+        	BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        	mmapToy.runGibbs();
+        } else if (opt.bayesType == "horseshoe") {
+        	BayesRRhp mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        	mmapToy.runGibbs();
+        } else if (opt.bayesType == "gbayes") {
+        	//data.readGroupFile2(opt.groupFile);
+        	//Eigen::VectorXi G=data.G;
+        	BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        	mmapToy.runGibbs();
+        }
 
         data.unmapPreprocessedBedFile();
         end = clock();
