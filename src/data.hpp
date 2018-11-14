@@ -122,11 +122,8 @@ public:
 
     // mmap related data
     int ppBedFd;
-    int sqNormFd;
     float *ppBedMap;
-    float *sqNormMap;
     Map<MatrixXf> mappedZ;
-    Map<VectorXf> mappedZPZDiag;
     PpBedIndex ppbedIndex;
 
     // Original data
