@@ -100,3 +100,30 @@ unsigned long compressData(const VectorXf &snpData, unsigned char *outputBuffer,
 
     return compressedSize;
 }
+
+void extractData(unsigned char *compressedData,
+                 unsigned int compressedDataSize,
+                 unsigned char *outputBuffer,
+                 unsigned int outputBufferSize)
+{
+    z_stream strm;
+    strm.zalloc = nullptr;
+    strm.zfree = nullptr;
+    strm.opaque = nullptr;
+    strm.avail_in = 0;
+    strm.next_in = nullptr;
+    auto ret = inflateInit(&strm);
+    if (ret != Z_OK)
+        throw("Failed to verify compressed data");
+
+    strm.next_out = outputBuffer;
+    strm.avail_out = outputBufferSize;
+    strm.next_in = compressedData;
+    strm.avail_in = compressedDataSize;
+    const int flush = Z_FINISH;
+    ret = inflate(&strm, flush);
+    if (ret != Z_STREAM_END)
+        throw("Failed to verify compressed data");
+
+    (void) inflateEnd(&strm);
+}

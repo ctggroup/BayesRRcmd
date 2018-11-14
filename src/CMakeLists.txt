@@ -35,6 +35,7 @@ add_executable(${PROJECT_NAME}
     BayesRRhp.cpp
     BayesRRpp.cpp
     BayesRRm.cpp
+    BayesRRmz.cpp
     BayesRMmapToy.cpp
     BayesRRtoy.cpp
     data.cpp

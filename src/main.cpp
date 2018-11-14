@@ -13,6 +13,7 @@
 #include <mpi.h>
 #include <string>
 #include "BayesRRm.h"
+#include "BayesRRmz.h"
 #include "BayesRRhp.h"
 #include "BayesRRpp.h"
 
@@ -131,29 +132,36 @@ int main(int argc, const char * argv[])
             gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
                               opt.includeChr, readGenotypes);
 
-            cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
-            clock_t start_bed = clock();
+            // Run analysis using mapped data files
             if (opt.compress) {
+                cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+                clock_t start_bed = clock();
                 data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
                                                     opt.bedFile + ".ppbedindex");
-            } else {
-                data.mapPreprocessBedFile(opt.bedFile + ".ppbed",
-                                          opt.bedFile + ".sqnorm");
-            }
-            clock_t end = clock();
-            printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-            cout << endl;
+                clock_t end = clock();
+                printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+                cout << endl;
 
-            // Run analysis using mapped data files
-//            BayesRRm toy(data, opt, sysconf(_SC_PAGE_SIZE));
-//            toy.runGibbs();
+                BayesRRmz toy(data, opt);
+                toy.runGibbs();
 
-            if (opt.compress) {
                 data.unmapCompressedPreprocessedBedFile();
             } else {
+                cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+                clock_t start_bed = clock();
+                data.mapPreprocessBedFile(opt.bedFile + ".ppbed",
+                                          opt.bedFile + ".sqnorm");
+                clock_t end = clock();
+                printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+                cout << endl;
+
+                BayesRRm toy(data, opt, sysconf(_SC_PAGE_SIZE));
+                toy.runGibbs();
+
                 data.unmapPreprocessedBedFile();
             }
-            end = clock();
+
+            clock_t end = clock();
             printf("OVERALL read+compute time = %.3f sec.\n", double(end - start) / double(CLOCKS_PER_SEC));
         } else {
             throw(" Error: Wrong analysis type: " + opt.analysisType);
