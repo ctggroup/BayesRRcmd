@@ -108,6 +108,14 @@ public:
     }
 };
 
+// An entry for the index to the compressed preprocessed bed file
+struct IndexEntry {
+    long pos;
+    long size;
+};
+
+using PpBedIndex = std::vector<IndexEntry>;
+
 class Data {
 public:
     Data();
@@ -119,6 +127,7 @@ public:
     float *sqNormMap;
     Map<MatrixXf> mappedZ;
     Map<VectorXf> mappedZPZDiag;
+    PpBedIndex ppbedIndex;
 
     // Original data
     MatrixXf X;              // coefficient matrix for fixed effects
@@ -181,6 +190,10 @@ public:
     void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, const string &sqNormFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile, const string &sqNormFile);
     void unmapPreprocessedBedFile();
+
+    void mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
+                                        const string &indexFile);
+    void unmapCompressedPreprocessedBedFile();
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);

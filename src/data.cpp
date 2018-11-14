@@ -27,6 +27,7 @@ Data::Data()
     , sqNormMap(nullptr)
     , mappedZ(nullptr, 1, 1)
     , mappedZPZDiag(nullptr, 1)
+    , ppbedIndex()
 {
 }
 
@@ -212,6 +213,39 @@ void Data::unmapPreprocessedBedFile()
 
     close(ppBedFd);
     close(sqNormFd);
+}
+
+void Data::mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
+                                          const string &indexFile)
+{
+    // Load the index to the compressed preprocessed bed file
+    ppbedIndex.resize(numIncdSnps);
+    ifstream indexStream(indexFile, std::ifstream::binary);
+    if (!indexStream)
+        throw("Error: Failed to open compressed preprocessed bed file index");
+    indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
+                     numIncdSnps * 2 * sizeof(long));
+
+    // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
+    // that we would otherwise get as intermediate variables!
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().size);
+
+    // Open and mmap the preprocessed bed file
+    ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
+    if (ppBedFd == -1)
+        throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
+
+    ppBedMap = reinterpret_cast<float *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
+    if (ppBedMap == MAP_FAILED)
+        throw("Error: Failed to mmap preprocessed bed file");
+}
+
+void Data::unmapCompressedPreprocessedBedFile()
+{
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().size);
+    munmap(ppBedMap, ppBedSize);
+    close(ppBedFd);
+    ppbedIndex.clear();
 }
 
 bool SnpInfo::isProximal(const SnpInfo &snp2, const float genWindow) const {

@@ -133,16 +133,26 @@ int main(int argc, const char * argv[])
 
             cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
             clock_t start_bed = clock();
-            data.mapPreprocessBedFile(opt.bedFile + ".ppbed", opt.bedFile + ".sqnorm");
+            if (opt.compress) {
+                data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
+                                                    opt.bedFile + ".ppbedindex");
+            } else {
+                data.mapPreprocessBedFile(opt.bedFile + ".ppbed",
+                                          opt.bedFile + ".sqnorm");
+            }
             clock_t end = clock();
             printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
             cout << endl;
 
             // Run analysis using mapped data files
-            BayesRRm toy(data, opt,sysconf(_SC_PAGE_SIZE));
-            toy.runGibbs();
+//            BayesRRm toy(data, opt, sysconf(_SC_PAGE_SIZE));
+//            toy.runGibbs();
 
-            data.unmapPreprocessedBedFile();
+            if (opt.compress) {
+                data.unmapCompressedPreprocessedBedFile();
+            } else {
+                data.unmapPreprocessedBedFile();
+            }
             end = clock();
             printf("OVERALL read+compute time = %.3f sec.\n", double(end - start) / double(CLOCKS_PER_SEC));
         } else {
