@@ -20,14 +20,14 @@ class BayesRRhp {
 	  const int 	max_iterations;
 	  const int		burn_in;
 	  const int 	thinning;
-	  const double	A=0.008;
+	  double	A;
 	  const double	v0E=0.0001;
 	  const double  s02E=0.0001;
 	  const double  vL=1.0;
 	  const double  vT=1.0;
-	  const int B=1.0;
-	  double c2=1000000;
-	  Eigen::VectorXd cva;
+	  const double vC=7.0;
+	  const double sC=10.0;
+	  double c2=1.0;
 	  Distributions_boost dist;
 public:
 	BayesRRhp(Data &data, Options &opt, const long memPageSize);

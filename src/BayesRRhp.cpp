@@ -27,7 +27,6 @@ double inv_gamma_rng(double shape,double scale){
 
   return (1.0 / rgamma(shape, 1.0/scale));
 }
-// [[Rcpp::export]]
 double gamma_rng(double shape,double scale){
   return rgamma(shape, scale);
 }
@@ -35,11 +34,9 @@ double gamma_rate_rng(double shape,double rate){
   return rgamma(shape,1.0/rate);
 }
 
-// [[Rcpp::export]]
 double inv_gamma_rate_rng(double shape,double rate){
   return 1.0 / gamma_rate_rng(shape, rate);
 }
-// [[Rcpp::export]]
 
 template<typename Scalar>
 struct inv_gamma_functor
@@ -85,7 +82,6 @@ void BayesRRhp::runGibbs(){
 	  flag=0;
 	  static unsigned int M(data.numIncdSnps);
 	  static unsigned int N(data.numKeptInds);
-	  VectorXd components(M);
 		VectorXf normedSnpData(data.numKeptInds);
 
 	  ////////////validate inputs
@@ -134,27 +130,19 @@ void BayesRRhp::runGibbs(){
 	      markerI.push_back(i);
 	    }
 
-
+        double t0; //tau prior
 	    int marker;
 	    double acum;
 	    VectorXd y;
 	    VectorXd cX;
+        A=ceil(M/2);
+	    t0=(1/sqrt(N))*(A/(M-A));
 
 	    y_tilde.setZero();
 
 	    beta.setZero();
-	    tau=dist.beta_rng(1,1);
 
 	    mu=0;
-
-	    eta=dist.inv_gamma_rate_rng(0.5,1/pow(A,2));
-	    eta=0.00001;
-	    std::cout<< "initial eta " << eta<<"\n";
-	    tau=(1.0/eta)*dist.inv_gamma_rate_rng(0.5*vT,vT);
-
-	    tau=A;
-	    // tau=1/A;
-	    std::cout<< "initial tau " << tau<<"\n";
 
 	    v=(v.setOnes().array()).unaryExpr(inv_gamma_functor<double>(0));
 	    v.setOnes();
@@ -169,6 +157,17 @@ void BayesRRhp::runGibbs(){
 	    std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 	    epsilon= y.array();
 	    sigmaE=epsilon.squaredNorm()/N*0.5;
+
+
+
+	    eta=dist.inv_gamma_rate_rng(0.5,1/(sigmaE*t0*t0));
+	    //eta=0.00001;
+	    std::cout<< "initial eta " << eta<<"\n";
+	    tau=(1.0/eta)*dist.inv_gamma_rate_rng(0.5*vT,vT);
+
+	    std::cout<< "initial tau " << tau<<"\n";
+
+
 	    for(int iteration=0; iteration < max_iterations; iteration++){
 
 	      if(iteration>0)
@@ -192,7 +191,7 @@ void BayesRRhp::runGibbs(){
 
 	      std::random_shuffle(markerI.begin(), markerI.end());
 
-	      eta = dist.inv_gamma_rate_rng(0.5+0.5*vT,(1.0/(A*A))+vT/tau);
+	      eta = dist.inv_gamma_rate_rng(0.5+0.5*vT,(1.0/(t0*t0*sigmaE))+vT/tau);
 	      v=(vL/(lambda).array()+1.0).unaryExpr(inv_gamma_functor<double>(vL));
 	      for(int j=0; j < M; j++){
 
@@ -224,7 +223,7 @@ void BayesRRhp::runGibbs(){
 
 	      //tau=A;
 	      //double vC(10.0),sC(100);
-	      //c2=inv_gamma_rate_rng(0.5*vC+0.5*M,vC*sC*0.5+0.5*beta.squaredNorm());
+	      c2=inv_gamma_rate_rng(0.5*vC+0.5*M,vC*sC*0.5+0.5*beta.squaredNorm());
 	    //  c2=sC;
 
 
