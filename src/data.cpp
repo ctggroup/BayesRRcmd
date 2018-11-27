@@ -1492,12 +1492,16 @@ void Data::readGroupFile(const string &groupFile) {
 
 
 void Data::readFailureFile(const string& failureFile){
-	ifstream input(failureFile);
+
+	ifstream input(failureFile.c_str());
 	vector<int> tmp;
 	int col;
-
+	cout << input.is_open() << endl;
 	if(!input.is_open()){
-		cout<<"Error opening the file"<< endl;
+		cout << "a" << endl;
+		cout << "Error opening the file" << endl;
+		cout << "a" << endl;
+
 		return;
 	}
 
