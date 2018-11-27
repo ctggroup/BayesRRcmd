@@ -15,6 +15,7 @@
 #include "BayesRRm.h"
 #include "BayesRRhp.h"
 #include "BayesRRpp.h"
+#include "BayesW.hpp"
 using namespace std;
 
 
@@ -83,7 +84,7 @@ int main(int argc, const char * argv[]) {
 
       //gctb.clearGenotypes(data);
 
-    } else if (opt.analysisType == "Bayes" && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe"))) {
+    } else if (opt.analysisType == "Bayes" && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe") || (opt.bayesType == "BayesW" ))) {
 
       clock_t start = clock();
 
@@ -94,12 +95,14 @@ int main(int argc, const char * argv[]) {
             opt.includeChr, readGenotypes);
 
 
-
       if (opt.bayesType == "bayesMmap") {
     	  BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
           mmapToy.runGibbs();
       } else if (opt.bayesType == "horseshoe") {
     	  BayesRRhp mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+          mmapToy.runGibbs();
+      } else if(opt.bayesType == "BayesW"){
+          BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
           mmapToy.runGibbs();
       }
 
