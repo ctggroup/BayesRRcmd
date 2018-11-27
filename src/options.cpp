@@ -192,7 +192,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
         	ss << "--group " << argv[i] << "\n";
 		}
 
-
+        // Failure vector file
+        else if (!strcmp(argv[i], "--failure")) {
+        	failureFile = argv[++i];
+        	ss << "--failure " << argv[i] << "\n";
+		}
 
 
 

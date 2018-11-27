@@ -1491,6 +1491,26 @@ void Data::readGroupFile(const string &groupFile) {
 }
 
 
+void Data::readFailureFile(const string& failureFile){
+	ifstream input(failureFile);
+	vector<int> tmp;
+	int col;
+
+	if(!input.is_open()){
+		cout<<"Error opening the file"<< endl;
+		return;
+	}
+
+	while(true){
+		input >> col ;
+		if(input.eof()) break;
+		tmp.push_back(col);
+	}
+
+	fail = Eigen::VectorXi::Map(tmp.data(), tmp.size());
+}
+
+
 //void Data::readMultiLDmatBinFile(const string &mldmatFile){
 //    ifstream in1(mldmatFile.c_str());
 //    if (!in1) throw ("Error: can not open the file [" + mldmatFile + "] to read.");
