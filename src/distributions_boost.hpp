@@ -31,6 +31,7 @@ public:
 	double categorical(Eigen::VectorXd probs);
 	double beta_rng(double a, double b);
 	double exp_rng(double a);
+	double bernoulli(double p);
 };
 
 

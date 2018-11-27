@@ -125,7 +125,8 @@ public:
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
-    VectorXi G; 			 //groups
+    VectorXi G; 			 // groups
+    VectorXi fail; 			 // failure indicator (0/1)
 
     //SparseMatrix<float> ZPZ; // sparse Z'Z because LE is assumed for distant SNPs
     vector<VectorXf> ZPZ;
