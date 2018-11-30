@@ -46,8 +46,8 @@ HDR = gctb.hpp \
       BayesRRpp.h \
 	  BayesRRhp.h \
 	  BayesRRg.h \
-	  BayesRRhp.h\
-	  BayesW_arms.h\
+	  BayesRRhp.h \
+	  BayesW_arms.h \
 	  BayesW.hpp
  
 SRC = gctb.cpp \
@@ -60,7 +60,7 @@ SRC = gctb.cpp \
       data.cpp \
       BayesRRpp.cpp \
 	  BayesRRhp.cpp \
-	  BayesRRg.cpp
+	  BayesRRg.cpp \
 	  BayesRRhp.cpp\
 	  BayesW_arms.cpp\
 	  BayesW.cpp
