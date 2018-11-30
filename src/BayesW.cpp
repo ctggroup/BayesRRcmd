@@ -349,6 +349,7 @@ int BayesW::runGibbs()
 
 						prob = 1/(1 + ((1-pi)/pi) * exp(beta_dens_diff(BETA_MODE,&used_data)) *
 								sqrt(-beta_dens_der2(BETA_MODE,&used_data)/(2*PI)));
+						//cout << marker << ": "<< prob << ";";
 
 						gamma(marker) = dist.bernoulli(prob);   // Sample the inclusion based on the probability
 
@@ -392,6 +393,8 @@ int BayesW::runGibbs()
 							q.enqueue(sample);
 						}
 					}
+
+					cout << iteration << ". " << gamma.sum() <<"; " << used_data.alpha << endl;
 				}
 
 				std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
