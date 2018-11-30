@@ -8,6 +8,8 @@
 #include <math.h>
 #include "distributions_boost.hpp"
 #include <boost/random/gamma_distribution.hpp>
+#include <boost/random/bernoulli_distribution.hpp>
+
 #include "boost/random.hpp"
 #include "boost/generator_iterator.hpp"
 #include <boost/random/normal_distribution.hpp>
@@ -34,6 +36,12 @@ Eigen::VectorXd Distributions_boost::dirichilet_rng(Eigen::VectorXd alpha) {
     result[i]=rgamma(alpha[i],(double)1.0);
   result/=result.sum();
   return result;
+}
+
+double Distributions_boost::bernoulli(double p){
+	boost::random::bernoulli_distribution<double> myBern(p);
+	boost::random::variate_generator<boost::mt19937&, boost::random::bernoulli_distribution<> > ran_bern(rng, myBern);
+  return ran_bern();
 }
 
 double Distributions_boost::inv_gamma_rng(double shape,double scale){

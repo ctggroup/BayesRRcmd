@@ -16,6 +16,8 @@
 #include "BayesRRhp.h"
 #include "BayesRRpp.h"
 #include "BayesRRg.h"
+#include "BayesW.hpp"
+
 using namespace std;
 
 
@@ -83,18 +85,13 @@ int main(int argc, const char * argv[]) {
       printf("OVERALL read+compute time = %.3f sec.\n", (float)(end - start) / CLOCKS_PER_SEC);
 
       //gctb.clearGenotypes(data);
-
-    } else if (opt.analysisType == "Bayes" && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe") || (opt.bayesType == "gbayes"))) {
-
+    } else if (opt.analysisType == "Bayes" && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe") || (opt.bayesType == "gbayes")||(opt.bayesType == "BayesW" ))) {
       clock_t start = clock();
-
       readGenotypes = false;
       gctb.inputIndInfo(data, opt.bedFile, opt.phenotypeFile, opt.keepIndFile, opt.keepIndMax,
             opt.mphen, opt.covariateFile);
       gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
             opt.includeChr, readGenotypes);
-
-
 
       if (opt.bayesType == "bayesMmap") {
     	  BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
@@ -107,6 +104,9 @@ int main(int argc, const char * argv[]) {
     	  //Eigen::VectorXi G=data.G;
     	  BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
     	  mmapToy.runGibbs();
+      } else if(opt.bayesType == "BayesW"){
+          BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+          mmapToy.runGibbs();
       }
 
       clock_t end   = clock();

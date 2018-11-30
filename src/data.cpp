@@ -732,6 +732,7 @@ void Data::readPhenotypeFile(const string &phenFile, const unsigned mphen) {
         cout << "Non-missing phenotypes of trait " << mphen << " of " << line << " individuals are included from [" + phenFile + "]." << endl;
 }
 
+
 void Data::keepMatchedInd(const string &keepIndFile, const unsigned keepIndMax){  // keepIndFile is optional
     map<string, IndInfo*>::iterator it, end=indInfoMap.end();
     IndInfo *ind = NULL;
@@ -1543,6 +1544,28 @@ void Data::readmSFile(const string& mSfile){
 				mS(j,k) = stod(strT[k]);
 		}
 	}
+}
+
+
+void Data::readFailureFile(const string& failureFile){
+
+
+	ifstream input(failureFile);
+	vector<int> tmp;
+	int col;
+	if(!input.is_open()){
+		cout << "Error opening the file" << endl;
+
+		return;
+	}
+
+	while(true){
+		input >> col ;
+		if(input.eof()) break;
+		tmp.push_back(col);
+	}
+	input.close();
+	fail = Eigen::VectorXi::Map(tmp.data(), tmp.size());
 }
 
 

@@ -34,7 +34,7 @@ LDFLAGS = -L/usr/local/opt/llvm/lib
 CXX = $(CXX_UNIX)
 
 
-HDR =  gctb.hpp \
+HDR = gctb.hpp \
       gadgets.hpp \
       options.hpp \
       mympi.hpp \
@@ -45,7 +45,10 @@ HDR =  gctb.hpp \
       data.hpp \
       BayesRRpp.h \
 	  BayesRRhp.h \
-	  BayesRRg.h
+	  BayesRRg.h \
+	  BayesRRhp.h\
+	  BayesW_arms.h\
+	  BayesW.hpp
  
 SRC = gctb.cpp \
       gadgets.cpp \
@@ -58,6 +61,9 @@ SRC = gctb.cpp \
       BayesRRpp.cpp \
 	  BayesRRhp.cpp \
 	  BayesRRg.cpp
+	  BayesRRhp.cpp\
+	  BayesW_arms.cpp\
+	  BayesW.cpp
 
 OBJ = $(SRC:.cpp=.o)
 

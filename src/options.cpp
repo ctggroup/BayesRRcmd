@@ -181,9 +181,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
         	groupFile = argv[++i];
         	ss << "--group " << argv[i] << "\n";
         }
-
-
-
+        // Failure vector file
+        else if (!strcmp(argv[i], "--failure")) {
+        	failureFile = argv[++i];
+        	ss << "--failure " << argv[i] << "\n";
+		}
         else if (!strcmp(argv[i], "--thread")) {
             numThread = atoi(argv[++i]);
             ss << "--thread " << argv[i] << "\n";
@@ -203,8 +205,6 @@ void Options::inputOptions(const int argc, const char* argv[]){
     if(myMPI::rank==0) cout << ss.str() << endl;
 
     //if (bayesType == "Cap" || bayesType == "Sap") myMPI::partition = "bycol";
-
-
 
 }
 
