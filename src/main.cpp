@@ -93,6 +93,7 @@ int main(int argc, const char * argv[]) {
       gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
             opt.includeChr, readGenotypes);
 
+
       if (opt.bayesType == "bayesMmap") {
     	  BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
           mmapToy.runGibbs();
@@ -106,7 +107,7 @@ int main(int argc, const char * argv[]) {
     	  mmapToy.runGibbs();
       } else if(opt.bayesType == "BayesW"){
           BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-          mmapToy.runGibbs();
+          mmapToy.runGibbs_notPreprocessed();
       }
 
       clock_t end   = clock();
@@ -155,6 +156,11 @@ int main(int argc, const char * argv[]) {
         	//Eigen::VectorXi G=data.G;
         	BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
         	mmapToy.runGibbs();
+        }else if (opt.bayesType == "BayesW") {
+        	//data.readGroupFile2(opt.groupFile);
+        	//Eigen::VectorXi G=data.G;
+        	BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        	mmapToy.runGibbs_Preprocessed();
         }
 
         data.unmapPreprocessedBedFile();

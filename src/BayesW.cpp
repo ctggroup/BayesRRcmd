@@ -177,7 +177,7 @@ double betaMode(double initVal, void *my_data ,double error = 0.000001, int max_
 }
 
 
-int BayesW::runGibbs()
+int BayesW::runGibbs_notPreprocessed()
 {
 	int flag;
 	moodycamel::ConcurrentQueue<Eigen::VectorXd> q;//lock-free queue
@@ -327,14 +327,11 @@ int BayesW::runGibbs()
 
 						marker = markerI[j];
 
-						if (!usePreprocessedData) {
-							data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
-							//I use a temporal variable to do the cast, there should be better ways to do this.
-							used_data.X_j = normedSnpData.cast<double>();
-						}
-						else{
-							used_data.X_j = data.mappedZ.col(marker).cast<double>();
-						}
+						// For not preprocessed we do the following
+						data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
+						//I use a temporal variable to do the cast, there should be better ways to do this.
+						used_data.X_j = normedSnpData.cast<double>();
+
 
 						used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
 
@@ -430,3 +427,254 @@ int BayesW::runGibbs()
 
 	return 0;
 }
+
+
+int BayesW::runGibbs_Preprocessed()
+{
+	int flag;
+	moodycamel::ConcurrentQueue<Eigen::VectorXd> q;//lock-free queue
+	const unsigned int M(data.numIncdSnps);
+	const unsigned int N(data.numKeptInds);
+
+	data.readFailureFile(opt.failureFile);
+
+
+	VectorXi gamma(M);
+	VectorXf normedSnpData(data.numKeptInds);
+	const bool usePreprocessedData = (opt.analysisType == "PPBayes");
+
+	flag = 0;
+
+	std::cout<<"Running Gibbs sampling" << endl;
+
+	// Compute the SNP data length in bytes
+	size_t snpLenByt = (data.numInds % 4) ? data.numInds / 4 + 1 : data.numInds / 4;
+
+	omp_set_nested(1); // 1 - enables nested parallelism; 0 - disables nested parallelism.
+
+	//Eigen::initParallel();
+
+#pragma omp parallel shared(flag,q)
+	{
+#pragma omp sections
+		{
+
+			{
+				// ARS parameters
+				int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
+				int neval;
+				double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
+
+				double convex = 1.0;
+				int dometrop = 0;
+				double xprev = 0.0;
+
+				double xl, xr ;			  // Initial left and right (pseudo) extremes
+				double xinit[4] = {2.5,3,5,10};     // Initial abscissae
+				double *p_xinit = xinit;
+				VectorXd new_xinit(4);  // Temporary vector to renew the initial parameters
+
+				struct pars used_data;  // For ARS, we are keeping the data in this structure
+
+				//mean and residual variables
+				double mu; // mean or intercept
+
+				double prob;  //Inclusion probability
+				double BETA_MODE;  //Beta mode at hand
+
+				//component variables
+				double pi = 0.5; // prior inclusion probability
+
+				//linear model variables   //y is logarithmed
+				VectorXd beta(M); // effect sizes
+				VectorXd BETAmodes(M); // Modes by variable
+
+				//     VectorXd y_tilde(N); // variable containing the adjusted residual to exclude the effects of a given marker
+
+				//sampler variables
+				VectorXd sample(1 * M + 5); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance
+				std::vector<int> markerI(M);
+				std::iota(markerI.begin(), markerI.end(), 0);
+
+				int marker;
+
+				VectorXd y;   //y is logarithmed
+
+				y = data.y.cast<double>();
+
+				VectorXi failure(N);   //Failure vector
+				failure = data.fail;
+
+				(used_data.epsilon).resize(y.size());
+				(used_data.failure_vector).resize(failure.size());
+
+				//         y_tilde.setZero();
+				beta.setZero();
+				//Initial value for intercept is the mean of the logarithms
+
+				mu = y.mean();
+				double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
+				used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
+
+
+				gamma.setZero();  //Exclude all the markers from the model
+
+				for(int i=0; i<(y.size()); ++i){
+					(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
+					(used_data.failure_vector)[i] = failure[i];
+				}
+
+
+				used_data.sigma_b = pow(PI,2)/ (6 * pow(used_data.alpha,2) * M ) ;
+
+				/* Prior value selection for the variables */
+				/* At the moment we set them to be uninformative */
+				/* alpha */
+				used_data.alpha_0 = alpha_0;
+				used_data.kappa_0 = kappa_0;
+				/* mu */
+				used_data.sigma_mu = sigma_mu;
+				/* sigma_b */
+				used_data.alpha_sigma = alpha_sigma;
+				used_data.beta_sigma = beta_sigma;
+
+
+				std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+
+				// Need to think whether log survival data should be scaled
+
+				//             y = (data.y.cast<double>().array() - data.y.cast<double>().mean());
+				//             y /= sqrt(y.squaredNorm() / ((double)N - 1.0));
+
+
+				// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
+				srand(2);
+
+				for (int iteration = 0; iteration < max_iterations; iteration++) {
+
+					if (iteration > 0) {
+						if (iteration % (int)std::ceil(max_iterations / 10) == 0)
+							std::cout << "iteration: "<<iteration <<"\n";
+					}
+
+
+
+					/* 1. Mu */
+					xl = -5; xr = 10.0;
+					new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
+					assignArray(p_xinit,new_xinit);
+					used_data.epsilon = used_data.epsilon.array() + mu;//  we add the previous value
+
+					err = arms(xinit,ninit,&xl,&xr,mu_dens,&used_data,&convex,
+							npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+
+					errorCheck(err);
+					mu = xsamp[0];
+					used_data.epsilon = used_data.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+
+					std::random_shuffle(markerI.begin(), markerI.end());
+
+					// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
+					for (int j = 0; j < M; j++) {
+
+						marker = markerI[j];
+
+						// Using the preprocessed solution
+						used_data.X_j = data.mappedZ.col(marker).cast<double>();
+
+						used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
+
+
+						/* Calculate the inclusion probability */
+						if(  (iteration <= burn_in)){ //or some other variable should be used
+							BETA_MODE = betaMode(beta(marker),&used_data);
+							BETAmodes(marker) = BETA_MODE;
+						}else{
+							BETA_MODE = BETAmodes(marker);
+						}
+
+						prob = 1/(1 + ((1-pi)/pi) * exp(beta_dens_diff(BETA_MODE,&used_data)) *
+								sqrt(-beta_dens_der2(BETA_MODE,&used_data)/(2*PI)));
+						//cout << marker << ": "<< prob << ";";
+
+						gamma(marker) = dist.bernoulli(prob);   // Sample the inclusion based on the probability
+
+						if(gamma(marker) == 1){
+							new_xinit << BETA_MODE - 0.1 , BETA_MODE,  BETA_MODE+0.05, BETA_MODE + 0.1;
+							assignArray(p_xinit,new_xinit);
+							err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data,&convex,
+									npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+							errorCheck(err);
+							beta(marker) = xsamp[0];
+							used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+
+						}else{
+							beta(marker) = 0;
+							//If beta is 0, then we don't need to do the residual update anymore
+						}
+
+
+					}
+
+					// 3. Alpha
+					xl = 0.0; xr = 400.0;
+					new_xinit << (used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3;  // New values for abscissae evaluation
+					assignArray(p_xinit,new_xinit);
+
+
+					err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data,&convex,
+							npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+					errorCheck(err);
+					used_data.alpha = xsamp[0];
+
+					// 4. sigma_b
+					used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (gamma.sum())),(double)(used_data.beta_sigma + 0.5 * (beta.array() * beta.array()).sum()));
+
+					//5. Inclusion probability
+					pi = dist.beta_rng(1+gamma.sum(), 1 + gamma.size() - gamma.sum());
+
+					if (iteration >= burn_in) {
+						if (iteration % thinning == 0) {
+							sample << iteration, used_data.alpha, mu, beta, used_data.sigma_b ,pi;
+							q.enqueue(sample);
+						}
+					}
+
+					cout << iteration << ". " << gamma.sum() <<"; " << used_data.alpha << endl;
+				}
+
+				std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+				auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+				std::cout << "duration: "<<duration << "s\n";
+				flag = 1;
+
+			}
+			//this thread saves in the output file using the lock-free queue
+#pragma omp section
+			{
+				bool queueFull;
+				queueFull = 0;
+				std::ofstream outFile;
+				outFile.open(outputFile);
+				VectorXd sampleq(1 * M + 5 );
+				IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", "", "");
+				outFile<< "iteration," << "alpha," << "mu,";
+				for (unsigned int i = 0; i < M; ++i) {
+					outFile << "beta[" << (i+1) << "],";
+				}
+				outFile << "sigma_b," << "pi,";
+
+				outFile << "\n";
+
+				while (!flag) {
+					if (q.try_dequeue(sampleq))
+						outFile << sampleq.transpose().format(CommaInitFmt) << "\n";
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+
