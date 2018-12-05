@@ -862,7 +862,7 @@ int BayesW::runGibbs_Preprocessed_LeftTruncated()
 				failure = data.fail;
 
 				VectorXd left_trunc(N);   //Left truncation time vector
-				left_trunc = data.left_trunc;
+				left_trunc = data.left_trunc.cast<double>();
 
 
 				(used_data.epsilon).resize(y.size());
@@ -925,7 +925,7 @@ int BayesW::runGibbs_Preprocessed_LeftTruncated()
 					new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
 					assignArray(p_xinit,new_xinit);
 					used_data.epsilon = used_data.epsilon.array() + mu;//  we add the previous value
-					used_data.epsilon_trunc = used_data.epsilon_trunc + mu;
+					used_data.epsilon_trunc = used_data.epsilon_trunc.array() + mu;
 
 					err = arms(xinit,ninit,&xl,&xr,mu_dens_ltrunc,&used_data,&convex,
 							npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
@@ -933,7 +933,7 @@ int BayesW::runGibbs_Preprocessed_LeftTruncated()
 					errorCheck(err);
 					mu = xsamp[0];
 					used_data.epsilon = used_data.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
-					used_data.epsilon_trunc = used_data.epsilon_trunc - mu;
+					used_data.epsilon_trunc = used_data.epsilon_trunc.array() - mu;
 
 
 					std::random_shuffle(markerI.begin(), markerI.end());
