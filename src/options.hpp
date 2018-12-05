@@ -63,6 +63,7 @@ public:
     string groupFile;
     string mSfile;
     string failureFile;
+    string leftTruncFile;
 
     string title;
     string analysisType;
@@ -126,6 +127,7 @@ public:
         gwasSummaryFile         = "";
         ldmatrixFile            = "";
         numGroups				=2;
+        leftTruncFile		    = "";
     }
     
     void inputOptions(const int argc, const char* argv[]);

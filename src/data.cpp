@@ -1548,8 +1548,6 @@ void Data::readmSFile(const string& mSfile){
 
 
 void Data::readFailureFile(const string& failureFile){
-
-
 	ifstream input(failureFile);
 	vector<int> tmp;
 	int col;
@@ -1566,6 +1564,25 @@ void Data::readFailureFile(const string& failureFile){
 	}
 	input.close();
 	fail = Eigen::VectorXi::Map(tmp.data(), tmp.size());
+}
+
+void Data::readLeftTruncationFile(const string& ltruncFile){
+	ifstream input(ltruncFile);
+	vector<double> tmp;
+	int col;
+	if(!input.is_open()){
+		cout << "Error opening the file" << endl;
+
+		return;
+	}
+
+	while(true){
+		input >> col ;
+		if(input.eof()) break;
+		tmp.push_back(col);
+	}
+	input.close();
+	left_trunc = Eigen::VectorXd::Map(tmp.data(), tmp.size());
 }
 
 

@@ -186,6 +186,12 @@ void Options::inputOptions(const int argc, const char* argv[]){
         	failureFile = argv[++i];
         	ss << "--failure " << argv[i] << "\n";
 		}
+        // Left truncation vector file
+        else if (!strcmp(argv[i], "--ltrunc")) {
+        	leftTruncFile = argv[++i];
+        	ss << "--ltrunc " << argv[i] << "\n";
+		}
+
         else if (!strcmp(argv[i], "--thread")) {
             numThread = atoi(argv[++i]);
             ss << "--thread " << argv[i] << "\n";
