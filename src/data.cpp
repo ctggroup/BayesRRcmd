@@ -8,6 +8,7 @@
 // most read file methods are adopted from GCTA with modification
 
 #include "data.hpp"
+#include "compression.h"
 #include <mpi.h>
 #include <Eigen/Eigen>
 #include <sys/mman.h>
@@ -21,17 +22,15 @@
 
 Data::Data()
     : ppBedFd(-1)
-    , sqNormFd(-1)
     , ppBedMap(nullptr)
-    , sqNormMap(nullptr)
     , mappedZ(nullptr, 1, 1)
-    , mappedZPZDiag(nullptr, 1)
+    , ppbedIndex()
 {
 }
 
-void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &sqNormFile)
+void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, const string &sqNormFile, bool compress)
 {
-    cout << "Preprocessing bed file: " << bedFile << endl;
+    cout << "Preprocessing bed file: " << bedFile << ", Compress data = " << (compress ? "yes" : "no") << endl;
     if (numIncdSnps == 0)
         throw ("Error: No SNP is retained for analysis.");
     if (numKeptInds == 0)
@@ -44,15 +43,22 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
     ofstream ppBedOutput(preprocessedBedFile.c_str(), ios::binary);
     if (!ppBedOutput)
         throw("Error: Unable to open the preprocessed bed file [" + preprocessedBedFile + "] for writing.");
-    ofstream sqNormOutput(sqNormFile.c_str(), ios::binary);
-    if (!sqNormOutput)
-        throw("Error: Unable to open the preprocessed square norm file [" + sqNormFile + "] for writing.");
+    ofstream ppBedIndexOutput(preprocessedBedIndexFile.c_str(), ios::binary);
+    if (!ppBedIndexOutput)
+        throw("Error: Unable to open the preprocessed bed index file [" + preprocessedBedIndexFile + "] for writing.");
 
     cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
     char header[3];
     BIT.read(header, 3);
     if (!BIT || header[0] != 0x6c || header[1] != 0x1b || header[2] != 0x01)
         throw ("Error: Incorrect first three bytes of bed file: " + bedFile);
+
+    // How much space do we need to compress the data (if requested)
+    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize(numKeptInds) : 0;
+    unsigned char *compressedBuffer = nullptr;
+    unsigned long pos = 0;
+    if (compress)
+        compressedBuffer = new unsigned char[maxCompressedOutputSize];
 
     // Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
     for (unsigned int j = 0, snp = 0; j < numSnps; j++) {
@@ -120,13 +126,22 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
 
         // Standardize genotypes
         snpData.array() -= snpData.mean();
-        //sqNorm = snpData.squaredNorm();
         float sqn = snpData.squaredNorm();
-        float std_ = 1.f / (sqrt(sqn / (float(numKeptInds)-1.0)));
+        float std_ = 1.0f / (sqrt(sqn / (float(numKeptInds - 1))));
         snpData.array() *= std_;
+
         // Write out the preprocessed data
-        ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(float));
-        sqNormOutput.write(reinterpret_cast<char *>(&sqNorm), sizeof(float));
+        if (!compress) {
+            ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(float));
+        } else {
+            const unsigned long compressedSize = compressData(snpData, compressedBuffer, maxCompressedOutputSize);
+            ppBedOutput.write(reinterpret_cast<char *>(compressedBuffer), long(compressedSize));
+
+            // Calculate the index data for this column
+            ppBedIndexOutput.write(reinterpret_cast<char *>(&pos), sizeof(unsigned long));
+            ppBedIndexOutput.write(reinterpret_cast<const char *>(&compressedSize), sizeof(unsigned long));
+            pos += compressedSize;
+        }
 
         // Compute allele frequency and any other required data and write out to file
         //snpInfo->af = 0.5f * float(mean);
@@ -135,6 +150,10 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         if (++snp == numIncdSnps)
             break;
     }
+
+    if (compress)
+        delete[] compressedBuffer;
+
     BIT.clear();
     BIT.close();
 
@@ -146,7 +165,6 @@ void Data::mapPreprocessBedFile(const string &preprocessedBedFile, const string 
     // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
     // that we would otherwise get as intermediate variables!
     const size_t ppBedSize = size_t(numInds) * size_t(numIncdSnps) * sizeof(float);
-    const size_t sqNormSize = size_t(numIncdSnps) * sizeof(float);
 
     // Open and mmap the preprocessed bed file
     ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
@@ -157,35 +175,53 @@ void Data::mapPreprocessBedFile(const string &preprocessedBedFile, const string 
     if (ppBedMap == MAP_FAILED)
         throw("Error: Failed to mmap preprocessed bed file");
 
-    // Open and mmap the sqNorm file
-    sqNormFd = open(sqNormFile.c_str(), O_RDONLY);
-    if (sqNormFd == -1)
-        throw("Error: Failed to open preprocessed square norm file [" + sqNormFile + "]");
-
-    sqNormMap = reinterpret_cast<float *>(mmap(nullptr, sqNormSize, PROT_READ, MAP_SHARED, sqNormFd, 0));
-    if (sqNormMap == MAP_FAILED)
-        throw("Error: Failed to mmap preprocessed square norm file");
-
     // Now that the raw data is available, wrap it into the mapped Eigen types using the
     // placement new operator.
     // See https://eigen.tuxfamily.org/dox/group__TutorialMapClass.html#TutorialMapPlacementNew
     new (&mappedZ) Map<MatrixXf>(ppBedMap, numInds, numIncdSnps);
-    new (&mappedZPZDiag) Map<VectorXf>(sqNormMap, numIncdSnps);
 }
 
 void Data::unmapPreprocessedBedFile()
 {
     // Unmap the data from the Eigen accessors
     new (&mappedZ) Map<MatrixXf>(nullptr, 1, 1);
-    new (&mappedZPZDiag) Map<VectorXf>(nullptr, 1);
 
     const auto ppBedSize = numInds * numIncdSnps * sizeof(float);
-    const auto sqNormSize = numIncdSnps * sizeof(float);
     munmap(ppBedMap, ppBedSize);
-    munmap(sqNormMap, sqNormSize);
-
     close(ppBedFd);
-    close(sqNormFd);
+}
+
+void Data::mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
+                                          const string &indexFile)
+{
+    // Load the index to the compressed preprocessed bed file
+    ppbedIndex.resize(numIncdSnps);
+    ifstream indexStream(indexFile, std::ifstream::binary);
+    if (!indexStream)
+        throw("Error: Failed to open compressed preprocessed bed file index");
+    indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
+                     numIncdSnps * 2 * sizeof(long));
+
+    // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
+    // that we would otherwise get as intermediate variables!
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().size);
+
+    // Open and mmap the preprocessed bed file
+    ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
+    if (ppBedFd == -1)
+        throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
+
+    ppBedMap = reinterpret_cast<float *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
+    if (ppBedMap == MAP_FAILED)
+        throw("Error: Failed to mmap preprocessed bed file");
+}
+
+void Data::unmapCompressedPreprocessedBedFile()
+{
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().size);
+    munmap(ppBedMap, ppBedSize);
+    close(ppBedFd);
+    ppbedIndex.clear();
 }
 
 bool SnpInfo::isProximal(const SnpInfo &snp2, const float genWindow) const {

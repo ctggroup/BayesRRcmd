@@ -38,6 +38,8 @@ add_executable(${PROJECT_NAME}
     BayesRRg.cpp
     BayesW.cpp
     BayesW_arms.cpp
+    BayesRRmz.cpp
+    BayesRRgz.cpp
     BayesRMmapToy.cpp
     BayesRRtoy.cpp
     data.cpp
@@ -46,8 +48,23 @@ add_executable(${PROJECT_NAME}
     gctb.cpp
     mympi.cpp
     options.cpp
+    parallelalgo.cpp
+    samplewriter.cpp
+    compression.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${MPI_LIBRARIES})
+
+find_package(ZLIB REQUIRED)
+if(ZLIB_FOUND)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
+endif(ZLIB_FOUND)
+
+set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../tbb)
+include(${TBB_ROOT}/cmake/TBBBuild.cmake)
+tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++11 tbb_cpf=1)
+find_package(TBB REQUIRED tbb_preview)
+
+target_link_libraries(${PROJECT_NAME} ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS})
 
 if(MPI_COMPILE_FLAGS)
   set_target_properties(${PROJECT_NAME} PROPERTIES

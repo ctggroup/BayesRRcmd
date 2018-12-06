@@ -80,6 +80,8 @@ public:
     string mcmcSampleFile;
     string gwasSummaryFile;
     string ldmatrixFile;
+
+    bool compress = false;
     
     Options(){
         chainLength             = 10000;
@@ -126,6 +128,7 @@ public:
         gwasSummaryFile         = "";
         ldmatrixFile            = "";
         numGroups				=2;
+        compress                = false;
     }
     
     void inputOptions(const int argc, const char* argv[]);

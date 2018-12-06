@@ -13,16 +13,18 @@
 #include <mpi.h>
 #include <string>
 #include "BayesRRm.h"
+#include "BayesRRmz.h"
 #include "BayesRRhp.h"
 #include "BayesRRpp.h"
 #include "BayesRRg.h"
+#include "BayesRRgz.h"
 #include "BayesW.hpp"
 
 using namespace std;
 
 
 int main(int argc, const char * argv[]) {
-
+	Eigen::initParallel();
   MPI_Init(NULL, NULL);
 
   MPI_Comm_size(MPI_COMM_WORLD, &myMPI::clusterSize);
@@ -114,57 +116,87 @@ int main(int argc, const char * argv[]) {
       printf("OVERALL read+compute time = %.3f sec.\n", (float)(end - start) / CLOCKS_PER_SEC);
 
     } else if (opt.analysisType == "Preprocess") {
-        readGenotypes = false;
-        //Thanasis and Marion: do we really need the phen file for the preprocessing?
-        gctb.inputIndInfo(data, opt.bedFile, opt.phenotypeFile, opt.keepIndFile, opt.keepIndMax,
-                          opt.mphen, opt.covariateFile);
-        gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
-                          opt.includeChr, readGenotypes);
+    	readGenotypes = false;
+    	gctb.inputIndInfo(data, opt.bedFile, opt.phenotypeFile, opt.keepIndFile, opt.keepIndMax,
+    			opt.mphen, opt.covariateFile);
+    	gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
+    			opt.includeChr, readGenotypes);
 
-        cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
-        clock_t start_bed = clock();
-        data.preprocessBedFile(opt.bedFile + ".bed", opt.bedFile + ".ppbed", opt.bedFile + ".sqnorm");
-        clock_t end = clock();
-        printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-        cout << endl;
+    	cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
+    	clock_t start_bed = clock();
+    	data.preprocessBedFile(opt.bedFile + ".bed",
+    			opt.bedFile + ".ppbed",
+				opt.bedFile + ".ppbedindex",
+				opt.bedFile + ".sqnorm",
+				opt.compress);
+    	clock_t end = clock();
+    	printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+    	cout << endl;
     } else if (opt.analysisType == "PPBayes") {
-        clock_t start = clock();
+    	clock_t start = clock();
 
-        readGenotypes = false;
+    	readGenotypes = false;
         gctb.inputIndInfo(data, opt.bedFile, opt.phenotypeFile, opt.keepIndFile, opt.keepIndMax,
                           opt.mphen, opt.covariateFile);
         gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
                           opt.includeChr, readGenotypes);
+        if (opt.compress) {
+        	cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+        	clock_t start_bed = clock();
+        	data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
+        			opt.bedFile + ".ppbedindex");
+        	clock_t end = clock();
+        	printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+        	cout << endl;
 
-        cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
-        clock_t start_bed = clock();
-        data.mapPreprocessBedFile(opt.bedFile + ".ppbed", opt.bedFile + ".sqnorm");
-        clock_t end = clock();
-        printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-        cout << endl;
+        	if (opt.bayesType == "bayesMmap") {
+        		BayesRRmz mmapToy(data, opt);
+        		mmapToy.runGibbs();
+        	}/* else if (opt.bayesType == "horseshoe") {
+        		BayesRRhp mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        		mmapToy.runGibbs();
+        	}*/ else if (opt.bayesType == "gbayes") {
+        		//data.readGroupFile2(opt.groupFile);
+        		//Eigen::VectorXi G=data.G;
+        		BayesRRgz mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        		mmapToy.runGibbs();
+        	}/*else if (opt.bayesType == "BayesW") {
+        		//data.readGroupFile2(opt.groupFile);
+        		//Eigen::VectorXi G=data.G;
+        		BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        		mmapToy.runGibbs_Preprocessed();
+        	}*/
+        } else {
+        	cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+        	clock_t start_bed = clock();
+        	data.mapPreprocessBedFile(opt.bedFile + ".ppbed", opt.bedFile + ".sqnorm");
+        	clock_t end = clock();
+        	printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+        	cout << endl;
 
-        // Run analysis using mapped data files
+        	// Run analysis using mapped data files
 
-        if (opt.bayesType == "bayesMmap") {
-        	BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-        	mmapToy.runGibbs();
-        } else if (opt.bayesType == "horseshoe") {
-        	BayesRRhp mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-        	mmapToy.runGibbs();
-        } else if (opt.bayesType == "gbayes") {
-        	//data.readGroupFile2(opt.groupFile);
-        	//Eigen::VectorXi G=data.G;
-        	BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-        	mmapToy.runGibbs();
-        }else if (opt.bayesType == "BayesW") {
-        	//data.readGroupFile2(opt.groupFile);
-        	//Eigen::VectorXi G=data.G;
-        	BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-        	mmapToy.runGibbs_Preprocessed();
+        	if (opt.bayesType == "bayesMmap") {
+        		BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        		mmapToy.runGibbs();
+        	} else if (opt.bayesType == "horseshoe") {
+        		BayesRRhp mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        		mmapToy.runGibbs();
+        	} else if (opt.bayesType == "gbayes") {
+        		//data.readGroupFile2(opt.groupFile);
+        		//Eigen::VectorXi G=data.G;
+        		BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        		mmapToy.runGibbs();
+        	}else if (opt.bayesType == "BayesW") {
+        		//data.readGroupFile2(opt.groupFile);
+        		//Eigen::VectorXi G=data.G;
+        		BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+        		mmapToy.runGibbs_Preprocessed();
+        	}
+
+        	data.unmapPreprocessedBedFile();
         }
-
-        data.unmapPreprocessedBedFile();
-        end = clock();
+      clock_t end = clock();
         printf("OVERALL read+compute time = %.3f sec.\n", double(end - start) / double(CLOCKS_PER_SEC));
     } else {
       throw(" Error: Wrong analysis type: " + opt.analysisType);

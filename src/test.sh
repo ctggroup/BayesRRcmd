@@ -19,3 +19,7 @@ echo Running preprocessing solution on dataset $dataset. Output in $out
 #./brr --preprocess  --bfile ../test/data/$dataset --pheno ../test/data/test.phen > $out
 #./brr --ppbayes  bayes --bfile ../test/data/$dataset --pheno ../test/data/test.phen>>$out
 echo done
+
+
+#src/brr --preprocess  --compress --bfile test/data/$dataset --pheno test/data/test.phen
+#src/brr --ppbayes gbayes --compress --bfile test/data/$dataset --pheno test/data/test.phen --group group3.txt --mS msfile.txt  --chain-length 500 --burn-in 5 --thin 2
