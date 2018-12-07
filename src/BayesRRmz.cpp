@@ -126,9 +126,10 @@ int BayesRRmz::runGibbs()
         // Output progress
         if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration: " << iteration << std::endl;
-
-        const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
-        parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
+//BUG2 mu was not returned/fixed
+        epsilon = epsilon.array() + mu;//  we substract previous value
+        mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
+        epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
 
         std::random_shuffle(markerI.begin(), markerI.end());
 
@@ -150,7 +151,8 @@ int BayesRRmz::runGibbs()
 
 //            for (int i = 0; i < 10; ++i)
 //                std::cout << Cx[i] << std::endl;
-
+			//cout<<"Cx"<<endl;
+			//cout<<Cx<<endl;
             // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
             parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 
@@ -160,10 +162,9 @@ int BayesRRmz::runGibbs()
             // We compute the denominator in the variance expression to save computations
             const double sigmaEOverSigmaG = sigmaE / sigmaG;
             denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
-
             // We compute the dot product to save computations
-            const double num = parallelDotProduct(Cx, y_tilde);
-
+            //BUG1 on original paralleldotproduct function in parallelalgo.cpp
+            const double num = parallelcwiseProduct(Cx, y_tilde);
             // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
 
@@ -205,6 +206,7 @@ int BayesRRmz::runGibbs()
 
             // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
             parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+
         }
 
         m0 = int(M) - int(v[0]);

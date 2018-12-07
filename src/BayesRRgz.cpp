@@ -213,7 +213,6 @@ void BayesRRgz::runGibbs() {
 						cVa.segment(1,(K-1))=cva.row(data.G(marker));
 						cVaI.segment(1,(K-1))=(cVa.segment(1,(K-1))).cwiseInverse();
 
-
 						//y_tilde= epsilon.array()+(Cx * beta(marker)).array();//now y_tilde= Y-mu-X*beta+ X.col(marker)*beta(marker)_old
 
 						parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));

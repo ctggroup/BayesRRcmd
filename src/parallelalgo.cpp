@@ -28,24 +28,26 @@ double parallelStepAndSumEpsilon(VectorXd &epsilon, double mu)
                            apply, combine);
 }
 
-void parallelStepMuEpsilon(double mu, VectorXd &epsilon, double sigmaEpsilon, double N, double sigmaE, Distributions_boost &dist)
+double parallelStepMuEpsilon(VectorXd &epsilon, double sigmaEpsilon, double N, double sigmaE, Distributions_boost &dist)
 {
-    const double sigmaEpsilonOverN = sigmaEpsilon / N;
-    const double sigmaEOverN = sigmaE / N;
-    const unsigned long startIndex = 0;
-    const unsigned long endIndex = static_cast<unsigned long>(epsilon.size());
+	const double sigmaEpsilonOverN = sigmaEpsilon / N;
+	const double sigmaEOverN = sigmaE / N;
+	const unsigned long startIndex = 0;
+	const unsigned long endIndex = static_cast<unsigned long>(epsilon.size());
 
-    parallel_for(blocked_range<unsigned long>(startIndex, endIndex, grainSize), [&](const blocked_range<size_t>& r) {
-        const long start = static_cast<long>(r.begin());
-        const long count = static_cast<long>(r.end() - r.begin());
+	parallel_for(blocked_range<unsigned long>(startIndex, endIndex, grainSize), [&](const blocked_range<size_t>& r) {
+		const long start = static_cast<long>(r.begin());
+		const long count = static_cast<long>(r.end() - r.begin());
 
-        // Update mu
-        mu = dist.norm_rng(sigmaEpsilonOverN, sigmaEOverN);
+		// Update mu
+		double mu = dist.norm_rng(sigmaEpsilonOverN, sigmaEOverN);
 
-        // We substract again now epsilon =Y-mu-X*beta
-        epsilon.segment(start, count) = epsilon.segment(start, count).array() - mu;
-    } );
+		// We substract again now epsilon =Y-mu-X*beta
+		epsilon.segment(start, count) = epsilon.segment(start, count).array() - mu;
+		return mu;
+	} );
 }
+
 
 double parallelSquaredNorm(const VectorXd &epsilon)
 {
@@ -110,7 +112,25 @@ double parallelDotProduct(const VectorXf &Cx, const VectorXd &y_tilde)
     auto apply = [&](const blocked_range<size_t>& r, double initialValue) {
         const long start = static_cast<long>(r.begin());
         const long count = static_cast<long>(r.end() - r.begin());
-        const auto sum = initialValue + (Cx.segment(start, count).cast<double>() * y_tilde.segment(start, count)).sum();
+        const auto sum = initialValue + (Cx.segment(start, count).cast<double>()*(y_tilde.segment(start, count))).sum();
+        return sum;
+    };
+
+    auto combine = [](double a, double b) { return a + b; };
+
+    return parallel_reduce(blocked_range<unsigned long>(startIndex, endIndex, grainSize), 0.0,
+                           apply, combine);
+}
+
+double parallelcwiseProduct(const VectorXf &Cx, const VectorXd &y_tilde)
+{
+    const unsigned long startIndex = 0;
+    const unsigned long endIndex = static_cast<unsigned long>(y_tilde.size());
+
+    auto apply = [&](const blocked_range<size_t>& r, double initialValue) {
+        const long start = static_cast<long>(r.begin());
+        const long count = static_cast<long>(r.end() - r.begin());
+        const auto sum = initialValue + (Cx.segment(start, count).cast<double>().cwiseProduct(y_tilde.segment(start, count))).sum();
         return sum;
     };
 

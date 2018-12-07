@@ -159,7 +159,9 @@ int BayesRRm::runGibbs()
 
                         //we compute the denominator in the variance expression to save computations
                         denom = ((double)N-1) + (sigmaE/sigmaG) * cVaI.segment(1, km1).array();
+
                         //we compute the dot product to save computations
+
                         num = (Cx.cwiseProduct(y_tilde)).sum();
                         //muk for the other components is computed according to equaitons
                         muk.segment(1, km1) = num / denom.array();
@@ -199,6 +201,7 @@ int BayesRRm::runGibbs()
                             }
                         }
                         epsilon = y_tilde - Cx * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+
                     }
 
                     m0 = M - v[0];
