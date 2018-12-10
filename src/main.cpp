@@ -136,16 +136,16 @@ int main(int argc, const char * argv[])
             if (opt.compress) {
                 cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
                 clock_t start_bed = clock();
-                data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
-                                                    opt.bedFile + ".ppbedindex");
+              //  data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
+             //                                       opt.bedFile + ".ppbedindex");
                 clock_t end = clock();
                 printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
                 cout << endl;
 
-                BayesRRmz toy(data, opt);
-                toy.runGibbs();
+                //BayesRRmz toy(data, opt);
+                //toy.runGibbs();
 
-                data.unmapCompressedPreprocessedBedFile();
+                //data.unmapCompressedPreprocessedBedFile();
             } else {
                 cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
                 clock_t start_bed = clock();

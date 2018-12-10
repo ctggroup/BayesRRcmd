@@ -18,7 +18,6 @@ CXX_UNIX = "/usr/local/opt/llvm/bin/clang++"  #g++
 #CXXFLAGS  = -I/software/include/Eigen -I/software/include/boost -DUNIX -m64 -ldl -O3
 CXXFLAGS = -w -O3 -m64 -DEIGEN_NO_DEBUG -msse2 -std=c++11 -I./
 # CXXFLAGS += -I../ -I../../  -I/usr/local/include -I/usr/local/include/Eigen -I/usr/local/include/boost -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/ -DUNIX -m64 -ldl
-
 CXXFLAGS += -fopenmp
 #CXXFLAGS += -mavx512f -mavx512cd -fopt-info-vec-all
 #CXXFLAGS += -g
@@ -27,9 +26,9 @@ CXXFLAGS += -march=native
 #CXXFLAGS += -S
 
 # LIB += -lz -lmpi -lm  -lc++
-LIB     += -lz -lmpi -lm -lc++
+LIB     += -lz -lmpi -lm -lc++ -ltbb
 
-LDFLAGS = -L/usr/local/opt/llvm/lib
+LDFLAGS = -L/usr/local/opt/llvm/lib -L/usr/local/lib
 
 CXX = $(CXX_UNIX)
 
@@ -44,9 +43,16 @@ HDR =  gctb.hpp \
       distributions_boost.hpp \
       data.hpp \
       BayesRRpp.h \
+      Mcmc.h \
+      LinearReg.h \
+      parallelalgo.h \
+      compression.h \
+      samplewriter.h \
 	  BayesRRhp.h
  
-SRC = gctb.cpp \
+SRC = samplewriter.cpp \
+      compression.cpp \
+      gctb.cpp \
       gadgets.cpp \
       main.cpp \
       options.cpp \
@@ -55,6 +61,9 @@ SRC = gctb.cpp \
       distributions_boost.cpp \
       data.cpp \
       BayesRRpp.cpp \
+      parallelalgo.cpp \
+      Mcmc.cpp \
+      LinearReg.cpp\
 	  BayesRRhp.cpp
 
 OBJ = $(SRC:.cpp=.o)

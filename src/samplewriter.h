@@ -21,7 +21,7 @@ public:
     void setIndividualCount(unsigned int individualCount) { m_individualCount = individualCount; }
     unsigned int individualCount() const { return m_individualCount; }
 
-    void open();
+    void open(std::string &header);
     void write(const Eigen::VectorXd &sample);
     void close();
 

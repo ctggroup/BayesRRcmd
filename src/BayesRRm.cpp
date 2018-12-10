@@ -15,128 +15,76 @@
 #include <chrono>
 #include <numeric>
 #include <random>
+#include <Eigen/Eigen>
 
 BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
-    : data(data)
-    , opt(opt)
-    , bedFile(opt.bedFile + ".bed")
-    , memPageSize(memPageSize)
-    , outputFile(opt.mcmcSampleFile)
-    , seed(opt.seed)
-    , max_iterations(opt.chainLength)
-    , burn_in(opt.burnin)
-    , thinning(opt.thin)
-    , dist(opt.seed)
-    , usePreprocessedData(opt.analysisType == "PPBayes")
-    , showDebug(false)
+    : LinearReg(opt,data)
 {
     float* ptr =static_cast<float*>(&opt.S[0]);
     cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
+    K=int(cva.size()) + 1;
+    // Component variables
+      priorPi = VectorXd(K);      // prior probabilities for each component
+      pi = VectorXd(K);           // mixture probabilities
+      cVa = VectorXd(K);          // component-specific variance
+      logL = VectorXd(K);         // log likelihood of component
+      muk = VectorXd (K);         // mean of k-th component marker effect size
+      denom = VectorXd(K - 1);    // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
+      m0 = 0;                     // total num ber of markes in model
+      v = VectorXd(K);            // variable storing the component assignment
+      cVaI = VectorXd(K);         // inverse of the component variances
+
+      // Mean and residual variables
+      sigmaG = 0.0;   // genetic variance
+
+
+      Cx = VectorXd();
+
+      // Init the working variables
+      cVa[0] = 0;
+      cVa.segment(1, km1) = cva;
+      priorPi[0] = 0.5;
+      priorPi.segment(1, km1) = priorPi[0] * cVa.segment(1, km1).array() / cVa.segment(1, km1).sum();
+
+      cVaI[0] = 0;
+      cVaI.segment(1, km1) = cVa.segment(1, km1).cwiseInverse();
+      sigmaG = dist.beta_rng(1,1);
+
+      pi = priorPi;
+
+
+      components=VectorXd(M);
+      components.setZero();
+      // sample vector and marker index vector
+      sample=VectorXd(2*M+4+N);
+
+      NM1 = double(N - 1);
+      km1 = K - 1;
+
+
+      m0 = 0;
+      v.setZero();
+
+      init_header();
 }
 
 BayesRRm::~BayesRRm()
 {
 }
 
-void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCount)
+void init()
 {
-    // Component variables
-    priorPi = VectorXd(K);      // prior probabilities for each component
-    pi = VectorXd(K);           // mixture probabilities
-    cVa = VectorXd(K);          // component-specific variance
-    logL = VectorXd(K);         // log likelihood of component
-    muk = VectorXd (K);         // mean of k-th component marker effect size
-    denom = VectorXd(K - 1);    // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
-    m0 = 0;                     // total num ber of markes in model
-    v = VectorXd(K);            // variable storing the component assignment
-    cVaI = VectorXd(K);         // inverse of the component variances
+	 // Sampler variables
 
-    // Mean and residual variables
-    mu = 0.0;       // mean or intercept
-    sigmaG = 0.0;   // genetic variance
-    sigmaE = 0.0;   // residuals variance
-
-    // Linear model variables
-    beta = VectorXd(markerCount);           // effect sizes
-    y_tilde = VectorXd(individualCount);    // variable containing the adjusted residuals to exclude the effects of a given marker
-    epsilon = VectorXd(individualCount);    // variable containing the residuals
-
-    y = VectorXd();
-    Cx = VectorXd();
-
-    // Init the working variables
-    const int km1 = K - 1;
-    cVa[0] = 0;
-    cVa.segment(1, km1) = cva;
-    priorPi[0] = 0.5;
-    priorPi.segment(1, km1) = priorPi[0] * cVa.segment(1, km1).array() / cVa.segment(1, km1).sum();
-    y_tilde.setZero();
-
-    cVaI[0] = 0;
-    cVaI.segment(1, km1) = cVa.segment(1, km1).cwiseInverse();
-    beta.setZero();
-    sigmaG = dist.beta_rng(1,1);
-
-    pi = priorPi;
-
-    y = (data.y.cast<double>().array() - data.y.cast<double>().mean());
-    y /= sqrt(y.squaredNorm() / (double(individualCount - 1)));
-
-    epsilon = (y).array() - mu;
-    sigmaE = epsilon.squaredNorm() / individualCount * 0.5;
 }
 
-int BayesRRm::runGibbs()
+void BayesRRm::updateBetas(int marker,const VectorXf &Cx)
 {
-    const unsigned int M(data.numIncdSnps);
-    const unsigned int N(data.numKeptInds);
-    const double NM1 = double(N - 1);
-    const int K(int(cva.size()) + 1);
-    const int km1 = K - 1;
-
-    init(K, M, N);
-
-    SampleWriter writer;
-    writer.setFileName(outputFile);
-    writer.setMarkerCount(M);
-    writer.setIndividualCount(N);
-    writer.open();
-
-    // Sampler variables
-    VectorXd sample(2*M+4+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
-    std::vector<unsigned int> markerI(M);
-    std::iota(markerI.begin(), markerI.end(), 0);
-
-    std::cout << "Running Gibbs sampling" << endl;
-    const auto t1 = std::chrono::high_resolution_clock::now();
-
-    // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
-    VectorXd components(M);
-    components.setZero();
-    for (unsigned int iteration = 0; iteration < max_iterations; iteration++) {
-        // Output progress
-        if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
-            std::cout << "iteration: " << iteration << std::endl;
-
-        const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
-        parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
-
-        std::random_shuffle(markerI.begin(), markerI.end());
-
-        m0 = 0;
-        v.setZero();
-
-        // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
-        for (unsigned int j = 0; j < M; j++) {
             double acum = 0.0;
-            const auto marker = markerI[j];
+
 
             // TODO: Can we improve things by decompressing a compressed mmap datafile?
-            //Cx = getSnpData(marker);
-            const VectorXf &Cx = data.mappedZ.col(marker);
 
-            // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-            parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 
             // muk for the zeroth component=0
             muk[0] = 0.0;
@@ -145,8 +93,8 @@ int BayesRRm::runGibbs()
             const double sigmaEOverSigmaG = sigmaE / sigmaG;
             denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
 
-            // We compute the dot product to save computations
-            const double num = parallelDotProduct(Cx, y_tilde);
+            // We compute the dot product to save computations using Thanasis fix
+            const double num = parallelcwiseProduct(Cx, y_tilde);
 
             // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
@@ -186,32 +134,25 @@ int BayesRRm::runGibbs()
                     }
                 }
             }
+            betasqn+=beta(marker)*beta(marker); //cheaper to compute here than  again in the update hyper
 
-            // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-            parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
-        }
+}
 
-        m0 = int(M) - int(v[0]);
-        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
 
-        if (showDebug)
-            printDebugInfo();
+void BayesRRm::updateHyper(){
+	  m0 = int(M) - int(v[0]);
+	// std::cout<<"beta norm "<<beta.squaredNorm()<<"\n";
+	 //std::cout<<"v "<<v<<"\n";
+	 //std::cout<< "v0g*s02g"<<v0G * s02G;
+	 sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (betasqn * m0 + v0G * s02G) / (v0G + m0));
+     std::cout<<"sigmaG "<<sigmaG << "\n";
+	 pi = dist.dirichilet_rng(v.array() + 1.0);
+     v.setZero();//restart component specific counters
+     betasqn=0;
+}
 
-        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
-        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
-        pi = dist.dirichilet_rng(v.array() + 1.0);
-
-        if (iteration >= burn_in && iteration % thinning == 0) {
-            sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
-            writer.write(sample);
-        }
-    }
-
-    const auto t2 = std::chrono::high_resolution_clock::now();
-    const auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    std::cout << "duration: " << duration << "s" << std::endl;
-
-    return 0;
+void BayesRRm::collectSample(){
+	 sample << mu, beta, sigmaE, sigmaG, components, epsilon;
 }
 
 VectorXd BayesRRm::getSnpData(unsigned int marker) const
@@ -232,7 +173,7 @@ VectorXd BayesRRm::getSnpData(unsigned int marker) const
     }
 }
 
-void BayesRRm::printDebugInfo() const
+ void BayesRRm::printDebugInfo()
 {
     const unsigned int N(data.numKeptInds);
     cout << "inv scaled parameters " << v0G + m0 << "__" << (beta.squaredNorm() * m0 + v0G * s02G) / (v0G + m0);
@@ -244,3 +185,40 @@ void BayesRRm::printDebugInfo() const
     cout << "x mean " << Cx.mean() << "\n";
     cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
 }
+
+ std::string& BayesRRm::getHeader(){
+	return header;
+}
+
+ void BayesRRm::init_header(){
+	 header="";
+	 header+="mu,";
+	     for (unsigned int i = 0; i < M; ++i) {
+	         header+= "beta[" ;
+	         header+=std::to_string(i+1);
+	         header+= "],";
+	     }
+
+	     header+= "sigmaE,";
+	     header+="sigmaG,";
+	     for (unsigned int i = 0; i < M; ++i) {
+	         header+="comp[";
+	         header+=std::to_string(i+1);
+	         header+="],";
+	     }
+
+	     unsigned int i;
+	     for (i = 0; i < (N - 1); ++i) {
+	         header += "epsilon[";
+	         header += std::to_string(i + 1);
+	         header+="],";
+	     }
+
+	     header+= "epsilon[";
+	     header+= std::to_string(i + 1);
+	     header+="]";
+	     header+= "\n";
+	//TODO header function
+}
+
+
