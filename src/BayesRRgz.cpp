@@ -187,9 +187,9 @@ void BayesRRgz::runGibbs() {
 						if( iteration % (int)std::ceil(max_iterations/10) ==0)
 							std::cout << "iteration: "<<iteration <<"\n";
 
-					epsilon= epsilon.array()+mu;//  we substract previous value
-					mu = dist.norm_rng(epsilon.sum()/(double)N, sigmaE/(double)N); //update mu
-					epsilon= epsilon.array()-mu;// we substract again now epsilon =Y-mu-X*beta
+			        epsilon = epsilon.array() + mu;//  we substract previous value
+			        mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
+			        epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
 
 
 					std::random_shuffle(markerI.begin(), markerI.end());
@@ -222,7 +222,7 @@ void BayesRRgz::runGibbs() {
 						//we compute the denominator in the variance expression to save computations
 						denom=((double)N-1)+(sigmaE/sigmaG)*cVaI.segment(1,(K-1)).array();
 						//muk for the other components is computed according to equaitons
-						const double num = parallelDotProduct(Cx, y_tilde);
+			            const double num = parallelcwiseProduct(Cx, y_tilde);
 						muk.segment(1,(K-1))= num/denom.array();
 
 

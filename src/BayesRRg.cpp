@@ -42,6 +42,8 @@ void BayesRRg::runGibbs() {
 	  data.readGroupFile(opt.groupFile);
 	  data.readmSFile(opt.mSfile);
 	  cva=data.mS;
+
+	  //cout<<cva<<endl;
 	  numberGroups=data.numGroups;
 	  // TO FINISH
 	  const bool usePreprocessedData = (opt.analysisType == "PPBayes");
@@ -130,29 +132,20 @@ void BayesRRg::runGibbs() {
         priorPi.setOnes();
 
         for(int i=0; i < numberGroups; i++){
-        	priorPi.row(i)(0)=0;
-        	priorPi.row(i).segment(1,(K-1))=priorPi.row(i).segment(1,(K-1)).array()*cva.row(i).segment(0,(K-1)).array()/cva.row(i).segment(0,(K-1)).sum();
-        	//priorPi.row(i).segment(1,(K-1))=priorPi.row(i).segment(1,(K-1)).array()/priorPi.row(i).array().sum();
-           	//priorPi.row(i)=priorPi.row(i).array()/priorPi.row(i).array().sum();
+        	priorPi.row(i)(0)=0.5;
+        	for(int k=1;k<K;k++){
+        	priorPi.row(i)(k)=0.5/K;
+        	}
         }
 
-
 	    y_tilde.setZero();
-	    //cVa[0] = 0;
-	    //cVa.segment(1,(K-1))=cva;
 
-	    //cVaI[0] = 0;
-	    //cVaI.segment(1,(K-1))=cVa.segment(1,(K-1)).cwiseInverse();
-	    //beta=beta.setRandom();
-
-	    //beta=(beta.array().abs() > 1e-6  ).select(beta, MatrixXd::Zero(M,1));
 	    beta.setZero();
 
 	    //mu=norm_rng(0,1);
 	    mu=0;
 
 
-	    betaAcum.setZero();
 	    // sigmaG=(1*cVa).sum()/M;
 	    for(int i=0; i<numberGroups;i++)
 	      sigmaGG[i]=dist.beta_rng(1,1);
@@ -201,7 +194,6 @@ void BayesRRg::runGibbs() {
 	          cVa.segment(1,(K-1))=cva.row(data.G(marker));
 	          cVaI.segment(1,(K-1))=(cVa.segment(1,(K-1))).cwiseInverse();
 
-
 	          y_tilde= epsilon.array()+(Cx * beta(marker)).array();//now y_tilde= Y-mu-X*beta+ X.col(marker)*beta(marker)_old
 
 
@@ -210,15 +202,13 @@ void BayesRRg::runGibbs() {
 	          // std::cout<< muk;
 	          //we compute the denominator in the variance expression to save computations
 	          denom=((double)N-1)+(sigmaE/sigmaG)*cVaI.segment(1,(K-1)).array();
+
 	          //muk for the other components is computed according to equaitons
 	          num=(Cx.cwiseProduct(y_tilde)).sum();
 	          muk.segment(1,(K-1))= num/denom.array();
-
-
 	          logL= pi.row(data.G(marker)).array().log();//first component probabilities remain unchanged
 
 	          // Here we reproduce the fortran code
-
 
 	          logL.segment(1,(K-1))=logL.segment(1,(K-1)).array() - 0.5*((((sigmaG/sigmaE)*(((double)N-1)))*cVa.segment(1,(K-1)).array() + 1).array().log())+0.5*( muk.segment(1,(K-1)).array()*num)/sigmaE;
 
@@ -239,7 +229,6 @@ void BayesRRg::runGibbs() {
 	              }else{
 	                beta(marker)=dist.norm_rng(muk[k],sigmaE/denom[k-1]);
 	                betaAcum(data.G(marker))+= pow(beta(marker),2);
-	                // beta(marker)=norm_rng(rhs/denom[k-1],sigmaE/denom[k-1]);
 	              }
 	              v.row(data.G(marker))(k)+=1.0;
 	              components[marker]=k;
@@ -258,26 +247,26 @@ void BayesRRg::runGibbs() {
 
 	        }
 
-
+	        //cout<<sigmaE<<endl;
 
 	        sigmaE=dist.inv_scaled_chisq_rng(v0E+N,((epsilon).squaredNorm()+v0E*s02E)/(v0E+N));
 
 
 	        for(int i=0; i<numberGroups; i++){
-	          m0=v.row(i).sum()-v.row(i)(0);
-	          sigmaGG[i]=dist.inv_scaled_chisq_rng(v0G+m0,(betaAcum(i)*m0+v0G*s02G)/(v0G+m0));
-	          pi.row(i)=dist.dirichilet_rng(v.row(i).array() + 1.0);
+	        	m0=v.row(i).sum()-v.row(i)(0);
+	        	sigmaGG[i]=dist.inv_scaled_chisq_rng(v0G+m0,(betaAcum(i)*m0+v0G*s02G)/(v0G+m0));
+	        	pi.row(i)=dist.dirichilet_rng(v.row(i).array() + 1.0);
 
 
 	        }
-
+	        //cout<<v<<endl;
 
 	        if(iteration >= burn_in)
 	        {
-	          if(iteration % thinning == 0){
-	            sample<< iteration,mu,beta,sigmaE,components,sigmaGG,epsilon;
-	            q.enqueue(sample);
-	          }
+	        	if(iteration % thinning == 0){
+	        		sample<< iteration,mu,beta,sigmaE,components,sigmaGG,epsilon;
+	        		q.enqueue(sample);
+	        	}
 
 	        }
 

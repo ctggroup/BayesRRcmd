@@ -168,7 +168,6 @@ int BayesRRm::runGibbs()
 
                         logL = pi.array().log(); //first component probabilities remain unchanged
 
-
                         //update the log likelihood for each component
                         logL.segment(1, km1) = logL.segment(1, km1).array() - 0.5 * ((((sigmaG / sigmaE) * (((double)N-1))) * cVa.segment(1, km1).array() + 1).array().log()) + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
 
@@ -199,22 +198,15 @@ int BayesRRm::runGibbs()
                                     acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
                                 }
                             }
+
                         }
+
                         epsilon = y_tilde - Cx * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
 
                     }
 
                     m0 = M - v[0];
-                    //cout<< "inv scaled parameters "<< v0G+m0 << "__"<<(beta.squaredNorm()*m0+v0G*s02G)/(v0G+m0);
-                    //cout<< "num components"<< opt.S.size();
-                    //cout<< "\nMixture components : "<<cva[0]<<""<<cva[1]<<" "<<cva[2]<<"\n";
                     sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
-                    //cout<<"sigmaG: "<<sigmaG<<"\n";
-                    //cout<<"y mean: "<<y.mean()<<"\n";
-                    // cout<<"y sd: "<< sqrt(y.squaredNorm()/((double)N-1.0))<< "\n";
-                    //cout<<"x mean "<<Cx.mean()<<"\n";
-                    //cout<<"x sd "<<sqrt(Cx.squaredNorm()/((double)N-1.0))<<"\n";
-
                     sigmaE = dist.inv_scaled_chisq_rng(v0E + N, ((epsilon).squaredNorm() + v0E * s02E) / (v0E + N));
                     pi = dist.dirichilet_rng(v.array() + 1.0);
 

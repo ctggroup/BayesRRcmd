@@ -127,9 +127,8 @@ int BayesRRmz::runGibbs()
         if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration: " << iteration << std::endl;
 //BUG2 mu was not returned/fixed
-        epsilon = epsilon.array() + mu;//  we substract previous value
-        mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
-        epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+        const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
+        mu=parallelStepMuEpsilon(epsilon, epsilon.sum(), double(N), sigmaE, dist);
 
         std::random_shuffle(markerI.begin(), markerI.end());
 
