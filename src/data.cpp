@@ -1605,6 +1605,24 @@ void Data::readFailureFile(const string& failureFile){
 }
 
 
+void Data::readLeftTruncationFile(const string& ltruncFile){
+	ifstream input(ltruncFile);
+	vector<double> tmp;
+	int col;
+	if(!input.is_open()){
+		cout << "Error opening the file" << endl;
+
+		return;
+	}
+
+	while(true){
+		input >> col ;
+		if(input.eof()) break;
+		tmp.push_back(col);
+	}
+	input.close();
+	left_trunc = Eigen::VectorXd::Map(tmp.data(), tmp.size());
+}
 //void Data::readMultiLDmatBinFile(const string &mldmatFile){
 //    ifstream in1(mldmatFile.c_str());
 //    if (!in1) throw ("Error: can not open the file [" + mldmatFile + "] to read.");

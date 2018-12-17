@@ -105,12 +105,14 @@ int main(int argc, const char * argv[]) {
       //gctb.clearGenotypes(data);
     } else if (opt.analysisType == "Bayes" && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe") || (opt.bayesType == "gbayes")||(opt.bayesType == "BayesW" ))) {
       clock_t start = clock();
-      readGenotypes = true;
+      readGenotypes = false;
       gctb.inputIndInfo(data, opt.bedFile, opt.phenotypeFile, opt.keepIndFile, opt.keepIndMax,
             opt.mphen, opt.covariateFile);
       gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,
             opt.includeChr, readGenotypes);
 
+      //this function works in reading bedfile, imputing missing data and standardizing by substracting the mean and dividing by sd.
+      data.readBedFile_noMPI(opt.bedFile+".bed");
 
       if (opt.bayesType == "bayesMmap") {
     	  BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
@@ -203,12 +205,16 @@ int main(int argc, const char * argv[]) {
         		//Eigen::VectorXi G=data.G;
         		BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
         		mmapToy.runGibbs();
-        	}else if (opt.bayesType == "BayesW") {
-        		//data.readGroupFile2(opt.groupFile);
-        		//Eigen::VectorXi G=data.G;
-        		BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-        		mmapToy.runGibbs_Preprocessed();
-        	}
+            }else if (opt.bayesType == "BayesW") {
+            	BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+
+            	// Left truncated version
+            	if(opt.leftTruncFile != ""){
+            		mmapToy.runGibbs_Preprocessed_LeftTruncated();
+            	}else{ // Regular version
+                	mmapToy.runGibbs_Preprocessed();
+            	}
+            }
 
         	data.unmapPreprocessedBedFile();
         }

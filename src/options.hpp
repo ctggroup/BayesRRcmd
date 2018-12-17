@@ -63,6 +63,7 @@ public:
     string groupFile;
     string mSfile;
     string failureFile;
+    string leftTruncFile;
 
     string title;
     string analysisType;
@@ -80,6 +81,7 @@ public:
     string mcmcSampleFile;
     string gwasSummaryFile;
     string ldmatrixFile;
+
 
     bool compress = false;
     bool loadRAM = false;
@@ -131,6 +133,7 @@ public:
         numGroups				=2;
         compress                = false;
         loadRAM					= false;
+        leftTruncFile		    = "";
     }
     
     void inputOptions(const int argc, const char* argv[]);
