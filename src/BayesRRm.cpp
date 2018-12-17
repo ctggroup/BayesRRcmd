@@ -98,8 +98,11 @@ int BayesRRm::runGibbs()
                 priorPi[0] = 0.5;
 
                 //Thanasis and Marion: dividing by zero??
-                priorPi.segment(1, km1) = priorPi[0] * cVa.segment(1, km1).array() / cVa.segment(1, km1).sum();
-
+                ///priorPi.segment(1, km1) = priorPi[0] * cVa.segment(1, km1).array() / cVa.segment(1, km1).sum();
+                //correction below
+                for(int k=1;k<K;k++){
+                	priorPi[k]=0.5/K;
+                }
 
                 y_tilde.setZero();
                 cVa[0] = 0;
@@ -143,11 +146,12 @@ int BayesRRm::runGibbs()
                     // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
                     for (int j = 0; j < M; j++) {
                         marker = markerI[j];
-
+                        //RAM solution became default
                         if (!usePreprocessedData) {
-                            data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
+                        	Cx = data.Z.col(marker).cast<double>();
+                        	//data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
                             //I use a temporal variable to do the cast, there should be better ways to do this.
-                            Cx = normedSnpData.cast<double>();
+                            //Cx = normedSnpData.cast<double>();
                         }
                         else{
                             Cx = data.mappedZ.col(marker).cast<double>();

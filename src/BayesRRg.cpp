@@ -128,9 +128,6 @@ void BayesRRg::runGibbs() {
         VectorXd Y;
         VectorXd Cx;
 
-
-        priorPi.setOnes();
-
         for(int i=0; i < numberGroups; i++){
         	priorPi.row(i)(0)=0.5;
         	for(int k=1;k<K;k++){
@@ -148,7 +145,7 @@ void BayesRRg::runGibbs() {
 
 	    // sigmaG=(1*cVa).sum()/M;
 	    for(int i=0; i<numberGroups;i++)
-	      sigmaGG[i]=dist.beta_rng(1,1);
+	    	sigmaGG[i]=dist.beta_rng(1,1);
 
 	    pi=priorPi;
 
@@ -158,94 +155,95 @@ void BayesRRg::runGibbs() {
 	    Y/=sqrt(Y.squaredNorm()/((double)N-1.0));
 	    epsilon= Y.array() - mu;
 	    sigmaE=epsilon.squaredNorm()/N*0.5;
-        //xsquared=X.colwise().squaredNorm(); replaced by (double)N-1)
+	    //xsquared=X.colwise().squaredNorm(); replaced by (double)N-1)
 	    for(int iteration=0; iteration < max_iterations; iteration++){
 
-	      if(iteration>0)
-	        if( iteration % (int)std::ceil(max_iterations/10) ==0)
-	          std::cout << "iteration: "<<iteration <<"\n";
+	    	if(iteration>0)
+	    		if( iteration % (int)std::ceil(max_iterations/10) ==0)
+	    			std::cout << "iteration: "<<iteration <<"\n";
 
-	        epsilon= epsilon.array()+mu;//  we substract previous value
-	        mu = dist.norm_rng(epsilon.sum()/(double)N, sigmaE/(double)N); //update mu
-	        epsilon= epsilon.array()-mu;// we substract again now epsilon =Y-mu-X*beta
-
-
-	        std::random_shuffle(markerI.begin(), markerI.end());
-
-	        m0=0;
-	        v.setZero();
-	        betaAcum.setZero();
-	        for(int j=0; j < M; j++){
-
-	          marker= markerI[j];
-	          sigmaG=sigmaGG[data.G(marker)];
-
-	          if (!usePreprocessedData) {
-	        	  data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
-	        	  //I use a temporal variable to do the cast, there should be better ways to do this.
-	        	  Cx = normedSnpData.cast<double>();
-	          }
-	          else{
-	        	  Cx = data.mappedZ.col(marker).cast<double>();
-	          }
-
-	          cVa[0]=0;
-	          cVaI[0]=0;
-	          cVa.segment(1,(K-1))=cva.row(data.G(marker));
-	          cVaI.segment(1,(K-1))=(cVa.segment(1,(K-1))).cwiseInverse();
-
-	          y_tilde= epsilon.array()+(Cx * beta(marker)).array();//now y_tilde= Y-mu-X*beta+ X.col(marker)*beta(marker)_old
+	    	epsilon= epsilon.array()+mu;//  we substract previous value
+	    	mu = dist.norm_rng(epsilon.sum()/(double)N, sigmaE/(double)N); //update mu
+	    	epsilon= epsilon.array()-mu;// we substract again now epsilon =Y-mu-X*beta
 
 
-	          muk[0]=0.0;//muk for the zeroth component=0
+	    	std::random_shuffle(markerI.begin(), markerI.end());
 
-	          // std::cout<< muk;
-	          //we compute the denominator in the variance expression to save computations
-	          denom=((double)N-1)+(sigmaE/sigmaG)*cVaI.segment(1,(K-1)).array();
+	    	m0=0;
+	    	v.setZero();
+	    	betaAcum.setZero();
+	    	for(int j=0; j < M; j++){
 
-	          //muk for the other components is computed according to equaitons
-	          num=(Cx.cwiseProduct(y_tilde)).sum();
-	          muk.segment(1,(K-1))= num/denom.array();
-	          logL= pi.row(data.G(marker)).array().log();//first component probabilities remain unchanged
+	    		marker= markerI[j];
+	    		sigmaG=sigmaGG[data.G(marker)];
+	    		//RAM solution became default
+	    		if (!usePreprocessedData) {
+	    			Cx = data.Z.col(marker).cast<double>();
+	    			//data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
+	    			//I use a temporal variable to do the cast, there should be better ways to do this.
+	    			//Cx = normedSnpData.cast<double>();
+	    		}
+	    		else{
+	    			Cx = data.mappedZ.col(marker).cast<double>();
+	    		}
 
-	          // Here we reproduce the fortran code
+	    		cVa[0]=0;
+	    		cVaI[0]=0;
+	    		cVa.segment(1,(K-1))=cva.row(data.G(marker));
+	    		cVaI.segment(1,(K-1))=(cVa.segment(1,(K-1))).cwiseInverse();
 
-	          logL.segment(1,(K-1))=logL.segment(1,(K-1)).array() - 0.5*((((sigmaG/sigmaE)*(((double)N-1)))*cVa.segment(1,(K-1)).array() + 1).array().log())+0.5*( muk.segment(1,(K-1)).array()*num)/sigmaE;
-
-
-	          double p(dist.beta_rng(1,1));//I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
-
-
-	          if(((logL.segment(1,(K-1)).array()-logL[0]).abs().array() >700 ).any() ){
-	            acum=0;
-	          }else{
-	            acum=1.0/((logL.array()-logL[0]).exp().sum());
-	          }
-
-	          for(int k=0;k<K;k++){
-	            if(p<=acum){
-	              if(k==0){
-	                beta(marker)=0;
-	              }else{
-	                beta(marker)=dist.norm_rng(muk[k],sigmaE/denom[k-1]);
-	                betaAcum(data.G(marker))+= pow(beta(marker),2);
-	              }
-	              v.row(data.G(marker))(k)+=1.0;
-	              components[marker]=k;
-	              break;
-	            }else{
-	              if(((logL.segment(1,(K-1)).array()-logL[k+1]).abs().array() >700 ).any() ){
-	                acum+=0;
-	              }
-	              else{
-	                acum+=1.0/((logL.array()-logL[k+1]).exp().sum());
-	              }
-	            }
-	          }
-	          epsilon=y_tilde - Cx * beta(marker);//now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+	    		y_tilde= epsilon.array()+(Cx * beta(marker)).array();//now y_tilde= Y-mu-X*beta+ X.col(marker)*beta(marker)_old
 
 
-	        }
+	    		muk[0]=0.0;//muk for the zeroth component=0
+
+	    		// std::cout<< muk;
+	    		//we compute the denominator in the variance expression to save computations
+	    		denom=((double)N-1)+(sigmaE/sigmaG)*cVaI.segment(1,(K-1)).array();
+
+	    		//muk for the other components is computed according to equaitons
+	    		num=(Cx.cwiseProduct(y_tilde)).sum();
+	    		muk.segment(1,(K-1))= num/denom.array();
+	    		logL= pi.row(data.G(marker)).array().log();//first component probabilities remain unchanged
+
+	    		// Here we reproduce the fortran code
+
+	    		logL.segment(1,(K-1))=logL.segment(1,(K-1)).array() - 0.5*((((sigmaG/sigmaE)*(((double)N-1)))*cVa.segment(1,(K-1)).array() + 1).array().log())+0.5*( muk.segment(1,(K-1)).array()*num)/sigmaE;
+
+
+	    		double p(dist.beta_rng(1,1));//I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
+
+
+	    		if(((logL.segment(1,(K-1)).array()-logL[0]).abs().array() >700 ).any() ){
+	    			acum=0;
+	    		}else{
+	    			acum=1.0/((logL.array()-logL[0]).exp().sum());
+	    		}
+
+	    		for(int k=0;k<K;k++){
+	    			if(p<=acum){
+	    				if(k==0){
+	    					beta(marker)=0;
+	    				}else{
+	    					beta(marker)=dist.norm_rng(muk[k],sigmaE/denom[k-1]);
+	    					betaAcum(data.G(marker))+= pow(beta(marker),2);
+	    				}
+	    				v.row(data.G(marker))(k)+=1.0;
+	    				components[marker]=k;
+	    				break;
+	    			}else{
+	    				if(((logL.segment(1,(K-1)).array()-logL[k+1]).abs().array() >700 ).any() ){
+	    					acum+=0;
+	    				}
+	    				else{
+	    					acum+=1.0/((logL.array()-logL[k+1]).exp().sum());
+	    				}
+	    			}
+	    		}
+	    		epsilon=y_tilde - Cx * beta(marker);//now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+
+
+	    	}
 
 	        //cout<<sigmaE<<endl;
 

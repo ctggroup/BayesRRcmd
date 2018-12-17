@@ -41,6 +41,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             compress = true;
             ss << "--compress " << "\n";
         }
+        else if (!strcmp(argv[i], "--loadRAM")) {
+            loadRAM = true;
+            ss << "--loadRAM " << "\n";
+        }
         else if (!strcmp(argv[i], "--make-ldm")) {
             analysisType = "LDmatrix";
             ss << "--make-ldm " << "\n";

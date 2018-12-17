@@ -328,9 +328,10 @@ int BayesW::runGibbs_notPreprocessed()
 						marker = markerI[j];
 
 						// For not preprocessed we do the following
-						data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
+						//data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
+
 						//I use a temporal variable to do the cast, there should be better ways to do this.
-						used_data.X_j = normedSnpData.cast<double>();
+						used_data.X_j = data.Z.col(marker).cast<double>();
 
 
 						used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();

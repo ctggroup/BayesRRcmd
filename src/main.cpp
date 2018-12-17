@@ -63,7 +63,7 @@ int main(int argc, const char * argv[]) {
     GCTB gctb(opt);
 
 
-    if (opt.analysisType == "Bayes" && opt.bayesType == "bayes") {
+    if (opt.analysisType == "Bayes" && opt.loadRAM==true && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe") || (opt.bayesType == "gbayes")||(opt.bayesType == "BayesW" ))) {
 
       clock_t start = clock();
 
@@ -81,7 +81,23 @@ int main(int argc, const char * argv[]) {
       printf("Finished reading the bed file in %.3f sec.\n", (float)(end - start_bed) / CLOCKS_PER_SEC);
       cout << endl;
 
-      //TODO non memory mapped version here
+      if (opt.bayesType == "bayesMmap") {
+              		BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+              		mmapToy.runGibbs();
+              	} else if (opt.bayesType == "horseshoe") {
+              		BayesRRhp mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+              		mmapToy.runGibbs();
+              	} else if (opt.bayesType == "gbayes") {
+              		//data.readGroupFile2(opt.groupFile);
+              		//Eigen::VectorXi G=data.G;
+              		BayesRRg mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+              		mmapToy.runGibbs();
+              	}else if (opt.bayesType == "BayesW") {
+              		//data.readGroupFile2(opt.groupFile);
+              		//Eigen::VectorXi G=data.G;
+              		BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+              		mmapToy.runGibbs_Preprocessed();
+              	}
 
       end = clock();
       printf("OVERALL read+compute time = %.3f sec.\n", (float)(end - start) / CLOCKS_PER_SEC);
@@ -89,7 +105,7 @@ int main(int argc, const char * argv[]) {
       //gctb.clearGenotypes(data);
     } else if (opt.analysisType == "Bayes" && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe") || (opt.bayesType == "gbayes")||(opt.bayesType == "BayesW" ))) {
       clock_t start = clock();
-      readGenotypes = false;
+      readGenotypes = true;
       gctb.inputIndInfo(data, opt.bedFile, opt.phenotypeFile, opt.keepIndFile, opt.keepIndMax,
             opt.mphen, opt.covariateFile);
       gctb.inputSnpInfo(data, opt.bedFile, opt.includeSnpFile, opt.excludeSnpFile,

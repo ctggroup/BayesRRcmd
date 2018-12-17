@@ -82,6 +82,7 @@ public:
     string ldmatrixFile;
 
     bool compress = false;
+    bool loadRAM = false;
     
     Options(){
         chainLength             = 10000;
@@ -129,6 +130,7 @@ public:
         ldmatrixFile            = "";
         numGroups				=2;
         compress                = false;
+        loadRAM					= false;
     }
     
     void inputOptions(const int argc, const char* argv[]);
