@@ -196,8 +196,8 @@ void BayesRRhp::runGibbs(){
 	      for(int j=0; j < M; j++){
 
 	        marker= markerI[j];
-	        data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
-            cX=normedSnpData.cast<double>();
+
+            cX=data.Z.col(marker).cast<double>();
 	        y_tilde= epsilon.array()+(cX*beta(marker,0)).array();//now y_tilde= Y-mu-X*beta+ X.col(marker)*beta(marker)_old
 
 
