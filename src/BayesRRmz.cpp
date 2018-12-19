@@ -66,7 +66,7 @@ void BayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCou
     epsilon = VectorXd(individualCount);    // variable containing the residuals
 
     y = VectorXd();
-    Cx = VectorXd();
+    //Cx = VectorXd();
 
     // Init the working variables
     const int km1 = K - 1;
@@ -94,9 +94,7 @@ int BayesRRmz::runGibbs()
 {
     const unsigned int M(data.numIncdSnps);
     const unsigned int N(data.numKeptInds);
-    const double NM1 = double(N - 1);
     const int K(int(cva.size()) + 1);
-    const int km1 = K - 1;
 
     init(K, M, N);
 
@@ -114,17 +112,10 @@ int BayesRRmz::runGibbs()
     std::cout << "Running Gibbs sampling" << endl;
     const auto t1 = std::chrono::high_resolution_clock::now();
 
-    // We can use a single fixed size buffer to decompress the preprocessed
-    // data into as each column is the same size when uncompressed.
-    unsigned char *decompressBuffer = nullptr;
-    Map<VectorXf> Cx(nullptr, 1);
-    const unsigned int colSize = N * sizeof(float);
-    decompressBuffer = new unsigned char[colSize];
-    new (&Cx) Map<VectorXf>(reinterpret_cast<float *>(decompressBuffer), N);
-
     // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
-    VectorXd components(M);
+    components.resize(M);
     components.setZero();
+
     for (unsigned int iteration = 0; iteration < max_iterations; iteration++) {
         // Output progress
         const auto startTime = std::chrono::high_resolution_clock::now();
@@ -139,91 +130,26 @@ int BayesRRmz::runGibbs()
         m0 = 0;
         v.setZero();
 
+        // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution.
+        // The flow graph is constructed to allow the data to be decompressed in parallel for enforce sequential processing of each column
+        // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
+        // of data.
         flowGraph->exec(N, M, markerI);
 
-        // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
-//        for (unsigned int j = 0; j < M; j++) {
-//            double acum = 0.0;
-//            const auto marker = markerI[j];
+        m0 = int(M) - int(v[0]);
+        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
 
-//            // TODO: Can we improve things by decompressing a compressed mmap datafile?
-//            //const VectorXf Cx = getSnpData(marker);
-//            //const VectorXf &Cx = data.mappedZ.col(marker);
-//            extractData(reinterpret_cast<unsigned char *>(data.ppBedMap) + data.ppbedIndex[marker].pos,
-//                        static_cast<unsigned int>(data.ppbedIndex[marker].size),
-//                        decompressBuffer,
-//                        colSize);
+        if (showDebug)
+            printDebugInfo();
 
-//            // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-//            parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
+        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
+        pi = dist.dirichilet_rng(v.array() + 1.0);
 
-//            // muk for the zeroth component=0
-//            muk[0] = 0.0;
-
-//            // We compute the denominator in the variance expression to save computations
-//            const double sigmaEOverSigmaG = sigmaE / sigmaG;
-//            denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
-
-//            // We compute the dot product to save computations
-//            const double num = parallelDotProduct(Cx, y_tilde);
-
-//            // muk for the other components is computed according to equaitons
-//            muk.segment(1, km1) = num / denom.array();
-
-//            // Update the log likelihood for each component
-//            const double logLScale = sigmaG / sigmaE * NM1;
-//            logL = pi.array().log(); // First component probabilities remain unchanged
-//            logL.segment(1, km1) = logL.segment(1, km1).array()
-//                    - 0.5 * ((logLScale * cVa.segment(1, km1).array() + 1).array().log())
-//                    + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
-
-//            double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
-
-//            if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
-//                acum = 0;
-//            } else {
-//                acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
-//            }
-
-//            for (int k = 0; k < K; k++) {
-//                if (p <= acum) {
-//                    //if zeroth component
-//                    if (k == 0) {
-//                        beta(marker) = 0;
-//                    } else {
-//                        beta(marker) = dist.norm_rng(muk[k], sigmaE/denom[k-1]);
-//                    }
-//                    v[k] += 1.0;
-//                    components[marker] = k;
-//                    break;
-//                } else {
-//                    //if too big or too small
-//                    if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
-//                        acum += 0;
-//                    } else {
-//                        acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
-//                    }
-//                }
-//            }
-
-//            // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-//            parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
-//        }
-
-//        m0 = int(M) - int(v[0]);
-//        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
-
-//        if (showDebug)
-//            printDebugInfo();
-
-//        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
-//        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
-//        pi = dist.dirichilet_rng(v.array() + 1.0);
-
-//        if (iteration >= burn_in && iteration % thinning == 0) {
-//            sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
-//            writer.write(sample);
-//        }
+        if (iteration >= burn_in && iteration % thinning == 0) {
+            sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
+            writer.write(sample);
+        }
 
         const auto endTime = std::chrono::high_resolution_clock::now();
         const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
@@ -237,6 +163,70 @@ int BayesRRmz::runGibbs()
     return 0;
 }
 
+void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
+{
+    const unsigned int N(data.numKeptInds);
+    const double NM1 = double(N - 1);
+    const int K(int(cva.size()) + 1);
+    const int km1 = K - 1;
+    double acum = 0.0;
+
+    // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
+    parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+
+    // muk for the zeroth component=0
+    muk[0] = 0.0;
+
+    // We compute the denominator in the variance expression to save computations
+    const double sigmaEOverSigmaG = sigmaE / sigmaG;
+    denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
+
+    // We compute the dot product to save computations
+    const double num = parallelDotProduct(Cx, y_tilde);
+
+    // muk for the other components is computed according to equaitons
+    muk.segment(1, km1) = num / denom.array();
+
+    // Update the log likelihood for each component
+    const double logLScale = sigmaG / sigmaE * NM1;
+    logL = pi.array().log(); // First component probabilities remain unchanged
+    logL.segment(1, km1) = logL.segment(1, km1).array()
+            - 0.5 * ((logLScale * cVa.segment(1, km1).array() + 1).array().log())
+            + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
+
+    double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
+
+    if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
+        acum = 0;
+    } else {
+        acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
+    }
+
+    for (int k = 0; k < K; k++) {
+        if (p <= acum) {
+            //if zeroth component
+            if (k == 0) {
+                beta(marker) = 0;
+            } else {
+                beta(marker) = dist.norm_rng(muk[k], sigmaE/denom[k-1]);
+            }
+            v[k] += 1.0;
+            components[marker] = k;
+            break;
+        } else {
+            //if too big or too small
+            if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
+                acum += 0;
+            } else {
+                acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
+            }
+        }
+    }
+
+    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+    parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+}
+
 void BayesRRmz::printDebugInfo() const
 {
     const unsigned int N(data.numKeptInds);
@@ -246,6 +236,6 @@ void BayesRRmz::printDebugInfo() const
     cout << "sigmaG: " << sigmaG << "\n";
     cout << "y mean: " << y.mean() << "\n";
     cout << "y sd: " << sqrt(y.squaredNorm() / (double(N - 1))) << "\n";
-    cout << "x mean " << Cx.mean() << "\n";
-    cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
+//    cout << "x mean " << Cx.mean() << "\n";
+//    cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
 }

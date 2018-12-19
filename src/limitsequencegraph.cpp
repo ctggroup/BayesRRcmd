@@ -40,10 +40,12 @@ LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
     // the graph have finished and freed up some resources.
     m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
 
-    auto g = [] (Message msg) -> continue_msg {
+    auto g = [this] (Message msg) -> continue_msg {
         //std::cout << "Sampling for id: " << msg.id << std::endl;
 
-        // TODO: Put actual sequential work in here
+        // Delegate the processing of this column to the algorithm class
+        Map<VectorXf> Cx(reinterpret_cast<float *>(msg.decompressBuffer), msg.numKeptInds);
+        m_bayes->processColumn(msg.marker, Cx);
 
         // Cleanup
         delete[] msg.decompressBuffer;

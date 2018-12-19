@@ -61,12 +61,13 @@ class BayesRRmz
     VectorXd epsilon;    // variable containing the residuals
 
     VectorXd y;
-    VectorXd Cx;
+    VectorXd components;
 
 public:
     BayesRRmz(Data &data, Options &opt);
     virtual ~BayesRRmz();
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
+    void processColumn(unsigned int marker, const Map<VectorXf> &Cx);
 
     void setDebugEnabled(bool enabled) { showDebug = enabled; }
     bool isDebugEnabled() const { return showDebug; }
