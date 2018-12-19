@@ -190,7 +190,7 @@ double mu_dens_ltrunc(double x, void *norm_data)
 
 	/* cast voided pointer into pointer to struct norm_parm */
 	y = - p.alpha * x * p.failure_vector.sum() - (( (p.epsilon * p.alpha).array()  -  p.alpha * x) - EuMasc).exp().sum() +
-			 (( (p.epsilon_trunc * p.alpha).array()  -  p.alpha * x) - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
+			(( (p.epsilon_trunc * p.alpha).array()  -  p.alpha * x) - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
 	return y;
 };
 
@@ -347,11 +347,16 @@ int BayesW::runGibbs_notPreprocessed()
 				//     VectorXd y_tilde(N); // variable containing the adjusted residual to exclude the effects of a given marker
 
 				//sampler variables
-				VectorXd sample(1 * M + 5); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance
+				VectorXd sample(1 * M + 7); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance
 				std::vector<int> markerI(M);
 				std::iota(markerI.begin(), markerI.end(), 0);
 
 				int marker;
+
+				VectorXd gi(N); // The genetic effects vector
+				gi.setZero();
+				double sigma_g;
+				double residual_var;
 
 				VectorXd y;   //y is logarithmed
 
@@ -419,7 +424,7 @@ int BayesW::runGibbs_notPreprocessed()
 					new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
 					assignArray(p_xinit,new_xinit);
 					used_data.epsilon = used_data.epsilon.array() + mu;//  we add the previous value
-cout << "Sample mu" << endl;
+					cout << "Sample mu" << endl;
 					err = arms(xinit,ninit,&xl,&xr,mu_dens,&used_data,&convex,
 							npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 
@@ -485,8 +490,8 @@ cout << "Sample mu" << endl;
 					err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data,&convex,
 							npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 					errorCheck(err);
-				//	cout << "alpha sampled" << endl;
-				//	used_data.alpha = xsamp[0];
+					//	cout << "alpha sampled" << endl;
+					//	used_data.alpha = xsamp[0];
 					if(xsamp[0]>100){
 						used_data.alpha = 100;
 					}else{
@@ -502,7 +507,14 @@ cout << "Sample mu" << endl;
 
 					if (iteration >= burn_in) {
 						if (iteration % thinning == 0) {
-							sample << iteration, used_data.alpha, mu, beta, used_data.sigma_b ,pi;
+							//6. Sigma_g
+							gi = y.array() - mu - used_data.epsilon.array();
+							sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
+
+							//7. Residual variance
+							residual_var = (used_data.epsilon.array() * used_data.epsilon.array()).sum()/N - pow(used_data.epsilon.sum()/N,2);
+
+							sample << iteration, used_data.alpha, mu, beta, used_data.sigma_b ,pi, sigma_g, residual_var;
 							q.enqueue(sample);
 						}
 					}
@@ -523,13 +535,13 @@ cout << "Sample mu" << endl;
 				queueFull = 0;
 				std::ofstream outFile;
 				outFile.open(outputFile);
-				VectorXd sampleq(1 * M + 5 );
+				VectorXd sampleq(1 * M + 7);
 				IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", "", "");
 				outFile<< "iteration," << "alpha," << "mu,";
 				for (unsigned int i = 0; i < M; ++i) {
 					outFile << "beta[" << (i+1) << "],";
 				}
-				outFile << "sigma_b," << "pi,";
+				outFile << "sigma_b," << "pi," << "sigma_g," << "residual_var,";
 
 				outFile << "\n";
 
@@ -752,15 +764,17 @@ int BayesW::runGibbs_Preprocessed()
 					//5. Inclusion probability
 					pi = dist.beta_rng(1+gamma.sum(), 1 + gamma.size() - gamma.sum());
 
-					//6. Sigma_g
-					gi = y.array() - mu - used_data.epsilon.array();
-					sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
 
-					//7. Residual variance
-					residual_var = (used_data.epsilon.array() * used_data.epsilon.array()).sum()/N - pow(used_data.epsilon.sum()/N,2);
 
 					if (iteration >= burn_in) {
 						if (iteration % thinning == 0) {
+							//6. Sigma_g
+							gi = y.array() - mu - used_data.epsilon.array();
+							sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
+
+							//7. Residual variance
+							residual_var = (used_data.epsilon.array() * used_data.epsilon.array()).sum()/N - pow(used_data.epsilon.sum()/N,2);
+
 							sample << iteration, used_data.alpha, mu, beta, used_data.sigma_b ,pi, sigma_g, residual_var;
 							q.enqueue(sample);
 						}
