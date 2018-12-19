@@ -19,6 +19,7 @@ class LimitSequenceGraph;
 
 class BayesRRmz
 {
+    friend class LimitSequenceGraph;
     std::unique_ptr<LimitSequenceGraph> flowGraph;
     Data            &data; // data matrices
     Options         &opt;

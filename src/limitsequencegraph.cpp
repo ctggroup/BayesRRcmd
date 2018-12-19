@@ -1,33 +1,38 @@
 #include "limitsequencegraph.h"
 
+#include "compression.h"
+#include "BayesRRmz.h"
+
 #include <iostream>
 
-LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
-    : m_maxParallel(maxParallel)
+LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
+    : m_bayes(bayes)
+    , m_maxParallel(maxParallel)
     , m_graph(new graph)
 {
-    // Just waste some cpu cycles and memory - simulate decompressing columns
-    auto f = [] (Message msg) -> Message {
-        std::cout << "Process node " << msg.id << std::endl;
+    // Decompress the column for this marker
+    auto f = [this] (Message msg) -> Message {
+        //std::cout << "Decompress column " << msg.id << " " << msg.marker << std::endl;
 
-        const size_t size = 20000000;
-        msg.data = new float[size];
-        for (auto i = 0U; i < size; ++i) {
-            msg.data[i] = static_cast<float>(msg.id);
-            msg.data[i]++;
-            msg.data[i]--;
-        }
+        const unsigned int colSize = msg.numKeptInds * sizeof(float);
+        msg.decompressBuffer = new unsigned char[colSize];
+
+        extractData(reinterpret_cast<unsigned char *>(m_bayes->data.ppBedMap) + m_bayes->data.ppbedIndex[msg.marker].pos,
+                    static_cast<unsigned int>(m_bayes->data.ppbedIndex[msg.marker].size),
+                    msg.decompressBuffer,
+                    colSize);
+
         return msg;
     };
-    // Do some work on up to maxParallel threads at once
-    m_process.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, f));
+    // Do the decompression work on up to maxParallel threads at once
+    m_decompressNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, f));
 
     // The sequencer node enforces the correct ordering based upon the message id
-    m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> int {
+    m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
         return msg.id;
     }));
 
-    m_ordering2.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> int {
+    m_ordering2.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
         return msg.id;
     }));
 
@@ -36,28 +41,48 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
     m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
 
     auto g = [] (Message msg) -> continue_msg {
-        std::cout << "Message recieved with id: " << msg.id << std::endl;
-        delete[] msg.data;
-        msg.data = nullptr;
+        //std::cout << "Sampling for id: " << msg.id << std::endl;
+
+        // TODO: Put actual sequential work in here
+
+        // Cleanup
+        delete[] msg.decompressBuffer;
+        msg.decompressBuffer = nullptr;
+
+        // Signal for next decompression task to continue
         return continue_msg();
     };
-    // The writer is enforced to behave in serial manner - simulate the processing of a column
-    m_writer.reset(new function_node<Message>(*m_graph, serial, g));
+    // The sampling node is enforced to behave in a serial manner to ensure that the resulting chain
+    // is ergodic.
+    m_samplingNode.reset(new function_node<Message>(*m_graph, serial, g));
 
+    // Set up the graph topology:
+    //
+    // orderingNode -> limitNode -> decompressionNode (parallel) -> orderingNode -> samplingNode (sequential)
+    //                      ^                                                           |
+    //                      |___________________________________________________________|
+    //
+    // This ensures that we always run the samplingNode on the correct order of markers and signal back to
+    // the parallel decompression to keep it constantly fed. This should be a self-balancing graph.
     make_edge(*m_ordering, *m_limit);
-    make_edge(*m_limit, *m_process);
-    make_edge(*m_process, *m_ordering2);
-    make_edge(*m_ordering2, *m_writer);
+    make_edge(*m_limit, *m_decompressNode);
+    make_edge(*m_decompressNode, *m_ordering2);
+    make_edge(*m_ordering2, *m_samplingNode);
 
     // Feedback that we can now decompress another column
-    make_edge(*m_writer, m_limit->decrement);
+    make_edge(*m_samplingNode, m_limit->decrement);
 }
 
-void LimitSequenceGraph::exec()
+void LimitSequenceGraph::exec(unsigned int numKeptInds,
+                              unsigned int numIncdSnps,
+                              const std::vector<unsigned int> &markerIndices)
 {
+    // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
+    m_graph->reset();
+
     // Push some messages into the top of the graph to be processed - representing the column indices
-    for (int i = 0; i < 1000; ++i) {
-        Message msg = { i, nullptr };
+    for (unsigned int i = 0; i < numIncdSnps; ++i) {
+        Message msg = { i, markerIndices[i], numKeptInds };
         m_ordering->try_put(msg);
     }
 

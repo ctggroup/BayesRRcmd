@@ -19,7 +19,7 @@
 #include <random>
 
 BayesRRmz::BayesRRmz(Data &data, Options &opt)
-    : flowGraph(new LimitSequenceGraph)
+    : flowGraph(nullptr)
     , data(data)
     , opt(opt)
     , bedFile(opt.bedFile + ".bed")
@@ -34,6 +34,8 @@ BayesRRmz::BayesRRmz(Data &data, Options &opt)
 {
     float* ptr =static_cast<float*>(&opt.S[0]);
     cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
+
+    flowGraph.reset(new LimitSequenceGraph(this));
 }
 
 BayesRRmz::~BayesRRmz()
@@ -137,89 +139,91 @@ int BayesRRmz::runGibbs()
         m0 = 0;
         v.setZero();
 
+        flowGraph->exec(N, M, markerI);
+
         // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
-        for (unsigned int j = 0; j < M; j++) {
-            double acum = 0.0;
-            const auto marker = markerI[j];
+//        for (unsigned int j = 0; j < M; j++) {
+//            double acum = 0.0;
+//            const auto marker = markerI[j];
 
-            // TODO: Can we improve things by decompressing a compressed mmap datafile?
-            //const VectorXf Cx = getSnpData(marker);
-            //const VectorXf &Cx = data.mappedZ.col(marker);
-            extractData(reinterpret_cast<unsigned char *>(data.ppBedMap) + data.ppbedIndex[marker].pos,
-                        static_cast<unsigned int>(data.ppbedIndex[marker].size),
-                        decompressBuffer,
-                        colSize);
+//            // TODO: Can we improve things by decompressing a compressed mmap datafile?
+//            //const VectorXf Cx = getSnpData(marker);
+//            //const VectorXf &Cx = data.mappedZ.col(marker);
+//            extractData(reinterpret_cast<unsigned char *>(data.ppBedMap) + data.ppbedIndex[marker].pos,
+//                        static_cast<unsigned int>(data.ppbedIndex[marker].size),
+//                        decompressBuffer,
+//                        colSize);
 
-            // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-            parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+//            // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
+//            parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 
-            // muk for the zeroth component=0
-            muk[0] = 0.0;
+//            // muk for the zeroth component=0
+//            muk[0] = 0.0;
 
-            // We compute the denominator in the variance expression to save computations
-            const double sigmaEOverSigmaG = sigmaE / sigmaG;
-            denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
+//            // We compute the denominator in the variance expression to save computations
+//            const double sigmaEOverSigmaG = sigmaE / sigmaG;
+//            denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
 
-            // We compute the dot product to save computations
-            const double num = parallelDotProduct(Cx, y_tilde);
+//            // We compute the dot product to save computations
+//            const double num = parallelDotProduct(Cx, y_tilde);
 
-            // muk for the other components is computed according to equaitons
-            muk.segment(1, km1) = num / denom.array();
+//            // muk for the other components is computed according to equaitons
+//            muk.segment(1, km1) = num / denom.array();
 
-            // Update the log likelihood for each component
-            const double logLScale = sigmaG / sigmaE * NM1;
-            logL = pi.array().log(); // First component probabilities remain unchanged
-            logL.segment(1, km1) = logL.segment(1, km1).array()
-                    - 0.5 * ((logLScale * cVa.segment(1, km1).array() + 1).array().log())
-                    + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
+//            // Update the log likelihood for each component
+//            const double logLScale = sigmaG / sigmaE * NM1;
+//            logL = pi.array().log(); // First component probabilities remain unchanged
+//            logL.segment(1, km1) = logL.segment(1, km1).array()
+//                    - 0.5 * ((logLScale * cVa.segment(1, km1).array() + 1).array().log())
+//                    + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
 
-            double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
+//            double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
 
-            if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
-                acum = 0;
-            } else {
-                acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
-            }
+//            if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
+//                acum = 0;
+//            } else {
+//                acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
+//            }
 
-            for (int k = 0; k < K; k++) {
-                if (p <= acum) {
-                    //if zeroth component
-                    if (k == 0) {
-                        beta(marker) = 0;
-                    } else {
-                        beta(marker) = dist.norm_rng(muk[k], sigmaE/denom[k-1]);
-                    }
-                    v[k] += 1.0;
-                    components[marker] = k;
-                    break;
-                } else {
-                    //if too big or too small
-                    if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
-                        acum += 0;
-                    } else {
-                        acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
-                    }
-                }
-            }
+//            for (int k = 0; k < K; k++) {
+//                if (p <= acum) {
+//                    //if zeroth component
+//                    if (k == 0) {
+//                        beta(marker) = 0;
+//                    } else {
+//                        beta(marker) = dist.norm_rng(muk[k], sigmaE/denom[k-1]);
+//                    }
+//                    v[k] += 1.0;
+//                    components[marker] = k;
+//                    break;
+//                } else {
+//                    //if too big or too small
+//                    if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
+//                        acum += 0;
+//                    } else {
+//                        acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
+//                    }
+//                }
+//            }
 
-            // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-            parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
-        }
+//            // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+//            parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+//        }
 
-        m0 = int(M) - int(v[0]);
-        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
+//        m0 = int(M) - int(v[0]);
+//        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
 
-        if (showDebug)
-            printDebugInfo();
+//        if (showDebug)
+//            printDebugInfo();
 
-        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
-        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
-        pi = dist.dirichilet_rng(v.array() + 1.0);
+//        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
+//        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
+//        pi = dist.dirichilet_rng(v.array() + 1.0);
 
-        if (iteration >= burn_in && iteration % thinning == 0) {
-            sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
-            writer.write(sample);
-        }
+//        if (iteration >= burn_in && iteration % thinning == 0) {
+//            sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
+//            writer.write(sample);
+//        }
 
         const auto endTime = std::chrono::high_resolution_clock::now();
         const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
