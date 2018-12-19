@@ -16,7 +16,7 @@
 #include "BayesRRmz.h"
 #include "BayesRRhp.h"
 #include "BayesRRpp.h"
-
+#include <tbb/tbb.h>
 using namespace std;
 
 int main(int argc, const char * argv[])
@@ -96,6 +96,7 @@ int main(int argc, const char * argv[])
 
 
             if (opt.bayesType == "bayesMmap") {
+            	tbb::task_scheduler_init init;
                 BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
                 mmapToy.runGibbs();
             } else if (opt.bayesType == "horseshoe") {

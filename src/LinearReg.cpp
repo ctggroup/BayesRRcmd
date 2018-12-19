@@ -61,10 +61,17 @@ void LinearReg::sampleGibbsProp(){
     	const auto marker = markerI[j];
     	const VectorXf &Cx = data.mappedZ.col(marker);
         // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-    	parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+    	double beta_old=beta(marker);
+    	if(beta_old==0) //if beta=0 then there is no need to update y_tilde
+    	 parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+    	else
+    		y_tilde=epsilon;
     	updateBetas(marker,Cx);
     	 // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-    	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+    	if(beta(marker)!=0){
+    		parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+    		betasqn+=pow(beta(marker),2)-pow(beta_old,2);
+    	} //no need to update epsilon if beta==0
 
     }
     updateHyper();

@@ -64,7 +64,7 @@ BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
 
       m0 = 0;
       v.setZero();
-
+      betasqn=0;
       init_header();
 }
 
@@ -134,21 +134,20 @@ void BayesRRm::updateBetas(int marker,const VectorXf &Cx)
                     }
                 }
             }
-            betasqn+=beta(marker)*beta(marker); //cheaper to compute here than  again in the update hyper
 
 }
 
 
 void BayesRRm::updateHyper(){
 	  m0 = int(M) - int(v[0]);
-	// std::cout<<"beta norm "<<beta.squaredNorm()<<"\n";
-	 //std::cout<<"v "<<v<<"\n";
+	 std::cout<<"m0 "<<m0<<"\n";
+	 std::cout<<"betasqn "<<betasqn<<"\n";
 	 //std::cout<< "v0g*s02g"<<v0G * s02G;
 	 sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (betasqn * m0 + v0G * s02G) / (v0G + m0));
      std::cout<<"sigmaG "<<sigmaG << "\n";
 	 pi = dist.dirichilet_rng(v.array() + 1.0);
      v.setZero();//restart component specific counters
-     betasqn=0;
+
 }
 
 void BayesRRm::collectSample(){

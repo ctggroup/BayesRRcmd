@@ -37,6 +37,7 @@ public:
 	     double sigmaE;      // residuals variance
 	     double mu;          // mean or intercept
 	     std::vector<unsigned long int> markerI;
+	 	double betasqn=0;
 
 
 	LinearReg(Options &opt,Data &data);

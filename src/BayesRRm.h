@@ -42,7 +42,6 @@ class BayesRRm : public LinearReg
 
     double NM1;
 	double km1;
-	double betasqn=0;
 
 public:
     BayesRRm(Data &data, Options &opt, const long memPageSize);
