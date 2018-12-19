@@ -13,13 +13,16 @@
 #include "distributions_boost.hpp"
 
 #include <Eigen/Eigen>
+#include <memory>
+
+class LimitSequenceGraph;
 
 class BayesRRmz
 {
+    std::unique_ptr<LimitSequenceGraph> flowGraph;
     Data            &data; // data matrices
     Options         &opt;
     const string    bedFile; // bed file
-    const long      memPageSize; // size of memory
     const string    outputFile;
     const unsigned int seed;
     const unsigned int max_iterations;

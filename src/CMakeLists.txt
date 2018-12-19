@@ -47,6 +47,7 @@ add_executable(${PROJECT_NAME}
     parallelalgo.cpp
     samplewriter.cpp
     compression.cpp
+    limitsequencegraph.cpp
 )
 
 find_package(ZLIB REQUIRED)

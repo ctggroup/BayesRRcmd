@@ -9,6 +9,7 @@
 #include "compression.h"
 #include "data.hpp"
 #include "distributions_boost.hpp"
+#include "limitsequencegraph.h"
 #include "options.hpp"
 #include "parallelalgo.h"
 #include "samplewriter.h"
@@ -18,10 +19,10 @@
 #include <random>
 
 BayesRRmz::BayesRRmz(Data &data, Options &opt)
-    : data(data)
+    : flowGraph(new LimitSequenceGraph)
+    , data(data)
     , opt(opt)
     , bedFile(opt.bedFile + ".bed")
-    , memPageSize(memPageSize)
     , outputFile(opt.mcmcSampleFile)
     , seed(opt.seed)
     , max_iterations(opt.chainLength)
@@ -124,8 +125,9 @@ int BayesRRmz::runGibbs()
     components.setZero();
     for (unsigned int iteration = 0; iteration < max_iterations; iteration++) {
         // Output progress
-        if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
-            std::cout << "iteration: " << iteration << std::endl;
+        const auto startTime = std::chrono::high_resolution_clock::now();
+        //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
+            std::cout << "iteration " << iteration << ": ";
 
         const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
         parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
@@ -147,9 +149,6 @@ int BayesRRmz::runGibbs()
                         static_cast<unsigned int>(data.ppbedIndex[marker].size),
                         decompressBuffer,
                         colSize);
-
-//            for (int i = 0; i < 10; ++i)
-//                std::cout << Cx[i] << std::endl;
 
             // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
             parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
@@ -221,6 +220,10 @@ int BayesRRmz::runGibbs()
             sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
             writer.write(sample);
         }
+
+        const auto endTime = std::chrono::high_resolution_clock::now();
+        const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+        std::cout << iterationDuration / double(1000.0) << "s" << std::endl;
     }
 
     const auto t2 = std::chrono::high_resolution_clock::now();
