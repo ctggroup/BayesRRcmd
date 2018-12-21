@@ -59,9 +59,12 @@ class BayesRRmz
     VectorXd beta;       // effect sizes
     VectorXd y_tilde;    // variable containing the adjusted residuals to exclude the effects of a given marker
     VectorXd epsilon;    // variable containing the residuals
+    double betasqn=0;
 
     VectorXd y;
     VectorXd components;
+
+
 
 public:
     BayesRRmz(Data &data, Options &opt);

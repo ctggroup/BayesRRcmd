@@ -137,7 +137,7 @@ int BayesRRmz::runGibbs()
         flowGraph->exec(N, M, markerI);
 
         m0 = int(M) - int(v[0]);
-        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
+        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (betasqn * m0 + v0G * s02G) / (v0G + m0));
 
         if (showDebug)
             printDebugInfo();
@@ -170,10 +170,16 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     const int K(int(cva.size()) + 1);
     const int km1 = K - 1;
     double acum = 0.0;
+    double beta_old;
 
+    beta_old=beta(marker);
     // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-    parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
-
+    if(components(marker)!=0){
+       parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+    }
+    else{
+    	y_tilde=epsilon;
+    }
     // muk for the zeroth component=0
     muk[0] = 0.0;
 
@@ -222,9 +228,15 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
             }
         }
     }
-
+    betasqn+=beta(marker)*beta(marker)-beta_old*beta_old;
+    if(components(marker)!=0){
+    	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+    }
+    else{
+    	epsilon=y_tilde;
+    }
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-    parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+
 }
 
 void BayesRRmz::printDebugInfo() const
