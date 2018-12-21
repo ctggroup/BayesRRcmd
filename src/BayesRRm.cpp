@@ -133,7 +133,7 @@ int BayesRRm::runGibbs()
 
             // TODO: Can we improve things by decompressing a compressed mmap datafile?
             //Cx = getSnpData(marker);
-            const VectorXf &Cx = data.mappedZ.col(marker);
+            const VectorXd &Cx = data.mappedZ.col(marker);
 
             // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
             parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
@@ -225,10 +225,10 @@ VectorXd BayesRRm::getSnpData(unsigned int marker) const
         data.getSnpDataFromBedFileUsingMmap_openmp(bedFile, snpLenByt, memPageSize, marker, normedSnpData);
         return normedSnpData.cast<double>();
     } else {
-        const VectorXf &sourceData = data.mappedZ.col(marker);
+        const VectorXd &sourceData = data.mappedZ.col(marker);
         VectorXd result(sourceData.size());
-        parallelCastDouble(sourceData, result);
-        return result;
+       // parallelCastDouble(sourceData, result);
+        return sourceData;
     }
 }
 

@@ -67,7 +67,7 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         unsigned int nmiss = 0;
 
         // Create some scratch space to preprocess the raw data
-        VectorXf snpData(numKeptInds);
+        VectorXd snpData(numKeptInds);
         float sqNorm = 0.0f;
 
         // Make a note of which individuals have a missing genotype
@@ -121,13 +121,13 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         }
         if (nmiss) {
             for (const auto index : missingIndices)
-                snpData[index] = float(mean);
+                snpData[index] = double(mean);
         }
 
         // Standardize genotypes
         snpData.array() -= snpData.mean();
-        float sqn = snpData.squaredNorm();
-        float std_ = 1.0f / (sqrt(sqn / (float(numKeptInds - 1))));
+        double sqn = snpData.squaredNorm();
+        double std_ = 1.0f / (sqrt(sqn / (double(numKeptInds - 1))));
         snpData.array() *= std_;
 
         // Write out the preprocessed data
@@ -171,22 +171,22 @@ void Data::mapPreprocessBedFile(const string &preprocessedBedFile, const string 
     if (ppBedFd == -1)
         throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
 
-    ppBedMap = reinterpret_cast<float *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
+    ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
     if (ppBedMap == MAP_FAILED)
         throw("Error: Failed to mmap preprocessed bed file");
 
     // Now that the raw data is available, wrap it into the mapped Eigen types using the
     // placement new operator.
     // See https://eigen.tuxfamily.org/dox/group__TutorialMapClass.html#TutorialMapPlacementNew
-    new (&mappedZ) Map<MatrixXf>(ppBedMap, numInds, numIncdSnps);
+    new (&mappedZ) Map<MatrixXd>(ppBedMap, numInds, numIncdSnps);
 }
 
 void Data::unmapPreprocessedBedFile()
 {
     // Unmap the data from the Eigen accessors
-    new (&mappedZ) Map<MatrixXf>(nullptr, 1, 1);
+    new (&mappedZ) Map<MatrixXd>(nullptr, 1, 1);
 
-    const auto ppBedSize = numInds * numIncdSnps * sizeof(float);
+    const auto ppBedSize = numInds * numIncdSnps * sizeof(double);
     munmap(ppBedMap, ppBedSize);
     close(ppBedFd);
 }
@@ -211,7 +211,7 @@ void Data::mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
     if (ppBedFd == -1)
         throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
 
-    ppBedMap = reinterpret_cast<float *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
+    ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
     if (ppBedMap == MAP_FAILED)
         throw("Error: Failed to mmap preprocessed bed file");
 }
