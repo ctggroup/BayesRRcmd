@@ -122,8 +122,11 @@ int BayesRRmz::runGibbs()
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration " << iteration << ": ";
 
-        const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
-        parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
+        //const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
+        //parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
+         epsilon = epsilon.array() + mu;//  we substract previous value
+         mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
+         epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
 
         std::random_shuffle(markerI.begin(), markerI.end());
 
@@ -142,8 +145,9 @@ int BayesRRmz::runGibbs()
         if (showDebug)
             printDebugInfo();
 
-        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
-        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
+        //const double epsilonSqNorm = parallelSquaredNorm(epsilon);
+        //sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
+        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilon.squaredNorm() + v0E * s02E) / (v0E + N));
         pi = dist.dirichilet_rng(v.array() + 1.0);
 
         if (iteration >= burn_in && iteration % thinning == 0) {
@@ -175,7 +179,8 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     beta_old=beta(marker);
     // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
     if(components(marker)!=0){
-       parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+       //parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+    	y_tilde=epsilon+beta_old*Cx.cast<double>();
     }
     else{
     	y_tilde=epsilon;
@@ -188,7 +193,8 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
 
     // We compute the dot product to save computations
-    const double num = parallelDotProduct(Cx, y_tilde);
+   // const double num = parallelDotProduct(Cx, y_tilde);
+    const double num = (Cx.cast<double>().cwiseProduct(y_tilde)).sum();
 
     // muk for the other components is computed according to equaitons
     muk.segment(1, km1) = num / denom.array();
@@ -230,7 +236,8 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     }
     betasqn+=beta(marker)*beta(marker)-beta_old*beta_old;
     if(components(marker)!=0){
-    	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+    	//parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+    	epsilon=y_tilde-beta(marker)*Cx.cast<double>{};
     }
     else{
     	epsilon=y_tilde;
