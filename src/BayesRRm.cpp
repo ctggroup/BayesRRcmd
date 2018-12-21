@@ -83,28 +83,21 @@ void BayesRRm::updateBetas(int marker,const VectorXf &Cx)
             double acum = 0.0;
 
 
-            // TODO: Can we improve things by decompressing a compressed mmap datafile?
+            muk[0] = 0.0;//muk for the zeroth component=0
 
-
-            // muk for the zeroth component=0
-            muk[0] = 0.0;
-
-            // We compute the denominator in the variance expression to save computations
-            const double sigmaEOverSigmaG = sigmaE / sigmaG;
-            denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
-
-            // We compute the dot product to save computations using Thanasis fix
-            const double num = parallelcwiseProduct(Cx, y_tilde);
-
-            // muk for the other components is computed according to equaitons
+            //we compute the denominator in the variance expression to save computations
+            VectorXd denom(K-1);
+            km1=K-1;
+            denom = ((double)N-1) + (sigmaE/sigmaG) * cVaI.segment(1, km1).array();
+            //we compute the dot product to save computations
+            double num = ((Cx.cast<double>()).cwiseProduct(y_tilde)).sum();
+            //muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
 
-            // Update the log likelihood for each component
-            const double logLScale = sigmaG / sigmaE * NM1;
-            logL = pi.array().log(); // First component probabilities remain unchanged
-            logL.segment(1, km1) = logL.segment(1, km1).array()
-                    - 0.5 * ((logLScale * cVa.segment(1, km1).array() + 1).array().log())
-                    + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
+            logL = pi.array().log(); //first component probabilities remain unchanged
+
+            //update the log likelihood for each component
+            logL.segment(1, km1) = logL.segment(1, km1).array() - 0.5 * ((((sigmaG / sigmaE) * (((double)N-1))) * cVa.segment(1, km1).array() + 1).array().log()) + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
 
             double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
 

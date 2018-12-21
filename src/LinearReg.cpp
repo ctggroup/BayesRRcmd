@@ -52,9 +52,14 @@ LinearReg::~LinearReg() {
 
 void LinearReg::sampleGibbsProp(){
 
-	const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
-	parallelStepMuEpsilon(mu,epsilon, sigmaEpsilon, double(N), sigmaE, dist);
-    std::random_shuffle(markerI.begin(), markerI.end());
+	//const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
+	//parallelStepMuEpsilon(mu,epsilon, sigmaEpsilon, double(N), sigmaE, dist);
+
+    epsilon = epsilon.array() + mu;//  we substract previous value
+    mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
+    epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+
+	std::random_shuffle(markerI.begin(), markerI.end());
     for (unsigned int j = 0; j < M; j++) {
 
 
@@ -62,16 +67,22 @@ void LinearReg::sampleGibbsProp(){
     	const VectorXf &Cx = data.mappedZ.col(marker);
         // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
     	double beta_old=beta(marker);
-    	if(beta_old==0) //if beta=0 then there is no need to update y_tilde
-    	 parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+    	if(beta_old!=0) //if beta=0 then there is no need to update y_tilde
+    		  y_tilde = epsilon.array() + (Cx.cast<double>() * beta(marker)).array();
+    	 //parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
     	else
     		y_tilde=epsilon;
     	updateBetas(marker,Cx);
     	 // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
     	if(beta(marker)!=0){
-    		parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+    		//parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+    		epsilon = y_tilde - Cx .cast<double>() * beta(marker);
     		betasqn+=pow(beta(marker),2)-pow(beta_old,2);
     	} //no need to update epsilon if beta==0
+    	else{
+    		epsilon=y_tilde;
+    		betasqn-=pow(beta_old,2);
+    	}
 
     }
     updateHyper();
