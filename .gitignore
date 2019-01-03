@@ -5,3 +5,4 @@ gctb
 *.ppbed
 *.sqnorm
 *.csv
+/build/

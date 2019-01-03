@@ -206,7 +206,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
             - 0.5 * ((logLScale * cVa.segment(1, km1).array() + 1).array().log())
             + 0.5 * (muk.segment(1, km1).array() * num) / sigmaE;
 
-    double p(dist.beta_rng(1,1)); //I use beta(1,1) because I cant be bothered in using the std::random or create my own uniform distribution, I will change it later
+    double p(dist.unif_rng());
 
     if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
         acum = 0;
