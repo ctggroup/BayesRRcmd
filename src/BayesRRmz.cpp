@@ -180,7 +180,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
     // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
     if(components(marker)!=0){
        //parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
-    	y_tilde=epsilon+beta_old*Cx;
+    	y_tilde=epsilon+beta_old*Cx.cast<double>();
     }
     else{
     	y_tilde=epsilon;
@@ -194,7 +194,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 
     // We compute the dot product to save computations
    // const double num = parallelDotProduct(Cx, y_tilde);
-    const double num = (Cx.cwiseProduct(y_tilde)).sum();
+    const double num = (Cx.cast<double>().cwiseProduct(y_tilde)).sum();
 
     // muk for the other components is computed according to equaitons
     muk.segment(1, km1) = num / denom.array();
@@ -237,7 +237,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
     betasqn+=beta(marker)*beta(marker)-beta_old*beta_old;
     if(components(marker)!=0){
     	//parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
-    	epsilon=y_tilde-beta(marker)*Cx();
+    	epsilon=y_tilde-beta(marker)*Cx.cast<double>();
     }
     else{
     	epsilon=y_tilde;
