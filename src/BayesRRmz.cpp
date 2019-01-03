@@ -167,7 +167,7 @@ int BayesRRmz::runGibbs()
     return 0;
 }
 
-void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
+void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
 {
     const unsigned int N(data.numKeptInds);
     const double NM1 = double(N - 1);

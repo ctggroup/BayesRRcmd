@@ -14,7 +14,7 @@ LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
     auto f = [this] (Message msg) -> Message {
         //std::cout << "Decompress column " << msg.id << " " << msg.marker << std::endl;
 
-        const unsigned int colSize = msg.numKeptInds * sizeof(double);
+        const unsigned int colSize = msg.numKeptInds * sizeof(float);
         msg.decompressBuffer = new unsigned char[colSize];
 
         extractData(reinterpret_cast<unsigned char *>(m_bayes->data.ppBedMap) + m_bayes->data.ppbedIndex[msg.marker].pos,
@@ -44,7 +44,7 @@ LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
         //std::cout << "Sampling for id: " << msg.id << std::endl;
 
         // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(msg.decompressBuffer, msg.numKeptInds);
+        Map<VectorXf> Cx(reinterpret_cast<float *>(msg.decompressBuffer), msg.numKeptInds);
         m_bayes->processColumn(msg.marker, Cx);
 
         // Cleanup
