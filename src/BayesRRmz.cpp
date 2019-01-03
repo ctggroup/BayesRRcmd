@@ -237,7 +237,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
     betasqn+=beta(marker)*beta(marker)-beta_old*beta_old;
     if(components(marker)!=0){
     	//parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
-    	epsilon=y_tilde-beta(marker)*Cx;
+    	epsilon=y_tilde-beta(marker)*Cx();
     }
     else{
     	epsilon=y_tilde;
