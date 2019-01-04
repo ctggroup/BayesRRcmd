@@ -122,12 +122,15 @@ int BayesRRmz::runGibbs()
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration " << iteration << ": ";
 
-        //const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
-        //parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
+        //
+#ifdef PARUP
+            const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
+            parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
+#else
          epsilon = epsilon.array() + mu;//  we substract previous value
          mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
          epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
-
+#endif
         std::random_shuffle(markerI.begin(), markerI.end());
 
         m0 = 0;
@@ -144,10 +147,12 @@ int BayesRRmz::runGibbs()
 
         if (showDebug)
             printDebugInfo();
-
-        //const double epsilonSqNorm = parallelSquaredNorm(epsilon);
-        //sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
-        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilon.squaredNorm() + v0E * s02E) / (v0E + N));
+#ifdef PARUP
+        const double epsilonSqNorm = parallelSquaredNorm(epsilon);
+#else
+        const double epsilonSqNorm = epsilon.squaredNorm();
+#endif
+        sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
         pi = dist.dirichilet_rng(v.array() + 1.0);
 
         if (iteration >= burn_in && iteration % thinning == 0) {
@@ -179,8 +184,11 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     beta_old=beta(marker);
     // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
     if(components(marker)!=0){
-       //parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+#ifdef PARUP
+    	parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+#else
     	y_tilde=epsilon+beta_old*Cx.cast<double>();
+#endif
     }
     else{
     	y_tilde=epsilon;
@@ -236,8 +244,11 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     }
     betasqn+=beta(marker)*beta(marker)-beta_old*beta_old;
     if(components(marker)!=0){
-    	//parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+#ifdef PARUP
+    	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+#else
     	epsilon=y_tilde-beta(marker)*Cx.cast<double>();
+#endif
     }
     else{
     	epsilon=y_tilde;

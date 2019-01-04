@@ -84,6 +84,7 @@ void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCoun
 
     epsilon = (y).array() - mu;
     sigmaE = epsilon.squaredNorm() / individualCount * 0.5;
+    betasqn=0;
 }
 
 int BayesRRm::runGibbs()
@@ -118,9 +119,15 @@ int BayesRRm::runGibbs()
         if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration: " << iteration << std::endl;
 
+
+#ifdef PARUP
         const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
         parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
-
+#else
+        epsilon = epsilon.array() + mu;//  we substract previous value
+        mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
+        epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+#endif
         std::random_shuffle(markerI.begin(), markerI.end());
 
         m0 = 0;
@@ -130,14 +137,22 @@ int BayesRRm::runGibbs()
         for (unsigned int j = 0; j < M; j++) {
             double acum = 0.0;
             const auto marker = markerI[j];
-
+            double beta_old=beta(marker);
             // TODO: Can we improve things by decompressing a compressed mmap datafile?
             //Cx = getSnpData(marker);
             const VectorXf &Cx = data.mappedZ.col(marker);
 
             // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-            parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
-
+            if(components(marker)!=0){
+#ifdef PARUP
+            	parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
+#else
+                	y_tilde=epsilon+beta_old*Cx.cast<double>();
+#endif
+                }
+                else{
+                	y_tilde=epsilon;
+                }
             // muk for the zeroth component=0
             muk[0] = 0.0;
 
@@ -146,8 +161,11 @@ int BayesRRm::runGibbs()
             denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
 
             // We compute the dot product to save computations
+#ifdef PARUP
             const double num = parallelDotProduct(Cx, y_tilde);
-
+#else
+            const double num = (Cx.cast<double>().cwiseProduct(y_tilde)).sum();
+#endif
             // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
 
@@ -186,18 +204,30 @@ int BayesRRm::runGibbs()
                     }
                 }
             }
-
+            betasqn+=beta(marker)*beta(marker)-beta_old*beta_old;
             // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-            parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+            if(components(marker)!=0){
+#ifdef PARUP
+            	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
+#else
+               	epsilon=y_tilde-beta(marker)*Cx.cast<double>();
+#endif
+               }
+               else{
+               	epsilon=y_tilde;
+               }
         }
 
         m0 = int(M) - int(v[0]);
-        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (beta.col(0).squaredNorm() * m0 + v0G * s02G) / (v0G + m0));
+        sigmaG = dist.inv_scaled_chisq_rng(v0G + m0, (betasqn * m0 + v0G * s02G) / (v0G + m0));
 
         if (showDebug)
             printDebugInfo();
-
+#ifdef PARUP
         const double epsilonSqNorm = parallelSquaredNorm(epsilon);
+#else
+        const double epsilonSqNorm=epsilon.squaredNorm();
+#endif
         sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
         pi = dist.dirichilet_rng(v.array() + 1.0);
 

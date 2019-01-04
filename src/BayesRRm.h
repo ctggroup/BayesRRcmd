@@ -34,6 +34,7 @@ class BayesRRm
     Distributions_boost dist;
     bool usePreprocessedData;
     bool showDebug;
+    double betasqn;
 
     // Component variables
     VectorXd priorPi;   // prior probabilities for each component
