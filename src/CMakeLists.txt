@@ -17,7 +17,12 @@ endif()
 
 # Silence some annoying warnings form Eigen with gcc >= 6.1
 SET(GCC_EIGEN_COMPILE_FLAGS "-Wno-ignored-attributes -Wno-deprecated-declarations -DEIGEN_NO_DEBUG")
-SET(CMAKE_CXX_FLAGS "-msse2 ${CMAKE_CXX_FLAGS} ${GCC_EIGEN_COMPILE_FLAGS}")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_EIGEN_COMPILE_FLAGS}")
+
+#conditional compilation if using parallelised or vectorised reductions
+if(PARUP)
+  add_definitions(-DPARUP)
+endif()
 
 find_package(MPI REQUIRED)
 
