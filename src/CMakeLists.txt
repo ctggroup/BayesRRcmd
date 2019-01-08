@@ -16,7 +16,13 @@ if(COMPILER_SUPPORTS_MARCH_NATIVE)
 endif()
 
 # Silence some annoying warnings form Eigen with gcc >= 6.1
-SET(GCC_EIGEN_COMPILE_FLAGS "-Wno-ignored-attributes -Wno-deprecated-declarations -DEIGEN_NO_DEBUG")
+SET(GCC_EIGEN_COMPILE_FLAGS "-Wno-ignored-attributes -Wno-deprecated-declarations -DEIGEN_NO_DEBUG  -DEIGEN_UNROLLING_LIMIT=1000")
+
+if(FAST)
+	SET(CMAKE_CXX_FLAGS "-O3 -ffast-math  -funroll-loops ${CMAKE_CXX_FLAGS}")
+endif()
+
+
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_EIGEN_COMPILE_FLAGS}")
 
 #conditional compilation if using parallelised or vectorised reductions

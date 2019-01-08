@@ -201,9 +201,12 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     denom = NM1 + sigmaEOverSigmaG * cVaI.segment(1, km1).array();
 
     // We compute the dot product to save computations
-   // const double num = parallelDotProduct(Cx, y_tilde);
-    const double num = (Cx.cast<double>().cwiseProduct(y_tilde)).sum();
-
+    // We compute the dot product to save computations
+#ifdef PARUP
+      const double num = parallelDotProduct(Cx, y_tilde);
+#else
+      const double num = Cx.cast<double>().dot(y_tilde);
+#endif
     // muk for the other components is computed according to equaitons
     muk.segment(1, km1) = num / denom.array();
 

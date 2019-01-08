@@ -164,7 +164,7 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             const double num = parallelDotProduct(Cx, y_tilde);
 #else
-            const double num = (Cx.cast<double>().cwiseProduct(y_tilde)).sum();
+            const double num = (Cx.cast<double>().dot(y_tilde));
 #endif
             // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
