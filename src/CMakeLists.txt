@@ -19,7 +19,7 @@ endif()
 SET(GCC_EIGEN_COMPILE_FLAGS "-Wno-ignored-attributes -Wno-deprecated-declarations -DEIGEN_NO_DEBUG  -DEIGEN_UNROLLING_LIMIT=1000")
 
 if(FAST)
-	SET(CMAKE_CXX_FLAGS "-O3 -ffast-math  -funroll-loops ${CMAKE_CXX_FLAGS}")
+	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffast-math  -funroll-loops ")
 endif()
 
 
