@@ -482,7 +482,7 @@ int BayesW::runGibbs_notPreprocessed()
 
 					// 3. Alpha
 					//cout << "Sample alpha" << endl;
-					xl = 0.0; xr = 4000.0;
+					xl = 0.0; xr = 400.0;
 					new_xinit << (used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*2;  // New values for abscissae evaluation
 					assignArray(p_xinit,new_xinit);
 
