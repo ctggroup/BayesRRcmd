@@ -113,8 +113,7 @@ void BayesRRg::runGibbs() {
 	    VectorXd epsilon(N); // variable containing the residuals
 
 	    //sampler variables
-	    //VectorXd sample(2*M+3+numberGroups+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
-	    VectorXd sample(2*M+3+numberGroups);
+	    VectorXd sample(2*M+3+numberGroups+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
 	    std::vector<int> markerI;
 	    for (int i=0; i<M; ++i) {
 	      markerI.push_back(i);
@@ -259,8 +258,7 @@ void BayesRRg::runGibbs() {
 	        if(iteration >= burn_in)
 	        {
 	        	if(iteration % thinning == 0){
-	        		//sample<< iteration,mu,beta,sigmaE,components,sigmaGG,epsilon;
-	        		sample<< iteration,mu,beta,sigmaE,components,sigmaGG;
+	        		sample<< iteration,mu,beta,sigmaE,components,sigmaGG,epsilon;
 	        		q.enqueue(sample);
 	        	}
 
@@ -279,8 +277,8 @@ void BayesRRg::runGibbs() {
 	  queueFull=0;
 	  std::ofstream outFile;
 	  outFile.open(outputFile);
-	  //VectorXd sampleq(2*M+3+numberGroups+N);
-	  VectorXd sampleq(2*M+3+numberGroups);
+	  VectorXd sampleq(2*M+3+numberGroups+N);
+
 	  IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", "", "");
 	  outFile<< "iteration,"<<"mu,";
 	  for(unsigned int i = 0; i < M; ++i){
@@ -294,11 +292,11 @@ void BayesRRg::runGibbs() {
 	  for(unsigned int i = 0; i < numberGroups; ++i){
 	    outFile << "sigmaG[" << (i+1) << "],";
 	  }
-	  //for(unsigned int i = 0; i < (N-1); ++i){
-	  //  outFile << "epsilon[" << (i+1) << "],";
-	  //}
-      //outFile << "epsilon[" << N << "]";
-	  //outFile<<"\n";
+	  for(unsigned int i = 0; i < (N-1); ++i){
+	    outFile << "epsilon[" << (i+1) << "],";
+	  }
+      outFile << "epsilon[" << N << "]";
+	  outFile<<"\n";
 
 	  while(!flag ){
 	    if(q.try_dequeue(sampleq))
