@@ -245,7 +245,6 @@ void BayesRRg::runGibbs() {
 
 	    	}
 
-	        //cout<<sigmaE<<endl;
 
 	        sigmaE=dist.inv_scaled_chisq_rng(v0E+N,((epsilon).squaredNorm()+v0E*s02E)/(v0E+N));
 
@@ -254,10 +253,7 @@ void BayesRRg::runGibbs() {
 	        	m0=v.row(i).sum()-v.row(i)(0);
 	        	sigmaGG[i]=dist.inv_scaled_chisq_rng(v0G+m0,(betaAcum(i)*m0+v0G*s02G)/(v0G+m0));
 	        	pi.row(i)=dist.dirichilet_rng(v.row(i).array() + 1.0);
-
-
 	        }
-	        //cout<<v<<endl;
 
 	        if(iteration >= burn_in)
 	        {
@@ -295,11 +291,11 @@ void BayesRRg::runGibbs() {
 	  for(unsigned int i = 0; i < numberGroups; ++i){
 	    outFile << "sigmaG[" << (i+1) << "],";
 	  }
-	  for(unsigned int i = 0; i < (N-1); ++i){
-	    outFile << "epsilon[" << (i+1) << "],";
-	  }
-      outFile << "epsilon[" << N << "]";
-	  outFile<<"\n";
+	  //for(unsigned int i = 0; i < (N-1); ++i){
+	  //  outFile << "epsilon[" << (i+1) << "],";
+	  //}
+      //outFile << "epsilon[" << N << "]";
+	  //outFile<<"\n";
 
 	  while(!flag ){
 	    if(q.try_dequeue(sampleq))
