@@ -28,7 +28,7 @@ double parallelStepAndSumEpsilon(VectorXd &epsilon, double mu)
                            apply, combine);
 }
 
-void parallelStepMuEpsilon(double mu, VectorXd &epsilon, double sigmaEpsilon, double N, double sigmaE, Distributions_boost &dist)
+void parallelStepMuEpsilon(double &mu, VectorXd &epsilon, double sigmaEpsilon, double N, double sigmaE, Distributions_boost &dist)
 {
     const double sigmaEpsilonOverN = sigmaEpsilon / N;
     const double sigmaEOverN = sigmaE / N;
