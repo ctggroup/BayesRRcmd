@@ -67,7 +67,7 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         unsigned int nmiss = 0;
 
         // Create some scratch space to preprocess the raw data
-        VectorXf snpData(numKeptInds);
+        VectorXd snpData(numKeptInds);
 
         // Make a note of which individuals have a missing genotype
         vector<long> missingIndices;
@@ -120,18 +120,18 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         }
         if (nmiss) {
             for (const auto index : missingIndices)
-                snpData[index] = float(mean);
+                snpData[index] = mean;
         }
 
         // Standardize genotypes
         snpData.array() -= snpData.mean();
-        float sqn = snpData.squaredNorm();
-        float std_ = 1.0f / (sqrt(sqn / (float(numKeptInds - 1))));
-        snpData.array() *= std_;
+        const auto sqn = snpData.squaredNorm();
+        const auto sigma = 1.0 / (sqrt(sqn / (double(numKeptInds - 1))));
+        snpData.array() *= sigma;
 
         // Write out the preprocessed data
         if (!compress) {
-            ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(float));
+            ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(double));
         } else {
             const unsigned long compressedSize = compressData(snpData, compressedBuffer, maxCompressedOutputSize);
             ppBedOutput.write(reinterpret_cast<char *>(compressedBuffer), long(compressedSize));
