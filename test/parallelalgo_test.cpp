@@ -23,11 +23,11 @@ TEST(ParallelalgoTest,testparallelSquaredNorm){
 //test that the parallel dot product is equivalent to the vectorised dot product
 TEST(ParallelalgoTest,testparallelDotProduct){
 	VectorXd y_tilde(N);
-	 VectorXf column(N);
+    VectorXd column(N);
 	y_tilde.setRandom();
 	column.setRandom();
 	const double par=parallelDotProduct(column,y_tilde);
-	const double vec=(column.cast<double>()).dot(y_tilde);
+    const double vec=column.dot(y_tilde);
 	ASSERT_NEAR (par, vec,1e-8);
 }
 
@@ -101,12 +101,9 @@ TEST(ParallelalgoTest,testparallelStepMuEpsilon_muisNormal){
     ASSERT_TRUE(residualMean<1e-6);
 }
 
-TEST(ParallelalgoTest,testparallelCastDouble){
-	//TODO implement test
-}
 TEST(ParallelalgoTest,parallelUpdateYTilde){
 	VectorXd epsilon(N);
-	VectorXf column(N);
+    VectorXd column(N);
 	VectorXd y_tilde(N);
 	double beta;
 	VectorXd y_tilde_expect(N);
@@ -117,13 +114,13 @@ TEST(ParallelalgoTest,parallelUpdateYTilde){
 	column.setRandom();
 	y_tilde.setRandom();
 	beta=0.1;
-	y_tilde_expect=epsilon+beta*column.cast<double>();
+    y_tilde_expect=epsilon+beta*column;
 	parallelUpdateYTilde(y_tilde, epsilon,  column,  beta);
 	ASSERT_TRUE (y_tilde.isApprox(y_tilde_expect));
 }
 TEST(ParallelalgoTest,parallelUpdateEpsilon){
 	VectorXd epsilon(N);
-	VectorXf column(N);
+    VectorXd column(N);
 	VectorXd y_tilde(N);
 	double beta;
 	VectorXd epsilon_expect(N);
@@ -134,7 +131,7 @@ TEST(ParallelalgoTest,parallelUpdateEpsilon){
 	column.setRandom();
 	y_tilde.setRandom();
 	beta=0.1;
-	epsilon_expect=y_tilde-beta*column.cast<double>();
+    epsilon_expect=y_tilde-beta*column;
 	parallelUpdateEpsilon(epsilon, y_tilde,  column,  beta);
 	ASSERT_TRUE (epsilon.isApprox(epsilon_expect));
 }
