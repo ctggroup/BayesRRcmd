@@ -6,51 +6,48 @@
  */
 
 #include<gtest/gtest.h>
-#include<parallelalgo.h>
+#include "parallelalgo.h"
 #include<Eigen/Eigen>
-#include<distributions_boost.hpp>"
+#include<distributions_boost.hpp>
 //we test that the parallel squared norm returns the same value as the squared norm
 const int N=300000;
 const int samples=100;
 //test that parallel squared norm is equivalent to vectorised squared norm
 TEST(ParallelalgoTest,testparallelSquaredNorm){
-	const VectorXd input(N);
+	VectorXd input(N);
 	input.setRandom();
 	const double par=parallelSquaredNorm(input);
 	const double vec=input.squaredNorm();
-	ASSERT_DOUBLE_EQ (par, vec);
+	ASSERT_NEAR (par, vec,1e-8);
 }
 //test that the parallel dot product is equivalent to the vectorised dot product
 TEST(ParallelalgoTest,testparallelDotProduct){
-	const VectorXd y_tilde(N);
-	const VectorXf column(N);
+	VectorXd y_tilde(N);
+	 VectorXf column(N);
 	y_tilde.setRandom();
 	column.setRandom();
 	const double par=parallelDotProduct(column,y_tilde);
 	const double vec=(column.cast<double>()).dot(y_tilde);
-	ASSERT_DOUBLE_EQ (par, vec);
+	ASSERT_NEAR (par, vec,1e-8);
 }
 
 //test thtat the parallel sum(epsilon-mu) is equivalent to the parallel verion
 TEST(ParallelalgoTest,testparallelStepAndSumEpsilon){
 	VectorXd epsilon(N);
-	const double mu;
-	const double epsilon_expect(N);
+	const double mu=0.1;
 	epsilon.setRandom();
-	mu=0.1;
 
-	epsilon_expect=epsilon.array()+mu;
-    const double vec=epsilon.sum();
+    const double vec=(epsilon.array()+mu).sum();
     const double par=parallelStepAndSumEpsilon(epsilon,mu);
-    ASSERT_DOUBLE_EQ (par, vec);
+    ASSERT_NEAR (par, vec,1e-8);
 }
 //test that mu is updated by the parallel funtion
 TEST(ParallelalgoTest,testparallelStepMuEpsilon_muUpdated){
 	VectorXd epsilon(N);
-	const double mu_old;
-	double mu;
+	double mu_old;
+    double mu;
 	const double sigmaE=0.5;
-	const double sigmaEpsilon;
+	double sigmaEpsilon;
 	Distributions_boost dist(123);
 	epsilon.setRandom();
 	mu_old=0.1;
@@ -63,30 +60,33 @@ TEST(ParallelalgoTest,testparallelStepMuEpsilon_muUpdated){
 //test that epsilon is updated by the parallel funtion
 TEST(ParallelalgoTest,testparallelStepMuEpsilon_epsilonUpdated){
 	VectorXd epsilon(N);
-	const double mu_old;
+	double mu_old;
 	double mu;
 	VectorXd epsilon_expect(N);
 	const double sigmaE=0.5;
-	const double sigmaEpsilon;
+	double sigmaEpsilon;
 	Distributions_boost dist(123);
-	epsilon.setRandom();
-	mu=0.1;
+	Distributions_boost dist_2(123);
+	epsilon.Random();
 	epsilon_expect=epsilon;
-	sigmaEpsilon=(epsilon.array()-mu).sum();
-	parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon,  N, sigmaE,dist);
-	epsilon_expect.array()-=mu;
+	sigmaEpsilon=(epsilon.array()).sum();
+	mu_old=dist.norm_rng(sigmaEpsilon/(double)N, sigmaE/(double)N);
+
+	epsilon_expect=epsilon.array()-mu_old;
+	mu=0.1;
+	parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon,  N, sigmaE,dist_2);
 	ASSERT_TRUE (epsilon.isApprox(epsilon_expect));
 }
 //test that mu comes from the correct distribution.
 TEST(ParallelalgoTest,testparallelStepMuEpsilon_muisNormal){
 	VectorXd epsilon(N);
 	VectorXd muVec(samples);
-	const double mu_old;
+	 double mu_old;
 	double mu;
 	VectorXd epsilon_old(N);
 	const double sigmaE=0.5;
-	const double sigmaEpsilon;
-	const double residualMean;
+	double sigmaEpsilon;
+	double residualMean;
 	Distributions_boost dist(123);
 	epsilon_old.setRandom();
     mu_old=0.1;
@@ -111,7 +111,7 @@ TEST(ParallelalgoTest,parallelUpdateYTilde){
 	double beta;
 	VectorXd y_tilde_expect(N);
 	const double sigmaE=0.5;
-	const double sigmaEpsilon;
+	double sigmaEpsilon;
 	Distributions_boost dist(123);
 	epsilon.setRandom();
 	column.setRandom();
@@ -128,7 +128,7 @@ TEST(ParallelalgoTest,parallelUpdateEpsilon){
 	double beta;
 	VectorXd epsilon_expect(N);
 	const double sigmaE=0.5;
-	const double sigmaEpsilon;
+	double sigmaEpsilon;
 	Distributions_boost dist(123);
 	epsilon.setRandom();
 	column.setRandom();
