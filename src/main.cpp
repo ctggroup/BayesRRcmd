@@ -118,7 +118,6 @@ int main(int argc, const char * argv[])
             data.preprocessBedFile(opt.bedFile + ".bed",
                                    opt.bedFile + ".ppbed",
                                    opt.bedFile + ".ppbedindex",
-                                   opt.bedFile + ".sqnorm",
                                    opt.compress);
             clock_t end = clock();
             printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));

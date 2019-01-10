@@ -28,7 +28,7 @@ Data::Data()
 {
 }
 
-void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, const string &sqNormFile, bool compress)
+void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress)
 {
     cout << "Preprocessing bed file: " << bedFile << ", Compress data = " << (compress ? "yes" : "no") << endl;
     if (numIncdSnps == 0)
@@ -68,7 +68,6 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
 
         // Create some scratch space to preprocess the raw data
         VectorXf snpData(numKeptInds);
-        float sqNorm = 0.0f;
 
         // Make a note of which individuals have a missing genotype
         vector<long> missingIndices;
