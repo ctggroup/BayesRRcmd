@@ -41,6 +41,25 @@ if(OPENMP_FOUND)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif(OPENMP_FOUND)
 
+
+add_library(libbrr-dev
+    BayesRRhp.cpp
+    BayesRRpp.cpp
+    BayesRRm.cpp
+    BayesRRmz.cpp
+    BayesRMmapToy.cpp
+    BayesRRtoy.cpp
+    data.cpp
+    distributions_boost.cpp
+    gadgets.cpp
+    gctb.cpp
+    mympi.cpp
+    options.cpp
+    parallelalgo.cpp
+    samplewriter.cpp
+    compression.cpp
+    limitsequencegraph.cpp)
+
 add_executable(${PROJECT_NAME}
     main.cpp
     BayesRRhp.cpp
@@ -73,6 +92,7 @@ tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++11 tbb_cpf
 find_package(TBB REQUIRED tbb_preview)
 
 target_link_libraries(${PROJECT_NAME} ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS})
+target_link_libraries(libbrr-dev ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS})
 
 if(MPI_COMPILE_FLAGS)
   set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -84,5 +104,8 @@ if(MPI_LINK_FLAGS)
     LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
+set(${PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_SOURCE_DIR} ${PROJECT_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
+    
+ 
 
 #target_link_libraries(${PROJECT_NAME} Qt5::Core)
