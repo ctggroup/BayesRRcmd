@@ -159,7 +159,7 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
     cout << "Genotype data for " << numKeptInds << " individuals and " << numIncdSnps << " SNPs are included from [" + bedFile + "]." << endl;
 }
 
-void Data::mapPreprocessBedFile(const string &preprocessedBedFile, const string &sqNormFile)
+void Data::mapPreprocessBedFile(const string &preprocessedBedFile)
 {
     // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
     // that we would otherwise get as intermediate variables!

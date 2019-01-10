@@ -185,7 +185,7 @@ public:
     unsigned numChroms;
 
     void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress);
-    void mapPreprocessBedFile(const string &preprocessedBedFile, const string &sqNormFile);
+    void mapPreprocessBedFile(const string &preprocessedBedFile);
     void unmapPreprocessedBedFile();
 
     void mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
