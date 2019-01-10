@@ -122,8 +122,8 @@ public:
 
     // mmap related data
     int ppBedFd;
-    float *ppBedMap;
-    Map<MatrixXf> mappedZ;
+    double *ppBedMap;
+    Map<MatrixXd> mappedZ;
     PpBedIndex ppbedIndex;
 
     // Original data

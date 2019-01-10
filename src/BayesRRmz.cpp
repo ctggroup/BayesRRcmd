@@ -172,7 +172,7 @@ int BayesRRmz::runGibbs()
     return 0;
 }
 
-void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
+void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 {
     const unsigned int N(data.numKeptInds);
     const double NM1 = double(N - 1);
@@ -181,17 +181,17 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
     double acum = 0.0;
     double beta_old;
 
-    beta_old=beta(marker);
+    beta_old = beta(marker);
+
     // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-    if(components(marker)!=0){
+    if (components(marker) != 0.0) {
 #ifdef PARUP
     	parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 #else
-    	y_tilde=epsilon+beta_old*Cx.cast<double>();
+        y_tilde = epsilon + beta_old * Cx;
 #endif
-    }
-    else{
-    	y_tilde=epsilon;
+    } else {
+        y_tilde = epsilon;
     }
     // muk for the zeroth component=0
     muk[0] = 0.0;
@@ -205,7 +205,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
 #ifdef PARUP
       const double num = parallelDotProduct(Cx, y_tilde);
 #else
-      const double num = Cx.cast<double>().dot(y_tilde);
+      const double num = Cx.dot(y_tilde);
 #endif
     // muk for the other components is computed according to equaitons
     muk.segment(1, km1) = num / denom.array();
@@ -246,15 +246,15 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXf> &Cx)
         }
     }
     betasqn+=beta(marker)*beta(marker)-beta_old*beta_old;
-    if(components(marker)!=0){
+
+    if (components(marker) != 0.0) {
 #ifdef PARUP
     	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
 #else
-    	epsilon=y_tilde-beta(marker)*Cx.cast<double>();
+        epsilon = y_tilde - beta(marker) * Cx;
 #endif
-    }
-    else{
-    	epsilon=y_tilde;
+    } else {
+        epsilon = y_tilde;
     }
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
