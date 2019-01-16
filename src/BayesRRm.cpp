@@ -147,7 +147,7 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             	parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 #else
-                	y_tilde=epsilon+beta_old*Cx.cast<double>();
+                	y_tilde=epsilon+beta_old*Cx;
 #endif
                 }
                 else{
@@ -164,7 +164,7 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             const double num = parallelDotProduct(Cx, y_tilde);
 #else
-            const double num = (Cx.cast<double>().dot(y_tilde));
+            const double num = (Cx.dot(y_tilde));
 #endif
             // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
@@ -210,7 +210,7 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
 #else
-               	epsilon=y_tilde-beta(marker)*Cx.cast<double>();
+               	epsilon=y_tilde-beta(marker)*Cx;
 #endif
                }
                else{
@@ -268,6 +268,6 @@ void BayesRRm::printDebugInfo() const
     cout << "sigmaG: " << sigmaG << "\n";
     cout << "y mean: " << y.mean() << "\n";
     cout << "y sd: " << sqrt(y.squaredNorm() / (double(N - 1))) << "\n";
-    cout << "x mean " << Cx.mean() << "\n";
-    cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
+   // cout << "x mean " << Cx.mean() << "\n";
+ //   cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
 }
