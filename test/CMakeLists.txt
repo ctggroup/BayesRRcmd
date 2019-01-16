@@ -31,9 +31,46 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
   include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
+
+
+find_package(MPI REQUIRED)
+
+include_directories(${MPI_INCLUDE_PATH})
+
+include(FindOpenMP)
+if(OPENMP_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif(OPENMP_FOUND)
+
+
+
 # Now simply link against gtest or gtest_main as needed. 
 
-add_executable(test parallelalgo_test.cpp)
+add_executable(test parallelalgo_test.cpp Brrcmdtest.cpp)
 
-target_link_libraries(test gtest_main libbrr-dev )
+
+find_package(ZLIB REQUIRED)
+if(ZLIB_FOUND)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  target_link_libraries(test ${ZLIB_LIBRARIES})
+endif(ZLIB_FOUND)
+
+
+set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../tbb)
+include(${TBB_ROOT}/cmake/TBBBuild.cmake)
+tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++11 tbb_cpf=1)
+find_package(TBB REQUIRED tbb_preview)
+
+
+target_link_libraries(test gtest_main libbrr-dev ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS} )
+
+if(MPI_COMPILE_FLAGS)
+  set_target_properties(test PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+endif()
+
+
+
 add_test(NAME example_test COMMAND test)

@@ -84,6 +84,7 @@ find_package(ZLIB REQUIRED)
 if(ZLIB_FOUND)
   include_directories(${ZLIB_INCLUDE_DIRS})
   target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
+  target_link_libraries(libbrr-dev ${ZLIB_LIBRARIES})
 endif(ZLIB_FOUND)
 
 set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../tbb)
@@ -97,10 +98,14 @@ target_link_libraries(libbrr-dev ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS})
 if(MPI_COMPILE_FLAGS)
   set_target_properties(${PROJECT_NAME} PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+    set_target_properties(libbrr-dev PROPERTIES
+    COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 
 if(MPI_LINK_FLAGS)
   set_target_properties(${PROJECT_NAME} PROPERTIES
+    LINK_FLAGS "${MPI_LINK_FLAGS}")
+    set_target_properties(libbrr-dev PROPERTIES
     LINK_FLAGS "${MPI_LINK_FLAGS}")
 endif()
 
