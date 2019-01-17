@@ -1702,6 +1702,3 @@ void Data::readLeftTruncationFile(const string& ltruncFile){
 //    cout << "Read LD matrix for " << numIncdSnps << " SNPs (time used: " << timer.format(timer.getElapse()) << ")." << endl;
 //    
 //}
-
-=======
->>>>>>> nothreads

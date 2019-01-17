@@ -69,9 +69,6 @@ add_executable(${PROJECT_NAME}
     BayesW.cpp
     BayesW_arms.cpp
     BayesRRmz.cpp
-    BayesRRgz.cpp
-    BayesRMmapToy.cpp
-    BayesRRtoy.cpp
     data.cpp
     distributions_boost.cpp
     gadgets.cpp

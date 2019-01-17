@@ -9,7 +9,7 @@
 
 #include <iostream>
 #include "gctb.hpp"
-#include "BayesRMmapToy.hpp"
+//#include "BayesRMmapToy.hpp"
 #include <mpi.h>
 #include <string>
 #include "BayesRRm.h"
@@ -17,7 +17,7 @@
 #include "BayesRRhp.h"
 #include "BayesRRpp.h"
 #include "BayesRRg.h"
-#include "BayesRRgz.h"
+//#include "BayesRRgz.h"
 #include "BayesW.hpp"
 
 using namespace std;
@@ -145,8 +145,7 @@ int main(int argc, const char * argv[]) {
     	data.preprocessBedFile(opt.bedFile + ".bed",
     			opt.bedFile + ".ppbed",
 				opt.bedFile + ".ppbedindex",
-				opt.bedFile + ".sqnorm",
-				opt.compress);
+								opt.compress);
     	clock_t end = clock();
     	printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
     	cout << endl;
@@ -176,8 +175,8 @@ int main(int argc, const char * argv[]) {
         	}*/ else if (opt.bayesType == "gbayes") {
         		//data.readGroupFile2(opt.groupFile);
         		//Eigen::VectorXi G=data.G;
-        		BayesRRgz mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-        		mmapToy.runGibbs();
+  //      		BayesRRgz mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+    //    		mmapToy.runGibbs();
         	}/*else if (opt.bayesType == "BayesW") {
         		//data.readGroupFile2(opt.groupFile);
         		//Eigen::VectorXi G=data.G;
@@ -187,7 +186,7 @@ int main(int argc, const char * argv[]) {
         } else {
         	cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
         	clock_t start_bed = clock();
-        	data.mapPreprocessBedFile(opt.bedFile + ".ppbed", opt.bedFile + ".sqnorm");
+        	data.mapPreprocessBedFile(opt.bedFile + ".ppbed");
         	clock_t end = clock();
         	printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
         	cout << endl;
