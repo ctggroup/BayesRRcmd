@@ -1,8 +1,10 @@
 /Debug/
 *.o
 CMakeLists.txt.user
+CMakeLists.txt.user.*
 gctb
 *.ppbed
 *.sqnorm
 *.csv
 /Release/
+/build/

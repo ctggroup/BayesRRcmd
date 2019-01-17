@@ -13,13 +13,17 @@
 #include "distributions_boost.hpp"
 
 #include <Eigen/Eigen>
+#include <memory>
+
+class LimitSequenceGraph;
 
 class BayesRRmz
 {
+    friend class LimitSequenceGraph;
+    std::unique_ptr<LimitSequenceGraph> flowGraph;
     Data            &data; // data matrices
     Options         &opt;
     const string    bedFile; // bed file
-    const long      memPageSize; // size of memory
     const string    outputFile;
     const unsigned int seed;
     const unsigned int max_iterations;
@@ -55,14 +59,18 @@ class BayesRRmz
     VectorXd beta;       // effect sizes
     VectorXd y_tilde;    // variable containing the adjusted residuals to exclude the effects of a given marker
     VectorXd epsilon;    // variable containing the residuals
+    double betasqn=0;
 
     VectorXd y;
-    VectorXd Cx;
+    VectorXd components;
+
+
 
 public:
     BayesRRmz(Data &data, Options &opt);
     virtual ~BayesRRmz();
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
+    void processColumn(unsigned int marker, const Map<VectorXd> &Cx);
 
     void setDebugEnabled(bool enabled) { showDebug = enabled; }
     bool isDebugEnabled() const { return showDebug; }

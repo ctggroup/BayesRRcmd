@@ -122,8 +122,8 @@ public:
 
     // mmap related data
     int ppBedFd;
-    float *ppBedMap;
-    Map<MatrixXf> mappedZ;
+    double *ppBedMap;
+    Map<MatrixXd> mappedZ;
     PpBedIndex ppbedIndex;
 
     // Original data
@@ -190,8 +190,8 @@ public:
     unsigned numKeptInds;
     unsigned numChroms;
 
-    void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, const string &sqNormFile, bool compress);
-    void mapPreprocessBedFile(const string &preprocessedBedFile, const string &sqNormFile);
+    void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress);
+    void mapPreprocessBedFile(const string &preprocessedBedFile);
     void unmapPreprocessedBedFile();
 
     void mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
