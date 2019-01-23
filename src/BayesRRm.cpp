@@ -91,6 +91,7 @@ void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCoun
 
 int BayesRRm::runGibbs()
 {
+
     const unsigned int M(data.numIncdSnps);
     const unsigned int N(data.numKeptInds);
     const double NM1 = double(N - 1);
@@ -118,9 +119,11 @@ int BayesRRm::runGibbs()
     components.setZero();
 #ifndef PARUP
     cout<<"BayesR sparse"<<endl;
+    cout<< 100*data.sparseZ.nonZeros()/(N*M)<<"% non zero elements"<<endl;
 #endif
     for (unsigned int iteration = 0; iteration < max_iterations; iteration++) {
         // Output progress
+    	const auto iterStart = std::chrono::high_resolution_clock::now();
         if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
             std::cout << "iteration: " << iteration << std::endl;
 
@@ -141,20 +144,23 @@ int BayesRRm::runGibbs()
 
         // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
         for (unsigned int j = 0; j < M; j++) {
+
+
             double acum = 0.0;
             const auto marker = markerI[j];
             double beta_old=beta(marker);
+
             // TODO: Can we improve things by decompressing a compressed mmap datafile?
             //Cx = getSnpData(marker);
            // const VectorXd &Cx = data.mappedZ.col(marker);
-
+            double musd=data.means(marker)/data.sds(marker);
             // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
             if(components(marker)!=0){
 #ifdef PARUP
             	parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 #else
-                	y_tilde=epsilon+beta_old*((data.sparseZ.col(marker))/data.sds(marker))-MatrixXd::Ones(N,1)*beta_old*data.means(marker)/data.sds(marker);
-                	ytildesum=epsilonsum+beta_old*data.sums(marker)/data.sds(marker)-beta_old*N*data.means(marker)/data.sds(marker);
+                	y_tilde=epsilon+(beta_old/data.sds(marker))*data.sparseZ.col(marker)-MatrixXd::Ones(N,1)*beta_old*(musd);
+                	ytildesum=epsilonsum+beta_old*data.sums(marker)/data.sds(marker)-beta_old*N*musd;
 #endif
                 }
                 else{
@@ -171,7 +177,7 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             const double num = parallelDotProduct(Cx, y_tilde);
 #else
-            const double num = data.sparseZ.col(marker).dot(y_tilde)/data.sds(marker)-data.means(marker) *ytildesum/data.sds(marker);
+            const double num = data.sds(marker)*(data.sparseZ.col(marker).dot(y_tilde)-musd *ytildesum/data.sds(marker));
 #endif
             // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
@@ -217,8 +223,8 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
 #else
-               	epsilon=(y_tilde-beta_old*data.sparseZ.col(marker)/data.sds(marker)) + MatrixXd::Ones(N,1)* beta_old*data.means(marker)/data.sds(marker);
-            	epsilonsum=ytildesum-beta_old*data.sums(marker)/data.sds(marker) +beta_old*N*data.means(marker)/data.sds(marker);
+               	epsilon=y_tilde-(beta(marker)/data.sds(marker))*data.sparseZ.col(marker) + MatrixXd::Ones(N,1)* beta_old*musd;
+            	epsilonsum=ytildesum-beta(marker)*data.sums(marker)/data.sds(marker) +beta_old*(double)N*musd;
 
 #endif
                }
@@ -245,6 +251,12 @@ int BayesRRm::runGibbs()
             sample << iteration, mu, beta, sigmaE, sigmaG, components, epsilon;
             writer.write(sample);
         }
+
+        const auto endTime = std::chrono::high_resolution_clock::now();
+        const auto dif = endTime - iterStart;
+        const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(dif).count();
+        std::cout << iterationDuration / double(1000.0) << "s" << std::endl;
+
     }
 
     const auto t2 = std::chrono::high_resolution_clock::now();
