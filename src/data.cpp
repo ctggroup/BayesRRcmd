@@ -28,6 +28,171 @@ Data::Data()
 {
 }
 
+
+//This function only scans the data and retrieve the summaries, given that allocating a sparse matrix on the run would be very slow.
+void Data::scanBedFile(const string &bedFile){
+
+	   cout << "Scanning bed file: " << bedFile << endl;
+	    if (numIncdSnps == 0)
+	        throw ("Error: No SNP is retained for analysis.");
+	    if (numKeptInds == 0)
+	        throw ("Error: No individual is retained for analysis.");
+
+	    ifstream BIT(bedFile.c_str(), ios::binary);
+	       if (!BIT)
+	           throw ("Error: can not open the file [" + bedFile + "] to read.");
+
+	    cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
+        VectorXd scratch(numSnps);
+
+	    means=VectorXd(numSnps);
+	    sds=VectorXd(numSnps);
+	    sums=VectorXd(numSnps);
+	    nonZero=VectorXi(numSnps);
+	     char header[3];
+	     BIT.read(header, 3);
+	     if (!BIT || header[0] != 0x6c || header[1] != 0x1b || header[2] != 0x01)
+	         throw ("Error: Incorrect first three bytes of bed file: " + bedFile);
+	     for (unsigned int j = 0, snp = 0; j < numSnps; j++) {
+	    	 scratch.setZero();
+	            double sum = 0.0;
+
+                int nZero=0;
+	            // Create some scratch space to preprocess the raw data
+	            float sqNorm = 0.0f;
+
+
+	            for (unsigned int i = 0, ind = 0; i < numInds;) {
+	                char ch;
+	                BIT.read(&ch, 1);
+	                if (!BIT)
+	                    throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
+
+	                bitset<8> b = ch;
+	                unsigned int k = 0;
+
+	                while (k < 7 && i < numInds) {
+
+	                        const unsigned int allele1 = (!b[k++]);
+	                        const unsigned int allele2 = (!b[k++]);
+
+	                        if (allele1 == 0 && allele2 == 1) {  // missing genotype
+
+	                        } else {
+	                            const auto value = allele1 + allele2;
+
+	                            sum += (double)value;
+	                            scratch(i)=(double)value;
+	                            if((int)value!=0)
+	                            	nZero++;
+	                        }
+
+	                    i++;
+	                }
+	            }
+
+	            // Fill missing values with the mean
+	             double mean = sum / (double)numKeptInds;
+
+
+
+                 //todo check what happens when there are missing values
+	            // Standardize genotypes
+
+	            means(j)=(double)mean;
+	            sums(j)=(double)sum;
+                //cout<<"computing squarednorm :"<<endl;
+	            float sqn = (float)sqNorm;
+	           // cout<<sqn<<endl;
+	         //   cout<<"computing sd:"<<endl;
+	            scratch.array()-=mean;
+	            double std_ = sqrt( scratch.squaredNorm() / (double(numKeptInds - 1)));
+	            sds(j)=(double)std_;
+	           // cout<<std_<<endl;
+	            //cout<<"computing non Zero elements"<<endl;
+               // nonZero(j)=nZero;
+                //cout<<nZero<<endl;
+                if (j % 100 == 0) {
+                	printf("MARKER %6d mean = %12.7f  sum= %12.7f sd=%12.7f\n",
+                	              	                       j, mean, sum,std_);
+                	               	                fflush(stdout);
+               	 }
+
+	        }
+
+	     cout << "Genotype data for " << numKeptInds << " individuals and " << numIncdSnps << " SNPs are included from [" + bedFile + "]." << endl;
+	        BIT.clear();
+	        BIT.close();
+}
+
+void Data::loadSparseMatrix(const string &bedFile){
+	   cout << "Scanning bed file: " << bedFile << endl;
+		    if (numIncdSnps == 0)
+		        throw ("Error: No SNP is retained for analysis.");
+		    if (numKeptInds == 0)
+		        throw ("Error: No individual is retained for analysis.");
+		    ifstream BIT(bedFile.c_str(), ios::binary);
+		       if (!BIT)
+		           throw ("Error: can not open the file [" + bedFile + "] to read.");
+
+		    cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
+		     sparseZ=SparseMatrix<double>(numKeptInds,numIncdSnps);
+		     sparseZ.reserve(nonZero);
+		     char header[3];
+		     BIT.read(header, 3);
+		     if (!BIT || header[0] != 0x6c || header[1] != 0x1b || header[2] != 0x01)
+		         throw ("Error: Incorrect first three bytes of bed file: " + bedFile);
+		     for (unsigned int j = 0, snp = 0; j < numSnps; j++) {
+
+
+		            for (unsigned int i = 0, ind = 0; i < numInds;) {
+		                char ch;
+		                BIT.read(&ch, 1);
+		                if (!BIT)
+		                    throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
+
+		                bitset<8> b = ch;
+		                unsigned int k = 0;
+
+		                while (k < 7 && i < numInds) {
+
+		                        const unsigned int allele1 = (!b[k++]);
+		                        const unsigned int allele2 = (!b[k++]);
+
+		                        if (allele1 == 0 && allele2 == 1) {  // missing genotype
+		                            // Don't store a marker value like this as it requires floating point comparisons later
+		                            // which are not done properly. Instead, store the index of the individual in a vector and simply
+		                            // iterate over the collected indices. Also means iterating over far fewer elements which may
+		                            // make a noticeable difference as this scales up.
+
+		                        } else {
+		                            const auto value = allele1 + allele2;
+
+		                            if(value!=0)
+		                            	sparseZ.insert(i,j)=(double)value;//TODO again check what happens with missing values
+
+		                        }
+
+		                    i++;
+		                }
+		            }
+
+
+		            if (++snp == numIncdSnps)
+		                break;
+		        }
+		       cout<< "sparse matrix read, compressing matrix\n";
+		       sparseZ.makeCompressed();
+
+
+		        BIT.clear();
+		        BIT.close();
+
+
+}
+
+
+
 void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress)
 {
     cout << "Preprocessing bed file: " << bedFile << ", Compress data = " << (compress ? "yes" : "no") << endl;

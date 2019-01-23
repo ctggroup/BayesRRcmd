@@ -100,3 +100,20 @@ TEST(Brrcmdtest,testBrrm_compress){
 
 }
 
+
+TEST(Brrcmdtest,testBrrm_sparse){
+	string bedFile="test/data/uk10k_chr1_1mb";
+			string phenotypeFile ="test/data/test.phen";
+			bool success=1;
+	        std::vector<float> S={0.001,0.01};
+			Data data;
+			data.readFamFile("test/data/uk10k_chr1_1mb.fam");
+		    data.readPhenotypeFile(phenotypeFile, 1);
+			data.readBimFile(bedFile + ".bim");
+			data.numKeptInds=data.numInds;//TODO get rid of these variables
+			data.numIncdSnps=data.numSnps;
+			data.scanBedFile("test/data/uk10k_chr1_1mb.bed");
+
+	        ASSERT_TRUE(success);
+
+}

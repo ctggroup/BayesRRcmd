@@ -71,16 +71,20 @@ int main(int argc, const char * argv[])
             cout << "Start reading " << opt.bedFile+".bed" << endl;
             clock_t start_bed = clock();
             //data.readBedFile(opt.bedFile+".bed");
-            data.readBedFile_noMPI(opt.bedFile+".bed");
+            data.scanBedFile(opt.bedFile+".bed");
+            data.loadSparseMatrix(opt.bedFile+".bed");
             clock_t end   = clock();
             printf("Finished reading the bed file in %.3f sec.\n", double(end - start_bed) / CLOCKS_PER_SEC);
             cout << endl;
+
 
             //TODO non memory mapped version here
 
             end = clock();
             printf("OVERALL read+compute time = %.3f sec.\n", double(end - start) / CLOCKS_PER_SEC);
-
+            BayesRRm mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
+            mmapToy.runGibbs();
+            data.sparseZ.resize(0,0);
             //gctb.clearGenotypes(data);
 
         } else if (opt.analysisType == "Bayes" && (opt.bayesType == "bayesMmap" || (opt.bayesType == "horseshoe"))) {

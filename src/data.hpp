@@ -177,12 +177,23 @@ public:
 //    vector<unsigned> numSnpMldVec;
     vector<vector<SnpInfo*> > mldmVec;
 
+
+    VectorXd sds; //standar deviations
+    VectorXd means; //means
+    VectorXd sums; //column sums
+    VectorXi nonZero; //number of non zero snps per column
+    SparseMatrix<double> sparseZ;
+
     unsigned numFixedEffects;
     unsigned numSnps;
     unsigned numInds;
     unsigned numIncdSnps;
     unsigned numKeptInds;
     unsigned numChroms;
+
+
+    void scanBedFile(const string &bedFile);
+    void loadSparseMatrix(const string &bedFile);
 
     void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile);

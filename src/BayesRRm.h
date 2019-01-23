@@ -60,6 +60,9 @@ class BayesRRm
     VectorXd y;
     VectorXd Cx;
 
+    double epsilonsum;
+    double ytildesum;
+
 public:
     BayesRRm(Data &data, Options &opt, const long memPageSize);
     virtual ~BayesRRm();

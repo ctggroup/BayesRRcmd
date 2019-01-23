@@ -85,6 +85,8 @@ void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCoun
     epsilon = (y).array() - mu;
     sigmaE = epsilon.squaredNorm() / individualCount * 0.5;
     betasqn=0;
+    epsilonsum=0;
+    ytildesum=0;
 }
 
 int BayesRRm::runGibbs()
@@ -114,6 +116,9 @@ int BayesRRm::runGibbs()
     // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
     VectorXd components(M);
     components.setZero();
+#ifndef PARUP
+    cout<<"BayesR sparse"<<endl;
+#endif
     for (unsigned int iteration = 0; iteration < max_iterations; iteration++) {
         // Output progress
         if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
@@ -124,6 +129,7 @@ int BayesRRm::runGibbs()
         const double sigmaEpsilon = parallelStepAndSumEpsilon(epsilon, mu);
         parallelStepMuEpsilon(mu, epsilon, sigmaEpsilon, double(N), sigmaE, dist);
 #else
+
         epsilon = epsilon.array() + mu;//  we substract previous value
         mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
         epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
@@ -140,14 +146,15 @@ int BayesRRm::runGibbs()
             double beta_old=beta(marker);
             // TODO: Can we improve things by decompressing a compressed mmap datafile?
             //Cx = getSnpData(marker);
-            const VectorXd &Cx = data.mappedZ.col(marker);
+           // const VectorXd &Cx = data.mappedZ.col(marker);
 
             // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
             if(components(marker)!=0){
 #ifdef PARUP
             	parallelUpdateYTilde(y_tilde, epsilon, Cx, beta(marker));
 #else
-                	y_tilde=epsilon+beta_old*Cx;
+                	y_tilde=epsilon+beta_old*((data.sparseZ.col(marker))/data.sds(marker))-MatrixXd::Ones(N,1)*beta_old*data.means(marker)/data.sds(marker);
+                	ytildesum=epsilonsum+beta_old*data.sums(marker)/data.sds(marker)-beta_old*N*data.means(marker)/data.sds(marker);
 #endif
                 }
                 else{
@@ -164,7 +171,7 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             const double num = parallelDotProduct(Cx, y_tilde);
 #else
-            const double num = (Cx.dot(y_tilde));
+            const double num = data.sparseZ.col(marker).dot(y_tilde)/data.sds(marker)-data.means(marker) *ytildesum/data.sds(marker);
 #endif
             // muk for the other components is computed according to equaitons
             muk.segment(1, km1) = num / denom.array();
@@ -210,11 +217,14 @@ int BayesRRm::runGibbs()
 #ifdef PARUP
             	parallelUpdateEpsilon(epsilon, y_tilde, Cx, beta(marker));
 #else
-               	epsilon=y_tilde-beta(marker)*Cx;
+               	epsilon=(y_tilde-beta_old*data.sparseZ.col(marker)/data.sds(marker)) + MatrixXd::Ones(N,1)* beta_old*data.means(marker)/data.sds(marker);
+            	epsilonsum=ytildesum-beta_old*data.sums(marker)/data.sds(marker) +beta_old*N*data.means(marker)/data.sds(marker);
+
 #endif
                }
                else{
                	epsilon=y_tilde;
+               	epsilonsum=ytildesum;
                }
         }
 
