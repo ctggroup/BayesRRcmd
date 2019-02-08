@@ -126,7 +126,7 @@ int main(int argc, const char * argv[])
             clock_t end = clock();
             printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
             cout << endl;
-        } else if (opt.analysisType == "PPBayes") {
+        } else if (opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes") {
             clock_t start = clock();
 
             readGenotypes = false;

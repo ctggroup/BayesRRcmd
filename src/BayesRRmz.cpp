@@ -35,7 +35,13 @@ BayesRRmz::BayesRRmz(Data &data, Options &opt)
     float* ptr =static_cast<float*>(&opt.S[0]);
     cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
 
-    flowGraph.reset(new LimitSequenceGraph(this));
+    if (opt.analysisType == "PPAsyncBayes") {
+        std::cerr << "PPAsyncBayes not implemented yet. Aborting" << std::endl;
+        throw "PPAsyncBayes not implemented yet. Aborting";
+        //flowGraph.reset(new AsyncSequenceGraph(this));
+    } else {
+        flowGraph.reset(new LimitSequenceGraph(this));
+    }
 }
 
 BayesRRmz::~BayesRRmz()
