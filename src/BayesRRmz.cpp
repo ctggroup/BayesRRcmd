@@ -54,7 +54,6 @@ void BayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCou
     m_priorPi = VectorXd(K);      // prior probabilities for each component
     m_pi = VectorXd(K);           // mixture probabilities
     m_cVa = VectorXd(K);          // component-specific variance
-    m_logL = VectorXd(K);         // log likelihood of component
     m_muk = VectorXd (K);         // mean of k-th component marker effect size
     m_denom = VectorXd(K - 1);    // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
     m_m0 = 0;                     // total num ber of markes in model
@@ -217,18 +216,19 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
     m_muk.segment(1, km1) = num / m_denom.array();
 
     // Update the log likelihood for each component
+    VectorXd logL(K);
     const double logLScale = m_sigmaG / m_sigmaE * NM1;
-    m_logL = m_pi.array().log(); // First component probabilities remain unchanged
-    m_logL.segment(1, km1) = m_logL.segment(1, km1).array()
+    logL = m_pi.array().log(); // First component probabilities remain unchanged
+    logL.segment(1, km1) = logL.segment(1, km1).array()
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
             + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
 
     double p(m_dist.unif_rng());
 
-    if (((m_logL.segment(1, km1).array() - m_logL[0]).abs().array() > 700).any()) {
+    if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
         acum = 0;
     } else {
-        acum = 1.0 / ((m_logL.array() - m_logL[0]).exp().sum());
+        acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
 
     for (int k = 0; k < K; k++) {
@@ -244,10 +244,10 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
             break;
         } else {
             //if too big or too small
-            if (((m_logL.segment(1, km1).array() - m_logL[k+1]).abs().array() > 700).any()) {
+            if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
                 acum += 0;
             } else {
-                acum += 1.0 / ((m_logL.array() - m_logL[k+1]).exp().sum());
+                acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
             }
         }
     }

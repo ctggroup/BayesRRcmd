@@ -43,7 +43,6 @@ class BayesRRmz
     VectorXd m_priorPi;   // prior probabilities for each component
     VectorXd m_pi;        // mixture probabilities
     VectorXd m_cVa;       // component-specific variance
-    VectorXd m_logL;      // log likelihood of component
     VectorXd m_muk;       // mean of k-th component marker effect size
     VectorXd m_denom;     // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
     int m_m0;             // total number of markers in model
