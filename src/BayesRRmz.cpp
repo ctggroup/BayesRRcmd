@@ -265,6 +265,13 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 }
 
+void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
+{
+    // Lock and take local copies of needed variabls
+    // Do work
+    // Lock to write updates (at end, or perhaps as updates are computed)
+}
+
 void BayesRRmz::printDebugInfo() const
 {
     const unsigned int N(m_data.numKeptInds);

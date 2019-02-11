@@ -20,6 +20,7 @@ class LimitSequenceGraph;
 class BayesRRmz
 {
     friend class LimitSequenceGraph;
+    friend class ParallelGraph;
     std::unique_ptr<LimitSequenceGraph> m_flowGraph;
     Data                &m_data; // data matrices
     Options             &m_opt;
@@ -68,6 +69,7 @@ public:
     virtual ~BayesRRmz();
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
     void processColumn(unsigned int marker, const Map<VectorXd> &Cx);
+    void processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx);
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
     bool isDebugEnabled() const { return m_showDebug; }

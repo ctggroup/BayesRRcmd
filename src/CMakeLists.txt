@@ -63,7 +63,9 @@ add_library(libbrr-dev
     parallelalgo.cpp
     samplewriter.cpp
     compression.cpp
-    limitsequencegraph.cpp)
+    limitsequencegraph.cpp
+    parallelgraph.cpp
+)
 
 add_executable(${PROJECT_NAME}
     main.cpp
@@ -83,6 +85,7 @@ add_executable(${PROJECT_NAME}
     samplewriter.cpp
     compression.cpp
     limitsequencegraph.cpp
+    parallelgraph.cpp
 )
 
 find_package(ZLIB REQUIRED)
