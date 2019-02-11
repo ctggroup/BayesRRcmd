@@ -268,6 +268,26 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 {
     // Lock and take local copies of needed variabls
+    // [ ] m_beta(marker) rwr - used, updated, then used - per column, could take a copy and update at end
+    // [ ] m_betasqn w - updated here, used in BayezRRmz::runGibbs
+    // [ ] m_components(marker) rwr - used, updated, then used - per column, could take a copy and update at end
+    // [ ] m_y_tilde wr - updated first, then used throughout
+    // [ ] m_epsilon rw - used throughout, then updated
+    // [ ] m_v w - updated here, used in BayezRRmz::runGibbs
+
+    // Temporaries
+    // - cost of locking vs allocating per iteration?
+    // m_denom wr - computed from m_cVaI
+    // m_muk wr - computed from m_cVaI
+
+    // m_data.numKeptInds r - could be a member?
+    // m_cva.size() r - could be a member?
+    // m_sigmaE r - calculated in BayesRRmz::init
+    // m_sigmaG r - calculated in BayesRRmz::init, updated in BayezRRmz::runGibbs
+    // m_pi r - calculated in BayesRRmz::init, updated in BayezRRmz::runGibbs
+    // m_dist r - the engine is not thread safe
+    // m_cVa r - calculated in BayesRRmz::init
+    // m_cVaI r - calculated in BayesRRmz::init
 
     // Do work
     double beta_old;
