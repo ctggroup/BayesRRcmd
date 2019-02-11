@@ -268,7 +268,93 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 {
     // Lock and take local copies of needed variabls
+
     // Do work
+    const unsigned int N(m_data.numKeptInds);
+    const double NM1 = double(N - 1);
+    const int K(int(m_cva.size()) + 1);
+    const int km1 = K - 1;
+    double acum = 0.0;
+    double beta_old;
+
+    beta_old = m_beta(marker);
+
+    // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
+    if (m_components(marker) != 0.0) {
+#ifdef PARUP
+        parallelUpdateYTilde(m_y_tilde, m_epsilon, Cx, m_beta(marker));
+#else
+        y_tilde = epsilon + beta_old * Cx;
+#endif
+    } else {
+        m_y_tilde = m_epsilon;
+    }
+    // muk for the zeroth component=0
+    m_muk[0] = 0.0;
+
+    // We compute the denominator in the variance expression to save computations
+    const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
+    m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
+
+    // We compute the dot product to save computations
+    // We compute the dot product to save computations
+#ifdef PARUP
+      const double num = parallelDotProduct(Cx, m_y_tilde);
+#else
+      const double num = Cx.dot(y_tilde);
+#endif
+    // muk for the other components is computed according to equaitons
+    m_muk.segment(1, km1) = num / m_denom.array();
+
+    // Update the log likelihood for each component
+    VectorXd logL(K);
+    const double logLScale = m_sigmaG / m_sigmaE * NM1;
+    logL = m_pi.array().log(); // First component probabilities remain unchanged
+    logL.segment(1, km1) = logL.segment(1, km1).array()
+            - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
+            + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
+
+    double p(m_dist.unif_rng());
+
+    if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
+        acum = 0;
+    } else {
+        acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
+    }
+
+    for (int k = 0; k < K; k++) {
+        if (p <= acum) {
+            //if zeroth component
+            if (k == 0) {
+                m_beta(marker) = 0;
+            } else {
+                m_beta(marker) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+            }
+            m_v[k] += 1.0;
+            m_components[marker] = k;
+            break;
+        } else {
+            //if too big or too small
+            if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
+                acum += 0;
+            } else {
+                acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
+            }
+        }
+    }
+    m_betasqn += m_beta(marker) * m_beta(marker) - beta_old * beta_old;
+
+    if (m_components(marker) != 0.0) {
+#ifdef PARUP
+        parallelUpdateEpsilon(m_epsilon, m_y_tilde, Cx, m_beta(marker));
+#else
+        epsilon = y_tilde - beta(marker) * Cx;
+#endif
+    } else {
+        m_epsilon = m_y_tilde;
+    }
+    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+
     // Lock to write updates (at end, or perhaps as updates are computed)
 }
 
