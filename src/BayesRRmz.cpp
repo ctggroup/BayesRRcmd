@@ -273,7 +273,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // [*] m_components(marker) rwr - used, updated, then used - per column, could take a copy and update at end
     // [ ] m_y_tilde wr - updated first, then used throughout
     // [ ] m_epsilon rw - used throughout, then updated
-    // [ ] m_v w - updated here, used in BayezRRmz::runGibbs
+    // [*] m_v w - updated here, used in BayezRRmz::runGibbs
 
     // Temporaries
     // - cost of locking vs allocating per iteration?
@@ -348,6 +348,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     }
 
     const double p(m_dist.unif_rng());
+    VectorXd v = VectorXd(K);
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
@@ -356,7 +357,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
             } else {
                 beta = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
             }
-            m_v[k] += 1.0;
+            v[k] += 1.0;
             component = k;
             break;
         } else {
@@ -386,6 +387,8 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         m_beta(marker) = beta;
         m_betasqn += beta * beta - beta_old * beta_old;
         m_components(marker) = component;
+
+        m_v += v;
     }
 }
 
