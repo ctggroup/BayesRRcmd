@@ -268,8 +268,8 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 {
     // Lock and take local copies of needed variabls
-    // [ ] m_beta(marker) rwr - used, updated, then used - per column, could take a copy and update at end
-    // [ ] m_betasqn w - updated here, used in BayezRRmz::runGibbs
+    // [*] m_beta(marker) rwr - used, updated, then used - per column, could take a copy and update at end
+    // [*] m_betasqn w - updated here, used in BayezRRmz::runGibbs
     // [ ] m_components(marker) rwr - used, updated, then used - per column, could take a copy and update at end
     // [ ] m_y_tilde wr - updated first, then used throughout
     // [ ] m_epsilon rw - used throughout, then updated
@@ -289,15 +289,19 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // m_cVa r - calculated in BayesRRmz::init
     // m_cVaI r - calculated in BayesRRmz::init
 
-    // Do work
-    double beta_old;
+    double beta = 0;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        beta = m_beta(marker);
+    }
+    const double beta_old = beta;
 
-    beta_old = m_beta(marker);
+    // Do work
 
     // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
     if (m_components(marker) != 0.0) {
 #ifdef PARUP
-        parallelUpdateYTilde(m_y_tilde, m_epsilon, Cx, m_beta(marker));
+        parallelUpdateYTilde(m_y_tilde, m_epsilon, Cx, beta);
 #else
         y_tilde = epsilon + beta_old * Cx;
 #endif
@@ -346,9 +350,9 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         if (p <= acum) {
             //if zeroth component
             if (k == 0) {
-                m_beta(marker) = 0;
+                beta = 0;
             } else {
-                m_beta(marker) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+                beta = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
             }
             m_v[k] += 1.0;
             m_components[marker] = k;
@@ -362,11 +366,10 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
             }
         }
     }
-    m_betasqn += m_beta(marker) * m_beta(marker) - beta_old * beta_old;
 
     if (m_components(marker) != 0.0) {
 #ifdef PARUP
-        parallelUpdateEpsilon(m_epsilon, m_y_tilde, Cx, m_beta(marker));
+        parallelUpdateEpsilon(m_epsilon, m_y_tilde, Cx, beta);
 #else
         epsilon = y_tilde - beta(marker) * Cx;
 #endif
@@ -376,6 +379,11 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
     // Lock to write updates (at end, or perhaps as updates are computed)
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_beta(marker) = beta;
+        m_betasqn += beta * beta - beta_old * beta_old;
+    }
 }
 
 void BayesRRmz::printDebugInfo() const

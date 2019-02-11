@@ -14,6 +14,7 @@
 
 #include <Eigen/Eigen>
 #include <memory>
+#include <mutex>
 
 class LimitSequenceGraph;
 
@@ -63,6 +64,8 @@ class BayesRRmz
 
     VectorXd m_y;
     VectorXd m_components;
+
+    mutable std::mutex m_mutex; // Use a C++17 shared_mutex instead?
 
 public:
     BayesRRmz(Data &m_data, Options &m_opt);
