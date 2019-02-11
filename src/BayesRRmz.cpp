@@ -270,11 +270,6 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // Lock and take local copies of needed variabls
 
     // Do work
-    const unsigned int N(m_data.numKeptInds);
-    const double NM1 = double(N - 1);
-    const int K(int(m_cva.size()) + 1);
-    const int km1 = K - 1;
-    double acum = 0.0;
     double beta_old;
 
     beta_old = m_beta(marker);
@@ -294,6 +289,10 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
+
+    const double NM1 = double(m_data.numKeptInds - 1);
+    const int K(int(m_cva.size()) + 1);
+    const int km1 = K - 1;
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
     // We compute the dot product to save computations
@@ -314,14 +313,15 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
             + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
 
-    double p(m_dist.unif_rng());
 
+    double acum = 0.0;
     if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
         acum = 0;
     } else {
         acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
 
+    const double p(m_dist.unif_rng());
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
