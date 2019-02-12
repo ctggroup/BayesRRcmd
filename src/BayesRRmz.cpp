@@ -281,7 +281,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // - cost of locking vs allocating per iteration?
     // [ ] m_y_tilde wr - updated first, then used throughout
     // [ ] m_denom wr - computed from m_cVaI
-    // [ ] m_muk wr - computed from m_cVaI
+    // [*] m_muk wr - computed from m_cVaI
 
     // m_data.numKeptInds r - could be a member?
     // m_cva.size() r - could be a member?
@@ -309,8 +309,6 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     } else {
         m_y_tilde = m_epsilon;
     }
-    // muk for the zeroth component=0
-    m_muk[0] = 0.0;
 
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
@@ -323,8 +321,11 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // We compute the dot product to save computations
     const double num = Cx.dot(m_y_tilde);
 
+    // muk for the zeroth component=0
+    VectorXd muk(K);
+    muk[0] = 0.0;
     // muk for the other components is computed according to equaitons
-    m_muk.segment(1, km1) = num / m_denom.array();
+    muk.segment(1, km1) = num / m_denom.array();
 
     // Update the log likelihood for each component
     VectorXd logL(K);
@@ -332,7 +333,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     logL = m_pi.array().log(); // First component probabilities remain unchanged
     logL.segment(1, km1) = logL.segment(1, km1).array()
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
-            + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
+            + 0.5 * (muk.segment(1, km1).array() * num) / m_sigmaE;
 
 
     double acum = 0.0;
@@ -350,7 +351,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
             if (k == 0) {
                 beta = 0;
             } else {
-                beta = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+                beta = m_dist.norm_rng(muk[k], m_sigmaE/m_denom[k-1]);
             }
             v[k] += 1.0;
             component = k;
