@@ -272,14 +272,14 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // [*] m_beta(marker) rwr - used, updated, then used - per column, could take a copy and update at end
     // [*] m_betasqn w - updated here, used in BayezRRmz::runGibbs
     // [*] m_components(marker) rwr - used, updated, then used - per column, could take a copy and update at end
-    // [ ] m_epsilon rw - used throughout, then updated
+    // [*] m_epsilon rw - used throughout, then updated, used in BayezRRmz::runGibbs
     // [*] m_v w - updated here, used in BayezRRmz::runGibbs
 
     // [ ] m_dist r - the engine is not thread safe
 
     // Temporaries
     // - cost of locking vs allocating per iteration?
-    // [ ] m_y_tilde wr - updated first, then used throughout
+    // [*] m_y_tilde wr - updated first, then used throughout
     // [*] m_denom wr - computed from m_cVaI
     // [*] m_muk wr - computed from m_cVaI
 
@@ -301,14 +301,21 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     }
     const double beta_old = beta;
 
-    // Do work
-
-    // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-    if (component != 0.0) {
-        m_y_tilde = m_epsilon + beta_old * Cx;
-    } else {
-        m_y_tilde = m_epsilon;
+    double num = 0;
+    {
+        // Use a unique lock to ensure only one thread can write updates
+        std::unique_lock lock(m_mutex);
+        // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
+        if (component != 0.0) {
+            m_y_tilde = m_epsilon + beta_old * Cx;
+        } else {
+            m_y_tilde = m_epsilon;
+        }
+        // We compute the dot product to save computations
+        num = Cx.dot(m_y_tilde);
     }
+
+    // Do work
 
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
@@ -317,9 +324,6 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     const int K(int(m_cva.size()) + 1);
     const int km1 = K - 1;
     VectorXd denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
-
-    // We compute the dot product to save computations
-    const double num = Cx.dot(m_y_tilde);
 
     // muk for the zeroth component=0
     VectorXd muk(K);
@@ -366,13 +370,6 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         }
     }
 
-    if (component != 0.0) {
-        m_epsilon = m_y_tilde - beta * Cx;
-    } else {
-        m_epsilon = m_y_tilde;
-    }
-    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-
     // Lock to write updates (at end, or perhaps as updates are computed)
     {
         // Use a unique lock to ensure only one thread can write updates
@@ -380,6 +377,13 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         m_beta(marker) = beta;
         m_betasqn += beta * beta - beta_old * beta_old;
         m_components(marker) = component;
+
+        if (component != 0.0) {
+            m_epsilon = m_y_tilde - beta * Cx;
+        } else {
+            m_epsilon = m_y_tilde;
+        }
+        // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
         m_v += v;
     }
