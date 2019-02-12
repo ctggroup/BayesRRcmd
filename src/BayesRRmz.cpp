@@ -133,9 +133,9 @@ int BayesRRmz::runGibbs()
             const double sigmaEpsilon = parallelStepAndSumEpsilon(m_epsilon, m_mu);
             parallelStepMuEpsilon(m_mu, m_epsilon, sigmaEpsilon, double(N), m_sigmaE, m_dist);
 #else
-         epsilon = epsilon.array() + mu;//  we substract previous value
-         mu = dist.norm_rng(epsilon.sum() / (double)N, sigmaE / (double)N); //update mu
-         epsilon = epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+         m_epsilon = m_epsilon.array() + m_mu;//  we substract previous value
+         m_mu = m_dist.norm_rng(m_epsilon.sum() / (double)N, m_sigmaE / (double)N); //update mu
+         m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
 #endif
         std::random_shuffle(markerI.begin(), markerI.end());
 
@@ -156,7 +156,7 @@ int BayesRRmz::runGibbs()
 #ifdef PARUP
         const double epsilonSqNorm = parallelSquaredNorm(m_epsilon);
 #else
-        const double epsilonSqNorm = epsilon.squaredNorm();
+        const double epsilonSqNorm = m_epsilon.squaredNorm();
 #endif
         m_sigmaE = m_dist.inv_scaled_chisq_rng(m_v0E + N, (epsilonSqNorm + m_v0E * m_s02E) / (m_v0E + N));
         m_pi = m_dist.dirichilet_rng(m_v.array() + 1.0);
@@ -194,7 +194,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 #ifdef PARUP
         parallelUpdateYTilde(m_y_tilde, m_epsilon, Cx, m_beta(marker));
 #else
-        y_tilde = epsilon + beta_old * Cx;
+        m_y_tilde = m_epsilon + beta_old * Cx;
 #endif
     } else {
         m_y_tilde = m_epsilon;
@@ -211,7 +211,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 #ifdef PARUP
       const double num = parallelDotProduct(Cx, m_y_tilde);
 #else
-      const double num = Cx.dot(y_tilde);
+      const double num = Cx.dot(m_y_tilde);
 #endif
     // muk for the other components is computed according to equaitons
     m_muk.segment(1, km1) = num / m_denom.array();
@@ -258,7 +258,7 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 #ifdef PARUP
         parallelUpdateEpsilon(m_epsilon, m_y_tilde, Cx, m_beta(marker));
 #else
-        epsilon = y_tilde - beta(marker) * Cx;
+        m_epsilon = m_y_tilde - m_beta(marker) * Cx;
 #endif
     } else {
         m_epsilon = m_y_tilde;
@@ -307,7 +307,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 #ifdef PARUP
         parallelUpdateYTilde(m_y_tilde, m_epsilon, Cx, beta);
 #else
-        y_tilde = epsilon + beta_old * Cx;
+        m_y_tilde = m_epsilon + beta_old * Cx;
 #endif
     } else {
         m_y_tilde = m_epsilon;
@@ -328,7 +328,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 #ifdef PARUP
       const double num = parallelDotProduct(Cx, m_y_tilde);
 #else
-      const double num = Cx.dot(y_tilde);
+      const double num = Cx.dot(m_y_tilde);
 #endif
     // muk for the other components is computed according to equaitons
     m_muk.segment(1, km1) = num / m_denom.array();
@@ -376,7 +376,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 #ifdef PARUP
         parallelUpdateEpsilon(m_epsilon, m_y_tilde, Cx, beta);
 #else
-        epsilon = y_tilde - beta(marker) * Cx;
+        m_epsilon = m_y_tilde - beta * Cx;
 #endif
     } else {
         m_epsilon = m_y_tilde;
