@@ -51,13 +51,13 @@ endif(OPENMP_FOUND)
 
 # Now simply link against gtest or gtest_main as needed. 
 
-add_executable(test parallelalgo_test.cpp Brrcmdtest.cpp)
+add_executable(tests parallelalgo_test.cpp Brrcmdtest.cpp)
 
 
 find_package(ZLIB REQUIRED)
 if(ZLIB_FOUND)
   include_directories(${ZLIB_INCLUDE_DIRS})
-  target_link_libraries(test ${ZLIB_LIBRARIES})
+  target_link_libraries(tests ${ZLIB_LIBRARIES})
 endif(ZLIB_FOUND)
 
 
@@ -67,13 +67,13 @@ tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++11 tbb_cpf
 find_package(TBB REQUIRED tbb_preview)
 
 
-target_link_libraries(test gtest_main libbrr-dev ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS} )
+target_link_libraries(tests gtest_main libbrr-dev ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS} )
 
 if(MPI_COMPILE_FLAGS)
-  set_target_properties(test PROPERTIES
+  set_target_properties(tests PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 
 
 
-add_test(NAME example_test COMMAND test)
+add_test(NAME example_test COMMAND tests)
