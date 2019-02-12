@@ -66,6 +66,7 @@ class BayesRRmz
     VectorXd m_components;
 
     mutable std::shared_mutex m_mutex;
+    mutable std::mutex m_rngMutex;
 
 public:
     BayesRRmz(Data &m_data, Options &m_opt);

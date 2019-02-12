@@ -275,7 +275,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // [*] m_epsilon rw - used throughout, then updated, used in BayezRRmz::runGibbs
     // [*] m_v w - updated here, used in BayezRRmz::runGibbs
 
-    // [ ] m_dist r - the engine is not thread safe
+    // [*] m_dist r - the engine is not thread safe
 
     // Temporaries
     // - cost of locking vs allocating per iteration?
@@ -347,7 +347,24 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
 
-    const double p(m_dist.unif_rng());
+    double p = 0;
+    std::vector<double> randomNumbers(static_cast<std::vector<double>::size_type>(K), 0);
+    {
+        // Generate all the numbers we are going to need in one go.
+        // Use a unique lock to ensure only one thread can use the random number engine
+        // at a time.
+        std::unique_lock lock(m_rngMutex);
+        p = m_dist.unif_rng();
+
+        if (p <= acum) {
+            auto beginItr = randomNumbers.begin();
+            std::advance(beginItr, 1);
+            std::generate(beginItr, randomNumbers.end(), [&, k = 0] () mutable {
+                ++k;
+                return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
+            });
+        }
+    }
     VectorXd v = VectorXd(K);
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
@@ -355,7 +372,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
             if (k == 0) {
                 beta = 0;
             } else {
-                beta = m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
+                beta = randomNumbers.at(static_cast<std::vector<double>::size_type>(k));
             }
             v[k] += 1.0;
             component = k;
