@@ -17,6 +17,7 @@
 #include <chrono>
 #include <numeric>
 #include <random>
+#include <mutex>
 
 BayesRRmz::BayesRRmz(Data &data, Options &opt)
     : m_flowGraph(nullptr)
@@ -292,7 +293,8 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     double beta = 0;
     double component = 0;
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        // Use a shared lock to allow multiple threads to read updates
+        std::shared_lock lock(m_mutex);
         beta = m_beta(marker);
         component = m_components(marker);
     }
@@ -383,7 +385,8 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 
     // Lock to write updates (at end, or perhaps as updates are computed)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        // Use a unique lock to ensure only one thread can write updates
+        std::unique_lock lock(m_mutex);
         m_beta(marker) = beta;
         m_betasqn += beta * beta - beta_old * beta_old;
         m_components(marker) = component;

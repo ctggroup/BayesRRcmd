@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.1.3)
 
 include_directories("${brr_INCLUDE_DIRS}")
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
@@ -53,6 +54,8 @@ endif(OPENMP_FOUND)
 
 add_executable(tests parallelalgo_test.cpp Brrcmdtest.cpp)
 
+set_property(TARGET tests PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET tests PROPERTY CXX_STANDARD 17)
 
 find_package(ZLIB REQUIRED)
 if(ZLIB_FOUND)
@@ -63,7 +66,7 @@ endif(ZLIB_FOUND)
 
 set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../tbb)
 include(${TBB_ROOT}/cmake/TBBBuild.cmake)
-tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++11 tbb_cpf=1)
+tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++17 tbb_cpf=1)
 find_package(TBB REQUIRED tbb_preview)
 
 
