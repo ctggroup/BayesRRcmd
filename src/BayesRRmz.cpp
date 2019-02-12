@@ -280,7 +280,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     // Temporaries
     // - cost of locking vs allocating per iteration?
     // [ ] m_y_tilde wr - updated first, then used throughout
-    // [ ] m_denom wr - computed from m_cVaI
+    // [*] m_denom wr - computed from m_cVaI
     // [*] m_muk wr - computed from m_cVaI
 
     // m_data.numKeptInds r - could be a member?
@@ -316,7 +316,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     const double NM1 = double(m_data.numKeptInds - 1);
     const int K(int(m_cva.size()) + 1);
     const int km1 = K - 1;
-    m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
+    VectorXd denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
     // We compute the dot product to save computations
     const double num = Cx.dot(m_y_tilde);
@@ -325,7 +325,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     VectorXd muk(K);
     muk[0] = 0.0;
     // muk for the other components is computed according to equaitons
-    muk.segment(1, km1) = num / m_denom.array();
+    muk.segment(1, km1) = num / denom.array();
 
     // Update the log likelihood for each component
     VectorXd logL(K);
@@ -351,7 +351,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
             if (k == 0) {
                 beta = 0;
             } else {
-                beta = m_dist.norm_rng(muk[k], m_sigmaE/m_denom[k-1]);
+                beta = m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
             }
             v[k] += 1.0;
             component = k;
