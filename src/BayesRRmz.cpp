@@ -12,6 +12,7 @@
 #include "limitsequencegraph.h"
 #include "options.hpp"
 #include "parallelalgo.h"
+#include "parallelgraph.h"
 #include "samplewriter.h"
 
 #include <chrono>
@@ -37,9 +38,7 @@ BayesRRmz::BayesRRmz(Data &data, Options &opt)
     m_cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
 
     if (opt.analysisType == "PPAsyncBayes") {
-        std::cerr << "PPAsyncBayes not implemented yet. Aborting" << std::endl;
-        throw "PPAsyncBayes not implemented yet. Aborting";
-        //flowGraph.reset(new AsyncSequenceGraph(this));
+        m_flowGraph.reset(new ParallelGraph(this));
     } else {
         m_flowGraph.reset(new LimitSequenceGraph(this));
     }

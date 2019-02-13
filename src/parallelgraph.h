@@ -1,6 +1,8 @@
 #ifndef PARALLELGRAPH_H
 #define PARALLELGRAPH_H
 
+#include "analysisgraph.h"
+
 #include "tbb/flow_graph.h"
 #include <functional>
 #include <memory>
@@ -9,7 +11,7 @@ class BayesRRmz;
 
 using namespace tbb::flow;
 
-class ParallelGraph
+class ParallelGraph : public AnalysisGraph
 {
 public:
     ParallelGraph(BayesRRmz *bayes, size_t maxParallel = 12);
@@ -17,7 +19,7 @@ public:
 
     void exec(unsigned int numKeptInds,
               unsigned int numIncdSnps,
-              const std::vector<unsigned int> &markerIndices);
+              const std::vector<unsigned int> &markerIndices) override;
 
 private:
     struct Message {
@@ -26,8 +28,6 @@ private:
         unsigned int numKeptInds;
     };
 
-    BayesRRmz *m_bayes;
-    size_t m_maxParallel;
     std::unique_ptr<graph> m_graph;
     std::unique_ptr<function_node<Message>> m_computeNode;
     std::unique_ptr<limiter_node<Message>> m_limit;

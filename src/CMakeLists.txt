@@ -65,6 +65,7 @@ add_library(libbrr-dev
     compression.cpp
     limitsequencegraph.cpp
     parallelgraph.cpp
+    analysisgraph.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -86,6 +87,7 @@ add_executable(${PROJECT_NAME}
     compression.cpp
     limitsequencegraph.cpp
     parallelgraph.cpp
+    analysisgraph.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)

@@ -16,13 +16,13 @@
 #include <memory>
 #include <shared_mutex>
 
-class LimitSequenceGraph;
+class AnalysisGraph;
 
 class BayesRRmz
 {
     friend class LimitSequenceGraph;
     friend class ParallelGraph;
-    std::unique_ptr<LimitSequenceGraph> m_flowGraph;
+    std::unique_ptr<AnalysisGraph> m_flowGraph;
     Data                &m_data; // data matrices
     Options             &m_opt;
     const string        m_bedFile; // bed file

@@ -6,8 +6,7 @@
 #include <iostream>
 
 ParallelGraph::ParallelGraph(BayesRRmz *bayes, size_t maxParallel)
-    : m_bayes(bayes)
-    , m_maxParallel(maxParallel)
+    : AnalysisGraph(bayes, maxParallel)
     , m_graph(new graph)
 {
     // Decompress the column for this marker then process the column using the algorithm class
