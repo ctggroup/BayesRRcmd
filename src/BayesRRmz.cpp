@@ -355,14 +355,12 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         std::unique_lock lock(m_rngMutex);
         p = m_dist.unif_rng();
 
-        if (p <= acum) {
-            auto beginItr = randomNumbers.begin();
-            std::advance(beginItr, 1);
-            std::generate(beginItr, randomNumbers.end(), [&, k = 0] () mutable {
-                ++k;
-                return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
-            });
-        }
+        auto beginItr = randomNumbers.begin();
+        std::advance(beginItr, 1);
+        std::generate(beginItr, randomNumbers.end(), [&, k = 0] () mutable {
+            ++k;
+            return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
+        });
     }
     VectorXd v = VectorXd(K);
     for (int k = 0; k < K; k++) {
