@@ -1,5 +1,5 @@
-#ifndef LIMITSEQUENCEGRAPH_H
-#define LIMITSEQUENCEGRAPH_H
+#ifndef PARALLELGRAPH_H
+#define PARALLELGRAPH_H
 
 #include "analysisgraph.h"
 
@@ -11,10 +11,11 @@ class BayesRRmz;
 
 using namespace tbb::flow;
 
-class LimitSequenceGraph : public AnalysisGraph
+class ParallelGraph : public AnalysisGraph
 {
 public:
-    LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel = 12);
+    ParallelGraph(BayesRRmz *bayes, size_t maxParallel = 12);
+
 
     void exec(unsigned int numKeptInds,
               unsigned int numIncdSnps,
@@ -25,15 +26,12 @@ private:
         unsigned int id;
         unsigned int marker;
         unsigned int numKeptInds;
-        unsigned char *decompressBuffer = nullptr;
     };
 
     std::unique_ptr<graph> m_graph;
-    std::unique_ptr<function_node<Message, Message>> m_decompressNode;
+    std::unique_ptr<function_node<Message>> m_computeNode;
     std::unique_ptr<limiter_node<Message>> m_limit;
     std::unique_ptr<sequencer_node<Message>> m_ordering;
-    std::unique_ptr<sequencer_node<Message>> m_ordering2;
-    std::unique_ptr<function_node<Message>> m_samplingNode;
 };
 
-#endif // LIMITSEQUENCEGRAPH_H
+#endif // PARALLELGRAPH_H

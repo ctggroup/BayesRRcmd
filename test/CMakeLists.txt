@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.1.3)
 
 include_directories("${brr_INCLUDE_DIRS}")
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
@@ -51,29 +52,31 @@ endif(OPENMP_FOUND)
 
 # Now simply link against gtest or gtest_main as needed. 
 
-add_executable(test parallelalgo_test.cpp Brrcmdtest.cpp)
+add_executable(tests parallelalgo_test.cpp Brrcmdtest.cpp)
 
+set_property(TARGET tests PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET tests PROPERTY CXX_STANDARD 17)
 
 find_package(ZLIB REQUIRED)
 if(ZLIB_FOUND)
   include_directories(${ZLIB_INCLUDE_DIRS})
-  target_link_libraries(test ${ZLIB_LIBRARIES})
+  target_link_libraries(tests ${ZLIB_LIBRARIES})
 endif(ZLIB_FOUND)
 
 
 set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../tbb)
 include(${TBB_ROOT}/cmake/TBBBuild.cmake)
-tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++11 tbb_cpf=1)
+tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR MAKE_ARGS stdver=c++17 tbb_cpf=1)
 find_package(TBB REQUIRED tbb_preview)
 
 
-target_link_libraries(test gtest_main libbrr-dev ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS} )
+target_link_libraries(tests gtest_main libbrr-dev ${MPI_LIBRARIES} ${TBB_IMPORTED_TARGETS} )
 
 if(MPI_COMPILE_FLAGS)
-  set_target_properties(test PROPERTIES
+  set_target_properties(tests PROPERTIES
     COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
 endif()
 
 
 
-add_test(NAME example_test COMMAND test)
+add_test(NAME example_test COMMAND tests)

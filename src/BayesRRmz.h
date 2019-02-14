@@ -14,13 +14,15 @@
 
 #include <Eigen/Eigen>
 #include <memory>
+#include <shared_mutex>
 
-class LimitSequenceGraph;
+class AnalysisGraph;
 
 class BayesRRmz
 {
     friend class LimitSequenceGraph;
-    std::unique_ptr<LimitSequenceGraph> m_flowGraph;
+    friend class ParallelGraph;
+    std::unique_ptr<AnalysisGraph> m_flowGraph;
     Data                &m_data; // data matrices
     Options             &m_opt;
     const string        m_bedFile; // bed file
@@ -63,11 +65,15 @@ class BayesRRmz
     VectorXd m_y;
     VectorXd m_components;
 
+    mutable std::shared_mutex m_mutex;
+    mutable std::mutex m_rngMutex;
+
 public:
     BayesRRmz(Data &m_data, Options &m_opt);
     virtual ~BayesRRmz();
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
     void processColumn(unsigned int marker, const Map<VectorXd> &Cx);
+    void processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx);
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
     bool isDebugEnabled() const { return m_showDebug; }
