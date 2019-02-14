@@ -300,7 +300,6 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     }
     const double beta_old = beta;
 
-    double num = 0;
     VectorXd y_tilde(m_data.numKeptInds);
     {
         // Use a unique lock to ensure only one thread can write updates
@@ -311,9 +310,10 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         } else {
             y_tilde = m_epsilon;
         }
-        // We compute the dot product to save computations
-        num = Cx.dot(y_tilde);
     }
+
+    // We compute the dot product to save computations
+    const double num = Cx.dot(y_tilde);
 
     // Do work
 
