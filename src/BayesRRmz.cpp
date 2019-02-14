@@ -301,17 +301,18 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     const double beta_old = beta;
 
     double num = 0;
+    VectorXd y_tilde(m_data.numKeptInds);
     {
         // Use a unique lock to ensure only one thread can write updates
-        std::unique_lock lock(m_mutex);
+        std::shared_lock lock(m_mutex);
         // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
         if (component != 0.0) {
-            m_y_tilde = m_epsilon + beta_old * Cx;
+            y_tilde = m_epsilon + beta_old * Cx;
         } else {
-            m_y_tilde = m_epsilon;
+            y_tilde = m_epsilon;
         }
         // We compute the dot product to save computations
-        num = Cx.dot(m_y_tilde);
+        num = Cx.dot(y_tilde);
     }
 
     // Do work
@@ -393,9 +394,9 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         m_components(marker) = component;
 
         if (component != 0.0) {
-            m_epsilon = m_y_tilde - beta * Cx;
+            m_epsilon = y_tilde - beta * Cx;
         } else {
-            m_epsilon = m_y_tilde;
+            m_epsilon = y_tilde;
         }
         // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
