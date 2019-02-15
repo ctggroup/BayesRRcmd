@@ -301,18 +301,16 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         // std::memcpy is faster than epsilon = m_epsilon which compiles down to a loop over pairs of
         // doubles and uses _mm_load_pd(source) SIMD intrinsics. Just be careful if we change the type
         // contained in the vector back to floats.
-        std::memcpy(epsilon.data(), m_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+        std::memcpy(y_tilde.data(), m_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
         beta = m_beta(marker);
         component = m_components(marker);
     }
     const double beta_old = beta;
 
+    // Note that we assign y_tilde = m_epsilon above with the memcpy.
     // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-    if (component != 0.0) {
-        y_tilde = epsilon + beta_old * Cx;
-    } else {
-        y_tilde = epsilon;
-    }
+    if (component != 0.0)
+        y_tilde += beta_old * Cx;
 
     // We compute the dot product to save computations
     const double num = Cx.dot(y_tilde);
