@@ -278,7 +278,6 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 
     // Temporaries
     // - cost of locking vs allocating per iteration?
-    // [*] m_y_tilde wr - updated first, then used throughout
     // [*] m_denom wr - computed from m_cVaI
     // [*] m_muk wr - computed from m_cVaI
 
@@ -292,27 +291,31 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 
     double beta = 0;
     double component = 0;
+    VectorXd y_tilde(m_data.numKeptInds);
+    VectorXd epsilon(m_data.numKeptInds);
+
     {
         // Use a shared lock to allow multiple threads to read updates
         std::shared_lock lock(m_mutex);
+
+        // std::memcpy is faster than epsilon = m_epsilon which compiles down to a loop over pairs of
+        // doubles and uses _mm_load_pd(source) SIMD intrinsics. Just be careful if we change the type
+        // contained in the vector back to floats.
+        std::memcpy(epsilon.data(), m_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
         beta = m_beta(marker);
         component = m_components(marker);
     }
     const double beta_old = beta;
 
-    double num = 0;
-    {
-        // Use a unique lock to ensure only one thread can write updates
-        std::unique_lock lock(m_mutex);
-        // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-        if (component != 0.0) {
-            m_y_tilde = m_epsilon + beta_old * Cx;
-        } else {
-            m_y_tilde = m_epsilon;
-        }
-        // We compute the dot product to save computations
-        num = Cx.dot(m_y_tilde);
+    // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
+    if (component != 0.0) {
+        y_tilde = epsilon + beta_old * Cx;
+    } else {
+        y_tilde = epsilon;
     }
+
+    // We compute the dot product to save computations
+    const double num = Cx.dot(y_tilde);
 
     // Do work
 
@@ -384,21 +387,22 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         }
     }
 
+    // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
+    if (component != 0.0) {
+        epsilon = y_tilde - beta * Cx;
+    } else {
+        epsilon = y_tilde;
+    }
+    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+
     // Lock to write updates (at end, or perhaps as updates are computed)
     {
         // Use a unique lock to ensure only one thread can write updates
         std::unique_lock lock(m_mutex);
+        std::memcpy(m_epsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
         m_beta(marker) = beta;
         m_betasqn += beta * beta - beta_old * beta_old;
         m_components(marker) = component;
-
-        if (component != 0.0) {
-            m_epsilon = m_y_tilde - beta * Cx;
-        } else {
-            m_epsilon = m_y_tilde;
-        }
-        // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
-
         m_v += v;
     }
 }
