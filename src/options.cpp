@@ -10,6 +10,7 @@
 
 void Options::inputOptions(const int argc, const char* argv[]){
     stringstream ss;
+    bool defaultThreads = true;
     for (unsigned i=1; i<argc; ++i) {
         if (!strcmp(argv[i], "--inp-file")) {
             optionFile = argv[++i];
@@ -206,6 +207,7 @@ void Options::inputOptions(const int argc, const char* argv[]){
 
 
         else if (!strcmp(argv[i], "--thread")) {
+            defaultThreads = false;
             numThread = atoi(argv[++i]);
             ss << "--thread " << argv[i] << "\n";
         }
@@ -218,6 +220,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";
             throw (errmsg.str());
         }
+    }
+
+    if (defaultThreads) {
+        ss << "\nDetected " << numThread << " threads. Override with --thread option.\n";
     }
 
     MPI_Comm_rank(MPI_COMM_WORLD, &myMPI::rank);
