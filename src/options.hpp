@@ -21,6 +21,7 @@
 #include "mympi.hpp"
 #include "gadgets.hpp"
 #include <Eigen/Eigen>
+#include <thread>
 
 using namespace std;
 using namespace boost;
@@ -87,7 +88,8 @@ public:
         burnin                  = 5000;
         outputFreq              = 100;
         seed                    = static_cast<unsigned int>(std::time(0));
-        numThread               = 1;
+        const unsigned int threadHint = thread::hardware_concurrency();
+        numThread               = threadHint > 0 ? threadHint : 1;
         mphen                   = 1;
         keepIndMax              = UINT_MAX;
         snpFittedPerWindow      = 2;
