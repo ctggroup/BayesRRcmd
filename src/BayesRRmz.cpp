@@ -38,9 +38,9 @@ BayesRRmz::BayesRRmz(Data &data, Options &opt)
     m_cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
 
     if (opt.analysisType == "PPAsyncBayes") {
-        m_flowGraph.reset(new ParallelGraph(this));
+        m_flowGraph.reset(new ParallelGraph(this, opt.numThread));
     } else {
-        m_flowGraph.reset(new LimitSequenceGraph(this));
+        m_flowGraph.reset(new LimitSequenceGraph(this, opt.numThread));
     }
 }
 
