@@ -402,16 +402,16 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
 
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {
-        epsilon = y_tilde - beta * Cx;
+        y_tilde -= beta * Cx;
     }
-    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+    // Now y_tilde contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
     // Lock to write updates (at end, or perhaps as updates are computed)
     {
         // Use a unique lock to ensure only one thread can write updates
         std::unique_lock lock(m_mutex);
         if (!skipUpdate) {
-            std::memcpy(m_epsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+            std::memcpy(m_epsilon.data(), y_tilde.data(), static_cast<size_t>(y_tilde.size()) * sizeof(double));
             m_betasqn += beta * beta - beta_old * beta_old;
         }
         m_v += v;
