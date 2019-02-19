@@ -121,6 +121,9 @@ int BayesRRmz::runGibbs()
     m_components.resize(M);
     m_components.setZero();
 
+    long meanIterationTime = 0;
+    long meanFlowGraphIterationTime = 0;
+
     for (unsigned int iteration = 0; iteration < m_maxIterations; iteration++) {
         // Output progress
         const auto startTime = std::chrono::high_resolution_clock::now();
@@ -145,7 +148,9 @@ int BayesRRmz::runGibbs()
         // The flow graph is constructed to allow the data to be decompressed in parallel for enforce sequential processing of each column
         // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
         // of data.
+        const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
         m_flowGraph->exec(N, M, markerI);
+        const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
         m_m0 = int(M) - int(m_v[0]);
         m_sigmaG = m_dist.inv_scaled_chisq_rng(m_v0G + m_m0, (m_betasqn * m_m0 + m_v0G * m_s02G) / (m_v0G + m_m0));
@@ -167,12 +172,19 @@ int BayesRRmz::runGibbs()
 
         const auto endTime = std::chrono::high_resolution_clock::now();
         const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-        std::cout << iterationDuration / double(1000.0) << "s" << std::endl;
+        const auto flowGraphDuration = std::chrono::duration_cast<std::chrono::milliseconds>(flowGraphEndTime - flowGraphStartTime).count();
+        std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)" << std::endl;
+        meanIterationTime += iterationDuration;
+        meanFlowGraphIterationTime += flowGraphDuration;
     }
 
     const auto t2 = std::chrono::high_resolution_clock::now();
     const auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
     std::cout << "duration: " << duration << "s" << std::endl;
+    const double meanIterationDuration = (static_cast<double>(meanIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
+    const double meanFlowGraphIterationDuration = (static_cast<double>(meanFlowGraphIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
+    std::cout << "mean iteration duration: " << meanIterationDuration  << "s" << std::endl
+              << "mean flowgraph duration: " << meanFlowGraphIterationDuration << "s" << std::endl;
 
     return 0;
 }
