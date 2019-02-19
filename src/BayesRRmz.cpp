@@ -397,11 +397,12 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         }
     }
 
+    // Only update m_epsilon if required
+    const bool skipUpdate = beta_old == 0.0 && beta == 0.0;
+
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
-    if (component != 0.0) {
+    if (!skipUpdate) {
         epsilon = y_tilde - beta * Cx;
-    } else {
-        epsilon = y_tilde;
     }
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
@@ -409,12 +410,16 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
     {
         // Use a unique lock to ensure only one thread can write updates
         std::unique_lock lock(m_mutex);
-        std::memcpy(m_epsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
-        m_beta(marker) = beta;
-        m_betasqn += beta * beta - beta_old * beta_old;
-        m_components(marker) = component;
+        if (!skipUpdate) {
+            std::memcpy(m_epsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+            m_betasqn += beta * beta - beta_old * beta_old;
+        }
         m_v += v;
     }
+
+    // These updates do not need to be atomic
+    m_beta(marker) = beta;
+    m_components(marker) = component;
 }
 
 void BayesRRmz::printDebugInfo() const
