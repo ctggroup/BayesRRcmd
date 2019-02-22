@@ -12,7 +12,7 @@
 #include "options.hpp"
 #include "distributions_boost.hpp"
 
-#include <Eigen/Eigen>
+#include <eigen3/Eigen/Eigen>
 
 class BayesW
 {
