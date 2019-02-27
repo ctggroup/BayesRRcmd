@@ -615,31 +615,31 @@ int BayesW::runGibbs_notPreprocessed()
 
 	return 0;
 }
-*/
+ */
 
 
 /* Usual PP solution */
 int BayesW::runGibbs_Preprocessed()
 {
-    const unsigned int M(data.numIncdSnps);
-    const unsigned int N(data.numKeptInds);
-	const int L_num=opt.S.size()+1;  //number of mixtures + 0 class
+	const unsigned int M(data.numIncdSnps);
+	const unsigned int N(data.numKeptInds);
+	const int K = opt.S.size()+1;  //number of mixtures + 0 class
+	const int km1 = K -1;
 
 	SampleWriter writer;
-    writer.setFileName(outputFile);
-    writer.setMarkerCount(M);
-    writer.setIndividualCount(N);
-    writer.open();
+	writer.setFileName(outputFile);
+	writer.setMarkerCount(M);
+	writer.setIndividualCount(N);
+	writer.open();
 
-    // Sampler variables
-    VectorXd sample(2*M+4); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance,sigma_g
-    std::vector<unsigned int> markerI(M);
-    std::iota(markerI.begin(), markerI.end(), 0);
+	// Sampler variables
+	VectorXd sample(2*M+4); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance,sigma_g
+	std::vector<unsigned int> markerI(M);
+	std::iota(markerI.begin(), markerI.end(), 0);
 
 	data.readFailureFile(opt.failureFile);
 
 	VectorXi gamma(M); //Indicator vector
-	int gamma_temp;    //Temporary indicator to check if marker has an effect (1/0)
 	VectorXf normedSnpData(data.numKeptInds);
 
 	std::cout<< "Running Gibbs sampling" << endl;
@@ -670,27 +670,26 @@ int BayesW::runGibbs_Preprocessed()
 	double BETA_MODE;  //Beta mode at hand
 
 	//Precompute matrix of (1/2Ck - 1/2Cq)
-	used_data.mixture_diff.resize(L_num-1,L_num-1);
+	used_data.mixture_diff.resize(km1,km1);
 	//Save variance classes
-	used_data.mixture_classes.resize(L_num-1);
+	used_data.mixture_classes.resize(km1);
 
-	for(int i=0;i<(L_num-1);i++){
+	for(int i=0;i<(km1);i++){
 		used_data.mixture_classes(i) = opt.S[i];   //Save the mixture data (C_k)
-		for(int j=0;j<(L_num-1);j++){
+		for(int j=0;j<(km1);j++){
 			used_data.mixture_diff(i,j) = 1/(2*opt.S[i]) - 1/(2*opt.S[j]);
 		}
 	}
 
 	// Component variables
-	VectorXd pi_L(L_num); // Vector of mixture probabilities (+1 for 0 class)
+	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
 	//Give all mixtures (and 0 class) equal initial probabilities
-	pi_L.setConstant(1/(L_num));
+	pi_L.setConstant(1/K);
 
 	//Vector to contain probabilities of belonging to a mixture
-	double prob_0;
-	VectorXd prob_vec(L_num-1);   //exclude 0 mixture which is done before
-	VectorXd mixture_count(L_num);//Vector to count how many components are in each mixture
-	mixture_count.setOnes(); //Prior value is that every mixture has one count
+	double acum;
+	VectorXd prob_vec(km1);   //exclude 0 mixture which is done before
+    VectorXd v(K);            // variable storing the component assignment
 
 	//linear model variables   //y is logarithmed
 	VectorXd beta(M);      // effect sizes
@@ -751,7 +750,6 @@ int BayesW::runGibbs_Preprocessed()
 			if (iteration % (int)std::ceil(max_iterations / 10) == 0)
 				std::cout << "iteration: "<<iteration <<"\n";
 		}
-
 		/* 1. Mu */
 		xl = -5; xr = 10.0;
 		new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
@@ -768,6 +766,9 @@ int BayesW::runGibbs_Preprocessed()
 		std::random_shuffle(markerI.begin(), markerI.end());
 
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
+	    VectorXd components(M);
+	    components.setZero();
+
 		for (int j = 0; j < M; j++) {
 
 			marker = markerI[j];
@@ -775,47 +776,47 @@ int BayesW::runGibbs_Preprocessed()
 			// Using the preprocessed solution
 			used_data.X_j = data.mappedZ.col(marker).cast<double>();
 
-			used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
+			//Change the residual vector only if the previous beta was non-zero
+			if(beta(marker) != 0){
+				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
+			}
 
-			/* Calculate the inclusion probability */
+			/* Calculate the mixture probability */
 			BETA_MODE = betaMode(beta(marker),&used_data);   //Find the posterior mode
 			//TODO: For Multiple mixtures betaMode function needs to be defined
 			BETAmodes(marker) = BETA_MODE;
 
-			//First. Find p(gamma_j=0|par)
 			//TODO Calculate the second derivatives for each mixture component and save them
 
-			prob_0 = prob_calc0(BETA_MODE,pi_L,&used_data);
-			//Sample inclusion probability
-			gamma_temp = dist.bernoulli(1-prob_0);  //1 - exclusion probability
-			if(gamma_temp == 0){
-				gamma(marker) = 0; // Exclude the marker
-				beta(marker) = 0;
-				mixture_count(0)++;
-				//If beta is 0, then we don't need to do the residual update anymore
-			}else{
-				//If marker has an effect we assign it to one of the mixtures
-				for(int k = 0; k < (L_num-1); k++){
-					prob_vec(k) = prob_calc(k,BETA_MODE,pi_L,&used_data)/(1-prob_0); //Conditional probability
-				}
-				//TODO Fixes for generating mixture
-				std::default_random_engine generator;
-				std::discrete_distribution<int> distribution {1,2,3}; //Need to fix
-				gamma(marker) = 1 + distribution(generator);
-				used_data.used_mixture = gamma(marker) - 1;  //Save which mixture we use atm
-				for(int k=0;k < (L_num-1); k++){
-					if(used_data.used_mixture==k){
-						mixture_count(k+1)++;
-					}
-				}
+			double p = dist.unif_rng();  //Generate number from uniform distribution
 
-				new_xinit << BETA_MODE - 0.1 , BETA_MODE,  BETA_MODE+0.05, BETA_MODE + 0.1;
-				assignArray(p_xinit,new_xinit);
-				err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data,&convex,
-					npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
-				errorCheck(err);
-				beta(marker) = xsamp[0];
-				used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+			acum = prob_calc0(BETA_MODE,pi_L,&used_data);  // Calculate the probability that marker is 0
+			//Loop through the possible mixture classes
+			for (int k = 0; k < K; k++) {
+				if (p <= acum) {
+					//if zeroth component
+					if (k == 0) {
+						beta(marker) = 0;
+					}
+					// If is not 0th component then sample using ARS
+					else {
+						used_data.used_mixture = k; // Save the mixture class before sampling
+						// Set initial values for constructing ARS hull
+						new_xinit << BETA_MODE - 0.1 , BETA_MODE,  BETA_MODE+0.05, BETA_MODE + 0.1;
+						assignArray(p_xinit,new_xinit);
+						// Sample using ARS
+						err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data,&convex,
+								npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+						errorCheck(err);
+						beta(marker) = xsamp[0];  // Save the result
+						used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+					}
+					v[k] += 1.0;
+					components[marker] = k;
+					break;
+				} else {
+					acum += prob_calc(k,BETA_MODE,pi_L,&used_data);
+				}
 			}
 		}
 
@@ -834,9 +835,8 @@ int BayesW::runGibbs_Preprocessed()
 		//TODO Change the formula for sigma_b
 		used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (gamma.sum())),(double)(used_data.beta_sigma + 0.5 * (beta.array() * beta.array()).sum()));
 
-		//5. Mixture probability
-		pi_L = dist.dirichilet_rng(mixture_count);
-		mixture_count.setOnes();  //Reset to prior values
+		// 5. Mixture probability
+		pi_L = dist.dirichilet_rng(v.array() + 1.0);
 
 
 		if (iteration >= burn_in) {
@@ -845,7 +845,7 @@ int BayesW::runGibbs_Preprocessed()
 				gi = y.array() - mu - used_data.epsilon.array();
 				sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
 
-				sample << iteration, used_data.alpha, mu, beta, used_data.sigma_b ,pi, sigma_g, residual_var;
+				sample << iteration, used_data.alpha, mu, beta, used_data.sigma_b ,pi_L, sigma_g;
 				writer.write(sample);
 			}
 		}
@@ -1118,4 +1118,4 @@ int BayesW::runGibbs_Preprocessed_LeftTruncated()
 
 	return 0;
 }
-*/
+ */
