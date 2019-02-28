@@ -127,7 +127,7 @@ int main(int argc, const char * argv[]) {
     	  mmapToy.runGibbs();
       } else if(opt.bayesType == "BayesW"){
           BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-          mmapToy.runGibbs_notPreprocessed();
+       //   mmapToy.runGibbs_notPreprocessed();
       }
 
       clock_t end   = clock();
@@ -209,7 +209,7 @@ int main(int argc, const char * argv[]) {
 
             	// Left truncated version
             	if(opt.leftTruncFile != ""){
-            		mmapToy.runGibbs_Preprocessed_LeftTruncated();
+            		//mmapToy.runGibbs_Preprocessed_LeftTruncated();
             	}else{ // Regular version
                 	mmapToy.runGibbs_Preprocessed();
             	}

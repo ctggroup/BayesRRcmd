@@ -15,6 +15,7 @@
 #include "samplewriter.h"
 
 
+#include <chrono>
 #include <numeric>
 #include <random>
 
@@ -35,8 +36,7 @@ BayesW::BayesW(Data &data, Options &opt, const long memPageSize)
 , bedFile(opt.bedFile + ".bed")
 , dist(opt.seed)
 {
-	float* ptr =(float*)&opt.S[0];
-	//   cva=(Eigen::Map<Eigen::VectorXf>(ptr,opt.S.size())).cast<double>();
+
 }
 
 
@@ -52,7 +52,7 @@ struct pars{
 	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
 	VectorXd epsilon_trunc;		// Difference of left truncation time and linear predictor (per subject)
 
-	MatrixXd mixture_diff; //Matrix to store (1/2Ck-1/2Cq) values
+	MatrixXd mixture_diff;    //Matrix to store (1/2Ck-1/2Cq) values
 	VectorXd mixture_classes; // Vector to store mixture component C_k values
 
 	int used_mixture; //Write the index of the mixture we decide to use
@@ -615,7 +615,7 @@ int BayesW::runGibbs_notPreprocessed()
 
 	return 0;
 }
- */
+*/
 
 
 /* Usual PP solution */
@@ -633,19 +633,13 @@ int BayesW::runGibbs_Preprocessed()
 	writer.open();
 
 	// Sampler variables
-	VectorXd sample(2*M+4); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance,sigma_g
+	VectorXd sample(2*M+5+K); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance,sigma_g
 	std::vector<unsigned int> markerI(M);
 	std::iota(markerI.begin(), markerI.end(), 0);
 
 	data.readFailureFile(opt.failureFile);
 
-	VectorXi gamma(M); //Indicator vector
-	VectorXf normedSnpData(data.numKeptInds);
-
 	std::cout<< "Running Gibbs sampling" << endl;
-
-	// Compute the SNP data length in bytes
-	size_t snpLenByt = (data.numInds % 4) ? data.numInds / 4 + 1 : data.numInds / 4;
 
 	/* ARS parameters */
 	int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
@@ -666,7 +660,6 @@ int BayesW::runGibbs_Preprocessed()
 
 	//mean and residual variables
 	double mu; // mean or intercept
-
 	double BETA_MODE;  //Beta mode at hand
 
 	//Precompute matrix of (1/2Ck - 1/2Cq)
@@ -688,8 +681,10 @@ int BayesW::runGibbs_Preprocessed()
 
 	//Vector to contain probabilities of belonging to a mixture
 	double acum;
+    double betasqn = 0;
+
 	VectorXd prob_vec(km1);   //exclude 0 mixture which is done before
-    VectorXd v(K);            // variable storing the component assignment
+    VectorXi(K);            // variable storing the count in each component assignment
 
 	//linear model variables   //y is logarithmed
 	VectorXd beta(M);      // effect sizes
@@ -717,9 +712,6 @@ int BayesW::runGibbs_Preprocessed()
 	mu = y.mean();
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
 	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
-
-
-	gamma.setZero();  //Exclude all the markers from the model
 
 	for(int i=0; i<(y.size()); ++i){
 		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
@@ -766,8 +758,8 @@ int BayesW::runGibbs_Preprocessed()
 		std::random_shuffle(markerI.begin(), markerI.end());
 
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
-	    VectorXd components(M);
-	    components.setZero();
+	    VectorXi components(M);
+	    components.setZero();  //Exclude all the markers from the model
 
 		for (int j = 0; j < M; j++) {
 
@@ -779,6 +771,8 @@ int BayesW::runGibbs_Preprocessed()
 			//Change the residual vector only if the previous beta was non-zero
 			if(beta(marker) != 0){
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
+				// Subtract the weighted last beta²
+				betasqn = betasqn - (1/used_data.mixture_classes(components[marker]-1)) * beta(marker) * beta(marker);
 			}
 
 			/* Calculate the mixture probability */
@@ -791,6 +785,7 @@ int BayesW::runGibbs_Preprocessed()
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
 			acum = prob_calc0(BETA_MODE,pi_L,&used_data);  // Calculate the probability that marker is 0
+
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
 				if (p <= acum) {
@@ -800,7 +795,7 @@ int BayesW::runGibbs_Preprocessed()
 					}
 					// If is not 0th component then sample using ARS
 					else {
-						used_data.used_mixture = k; // Save the mixture class before sampling
+						used_data.used_mixture = k-1; // Save the mixture class before sampling (-1 because we count from 0)
 						// Set initial values for constructing ARS hull
 						new_xinit << BETA_MODE - 0.1 , BETA_MODE,  BETA_MODE+0.05, BETA_MODE + 0.1;
 						assignArray(p_xinit,new_xinit);
@@ -810,6 +805,10 @@ int BayesW::runGibbs_Preprocessed()
 						errorCheck(err);
 						beta(marker) = xsamp[0];  // Save the result
 						used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+
+						// Change the weighted sum of squares of betas
+						betasqn = betasqn + (1/used_data.mixture_classes(components[marker]-1)) * beta(marker) * beta(marker);
+
 					}
 					v[k] += 1.0;
 					components[marker] = k;
@@ -832,8 +831,8 @@ int BayesW::runGibbs_Preprocessed()
 		used_data.alpha = xsamp[0];
 
 		// 4. sigma_b
-		//TODO Change the formula for sigma_b
-		used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (gamma.sum())),(double)(used_data.beta_sigma + 0.5 * (beta.array() * beta.array()).sum()));
+		used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0])),
+				(double)(used_data.beta_sigma + 0.5 * betasqn));
 
 		// 5. Mixture probability
 		pi_L = dist.dirichilet_rng(v.array() + 1.0);
@@ -845,12 +844,12 @@ int BayesW::runGibbs_Preprocessed()
 				gi = y.array() - mu - used_data.epsilon.array();
 				sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
 
-				sample << iteration, used_data.alpha, mu, beta, used_data.sigma_b ,pi_L, sigma_g;
+				sample << iteration, used_data.alpha, mu, beta,components, used_data.sigma_b ,pi_L, sigma_g;
 				writer.write(sample);
 			}
 		}
 
-		cout << iteration << ". " << gamma.sum() <<"; " << used_data.alpha << endl;
+		cout << iteration << ". " << M - v[0] <<"; " << used_data.alpha << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
