@@ -1584,7 +1584,6 @@ void Data::readmSFile(const string& mSfile){
 
 void Data::readFailureFile(const string& failureFile){
 
-
 	ifstream input(failureFile);
 	vector<int> tmp;
 	int col;

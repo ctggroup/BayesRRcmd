@@ -432,7 +432,11 @@ void invert(double prob, ENVELOPE *env, POINT *p)
   }
 
   /* guard against imprecision yielding point outside interval */
-  if ((p->x < xl) || (p->x > xr))exit(1);
+  if ((p->x < xl) || (p->x > xr)){
+	  cout << "EXIT1" << endl;
+
+	  exit(1);
+  }
 
   return;
 }
@@ -589,6 +593,8 @@ int update(ENVELOPE *env, POINT *p, FUNBAG *lpdf, METROPOLIS *metrop)
     q->pl->pr = q;
   } else {
     /* this should be impossible */
+	  cout << "EXIT2" << endl;
+
     exit(10);
   }
 
@@ -692,6 +698,8 @@ int meet (POINT *q, ENVELOPE *env, METROPOLIS *metrop)
   int il,ir,irl;
 
   if(q->f){
+	  cout << "EXIT3" << endl;
+
     /* this is not an intersection point */
     exit(30);
   }
@@ -777,14 +785,17 @@ int meet (POINT *q, ENVELOPE *env, METROPOLIS *metrop)
     /* left hand bound */
     q->y = q->pr->y - gr * (q->pr->x - q->x);
   } else {
+	  cout << "EXIT4" << endl;
+
     /* gradient on neither side - should be impossible */
     exit(31);
   }
   if(((q->pl != NULL) && (q->x < q->pl->x)) ||
      ((q->pr != NULL) && (q->x > q->pr->x))){
-//	  cout << "d" << endl;
 
     /* intersection point outside interval (through imprecision) */
+	  cout << "EXIT5" << endl;
+
     exit(32);
   }
   /* successful exit : intersection has been calculated */
@@ -802,6 +813,7 @@ double area(POINT *q)
 
   if(q->pl == NULL){
     /* this is leftmost point in envelope */
+	  cout << "EXIT6" << endl;
     exit(1);
   } else if(q->pl->x == q->x){
     /* interval is zero length */

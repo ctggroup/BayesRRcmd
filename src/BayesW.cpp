@@ -193,7 +193,7 @@ inline double beta_dens_0(void *norm_data)
 /* Function to calculate the mode of the beta_j (assumed that C_k=1) */
 inline double betaMode(double initVal, void *my_data ,double error = 0.000001, int max_count = 20){
 	double x_i = initVal;
-	double x_i1 = initVal + 0.01;
+	double x_i1 = initVal + 0.00001;
 	int counter = 0;
 
 	while(abs(x_i-x_i1) > error){
@@ -316,9 +316,10 @@ inline double prob_calc0(double BETA_MODE, VectorXd prior_prob, void *norm_data)
 	pars p = *(static_cast<pars *>(norm_data));
 	double prob_0 = prior_prob(0);
 	double beta_0 = beta_dens_0(norm_data);
+
 	//Sum the comparisons
-	for(int i=0; i<p.mixture_classes.size(); i++){
-		prob_0 = prob_0 + prior_prob(i+1) * sqrt(-PI2/beta_dens_der2(BETA_MODE, p.mixture_classes(i), &norm_data))*
+	for(int i=0; i < p.mixture_classes.size(); i++){
+		prob_0 = prob_0 + prior_prob(i+1) * sqrt(-PI2/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
 				exp(beta_dens_ck(BETA_MODE,p.mixture_classes(i),norm_data)-beta_0);
 	}
 	return prior_prob(0)/prob_0;
@@ -329,11 +330,11 @@ inline double prob_calc(int k, double BETA_MODE, VectorXd prior_prob, void *norm
 	pars p = *(static_cast<pars *>(norm_data));
 	double beta_dens_der2_k = beta_dens_der2(BETA_MODE, p.mixture_classes(k), norm_data); //Calculate k-th second derivative
 	double prob_k = prior_prob(0) * sqrt(-beta_dens_der2_k/PI2)*exp(beta_dens_0(norm_data)-
-			beta_dens_ck(BETA_MODE,p.mixture_classes(k),&norm_data)) ;  //prior_prob vector has also the 0 component
+			beta_dens_ck(BETA_MODE,p.mixture_classes(k),norm_data)) ;  //prior_prob vector has also the 0 component
 
 	//Sum the comparisons
 	for(int i=0; i<p.mixture_classes.size(); i++){
-		prob_k = prob_k + prior_prob(i+1) * sqrt(beta_dens_der2_k/beta_dens_der2(BETA_MODE, p.mixture_classes(i), &norm_data))*
+		prob_k = prob_k + prior_prob(i+1) * sqrt(beta_dens_der2_k/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
 				exp(pow(BETA_MODE,2)* p.mixture_diff(i,k)/p.sigma_b );  // We have previously calculated the differences to matrix
 	}
 
@@ -615,12 +616,20 @@ int BayesW::runGibbs_notPreprocessed()
 
 	return 0;
 }
-*/
+ */
 
 
 /* Usual PP solution */
 int BayesW::runGibbs_Preprocessed()
 {
+
+
+	if(ltrunc){
+		mu_dens=mu_dens_ltrunc;
+	}else{
+		mu_dens=mu_dens_reg;
+	}
+
 	const unsigned int M(data.numIncdSnps);
 	const unsigned int N(data.numKeptInds);
 	const int K = opt.S.size()+1;  //number of mixtures + 0 class
@@ -673,18 +682,17 @@ int BayesW::runGibbs_Preprocessed()
 			used_data.mixture_diff(i,j) = 1/(2*opt.S[i]) - 1/(2*opt.S[j]);
 		}
 	}
-
 	// Component variables
 	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
 	//Give all mixtures (and 0 class) equal initial probabilities
-	pi_L.setConstant(1/K);
+	pi_L.setConstant(1.0/K);
 
 	//Vector to contain probabilities of belonging to a mixture
 	double acum;
-    double betasqn = 0;
+	double betasqn = 0;
 
 	VectorXd prob_vec(km1);   //exclude 0 mixture which is done before
-    VectorXi(K);            // variable storing the count in each component assignment
+	VectorXd v(K);            // variable storing the count in each component assignment
 
 	//linear model variables   //y is logarithmed
 	VectorXd beta(M);      // effect sizes
@@ -703,6 +711,7 @@ int BayesW::runGibbs_Preprocessed()
 	VectorXi failure(N);   //Failure vector
 	failure = data.fail;
 
+
 	(used_data.epsilon).resize(y.size());
 	(used_data.failure_vector).resize(failure.size());
 
@@ -713,12 +722,14 @@ int BayesW::runGibbs_Preprocessed()
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
 	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
 
+
 	for(int i=0; i<(y.size()); ++i){
 		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
 		(used_data.failure_vector)[i] = failure[i];
 	}
 
 	used_data.sigma_b = pow(PI,2)/ (6 * pow(used_data.alpha,2) * M ) ;
+
 
 	/* Prior value selection for the variables */
 	/* At the moment we set them to be uninformative */
@@ -735,6 +746,10 @@ int BayesW::runGibbs_Preprocessed()
 
 	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
 	srand(2);
+
+
+	VectorXd components(M);
+	components.setZero();  //Exclude all the markers from the model
 
 	for (int iteration = 0; iteration < max_iterations; iteration++) {
 
@@ -758,28 +773,35 @@ int BayesW::runGibbs_Preprocessed()
 		std::random_shuffle(markerI.begin(), markerI.end());
 
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
-	    VectorXi components(M);
-	    components.setZero();  //Exclude all the markers from the model
 
+		v.setOnes();           //Reset the counter
+		double beta_diff_sum=0;
 		for (int j = 0; j < M; j++) {
-
 			marker = markerI[j];
-
 			// Using the preprocessed solution
 			used_data.X_j = data.mappedZ.col(marker).cast<double>();
 
 			//Change the residual vector only if the previous beta was non-zero
+
 			if(beta(marker) != 0){
-				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
 				// Subtract the weighted last beta²
+				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
 				betasqn = betasqn - (1/used_data.mixture_classes(components[marker]-1)) * beta(marker) * beta(marker);
 			}
 
 			/* Calculate the mixture probability */
-			BETA_MODE = betaMode(beta(marker),&used_data);   //Find the posterior mode
+			BETA_MODE = betaMode(BETAmodes(marker),&used_data);   //Find the posterior mode using the last mode as the starting value
+			if(BETA_MODE != BETA_MODE){
+				BETA_MODE= betaMode(BETAmodes(marker),&used_data);
+
+				cout << BETAmodes(marker) << endl;
+				cout << marker << endl;
+			}
+			beta_diff_sum = beta_diff_sum + abs(BETA_MODE -BETAmodes(marker));
+
+
 			//TODO: For Multiple mixtures betaMode function needs to be defined
 			BETAmodes(marker) = BETA_MODE;
-
 			//TODO Calculate the second derivatives for each mixture component and save them
 
 			double p = dist.unif_rng();  //Generate number from uniform distribution
@@ -792,38 +814,43 @@ int BayesW::runGibbs_Preprocessed()
 					//if zeroth component
 					if (k == 0) {
 						beta(marker) = 0;
+						v[k] += 1.0;
+						components[marker] = k;
 					}
 					// If is not 0th component then sample using ARS
 					else {
+						//cout << marker << ": "  << k << endl;
+						xl = BETA_MODE - 0.1; xr = BETA_MODE + 0.1;
 						used_data.used_mixture = k-1; // Save the mixture class before sampling (-1 because we count from 0)
 						// Set initial values for constructing ARS hull
-						new_xinit << BETA_MODE - 0.1 , BETA_MODE,  BETA_MODE+0.05, BETA_MODE + 0.1;
+						new_xinit << BETA_MODE - 0.01 , BETA_MODE,  BETA_MODE + 0.005, BETA_MODE + 0.01;
 						assignArray(p_xinit,new_xinit);
 						// Sample using ARS
+
 						err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data,&convex,
 								npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 						errorCheck(err);
+
 						beta(marker) = xsamp[0];  // Save the result
 						used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
 
 						// Change the weighted sum of squares of betas
+						v[k] += 1.0;
+						components[marker] = k;
 						betasqn = betasqn + (1/used_data.mixture_classes(components[marker]-1)) * beta(marker) * beta(marker);
-
 					}
-					v[k] += 1.0;
-					components[marker] = k;
+
 					break;
 				} else {
 					acum += prob_calc(k,BETA_MODE,pi_L,&used_data);
 				}
 			}
 		}
-
+		cout << beta_diff_sum << endl;
 		// 3. Alpha
 		xl = 0.0; xr = 400.0;
 		new_xinit << (used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3;  // New values for abscissae evaluation
 		assignArray(p_xinit,new_xinit);
-
 
 		err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data,&convex,
 				npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
@@ -835,7 +862,8 @@ int BayesW::runGibbs_Preprocessed()
 				(double)(used_data.beta_sigma + 0.5 * betasqn));
 
 		// 5. Mixture probability
-		pi_L = dist.dirichilet_rng(v.array() + 1.0);
+
+		pi_L = dist.dirichilet_rng(v.array());
 
 
 		if (iteration >= burn_in) {
@@ -849,7 +877,7 @@ int BayesW::runGibbs_Preprocessed()
 			}
 		}
 
-		cout << iteration << ". " << M - v[0] <<"; " << used_data.alpha << endl;
+		cout << iteration << ". " << M - v[0] +1 <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
