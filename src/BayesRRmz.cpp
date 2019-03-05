@@ -376,6 +376,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         });
     }
     VectorXd v = VectorXd(K);
+    v.setZero();
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
