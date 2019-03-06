@@ -136,7 +136,7 @@ public:
     MatrixXd mS;			 // cva groups
     unsigned int numGroups;	 // number of groups
 
-    VectorXi fail; 			 // failure indicator (0/1)
+    VectorXd fail; 			 // failure indicator (0/1)
     VectorXd left_trunc;	 // Left truncation time
 
     //SparseMatrix<float> ZPZ; // sparse Z'Z because LE is assumed for distant SNPs

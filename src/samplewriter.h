@@ -22,6 +22,8 @@ public:
     unsigned int individualCount() const { return m_individualCount; }
 
     void open();
+    void open_bayesW();
+
     void write(const Eigen::VectorXd &sample);
     void close();
 

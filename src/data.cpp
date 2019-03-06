@@ -1585,11 +1585,10 @@ void Data::readmSFile(const string& mSfile){
 void Data::readFailureFile(const string& failureFile){
 
 	ifstream input(failureFile);
-	vector<int> tmp;
+	vector<double> tmp;
 	int col;
 	if(!input.is_open()){
 		cout << "Error opening the file" << endl;
-
 		return;
 	}
 
@@ -1599,7 +1598,7 @@ void Data::readFailureFile(const string& failureFile){
 		tmp.push_back(col);
 	}
 	input.close();
-	fail = Eigen::VectorXi::Map(tmp.data(), tmp.size());
+	fail = Eigen::VectorXd::Map(tmp.data(), tmp.size());
 }
 
 

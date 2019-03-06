@@ -44,13 +44,21 @@ BayesW::~BayesW()
 {
 }
 
-// Keep the necessary parameters in a structure
+/*
+void BayesW::init()
+{
+	failure = data.fail;
+}
+*/
+
+// Keep the necessary parameters in structures
 // ARS uses the structure for using necessary parameters
+
 struct pars{
 	/* Common parameters for the densities */
-	VectorXd failure_vector;	// Data for failures (per subject)
+//	VectorXd failure_vector;	// Data for failures (per subject)
 	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
-	VectorXd epsilon_trunc;		// Difference of left truncation time and linear predictor (per subject)
+//	 VectorXd epsilon_trunc;		// Difference of left truncation time and linear predictor (per subject)
 
 	MatrixXd mixture_diff;    //Matrix to store (1/2Ck-1/2Cq) values
 	VectorXd mixture_classes; // Vector to store mixture component C_k values
@@ -60,8 +68,6 @@ struct pars{
 	/* Store the current variables */
 	double alpha, sigma_b;
 
-	/* Alpha-specific variables */
-	double alpha_0, kappa_0;  /*  Prior parameters */
 	/* Beta_j - specific variables */
 	VectorXd X_j;
 	/* Mu-specific variables */
@@ -69,7 +75,25 @@ struct pars{
 	/* sigma_b-specific variables */
 	double alpha_sigma, beta_sigma;
 
+	/*  of sum(X_j*failure) */
+	double sum_failure;
+
+	/* Number of events (sum of failure indicators) */
+	double d;
+
 };
+
+struct pars_alpha{
+	VectorXd failure_vector;
+	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
+
+	/* Alpha-specific variables */
+	double alpha_0, kappa_0;  /*  Prior parameters */
+
+	/* Number of events (sum of failure indicators) */
+	double d;
+};
+
 
 /* Function to assign initial values */
 inline void assignArray(double *array_arg,VectorXd new_vals){
@@ -106,21 +130,35 @@ inline double beta_dens_12_ratio(double x, void *norm_data){
 
 	pars p = *(static_cast<pars *>(norm_data));
 
-	return (-(x/(p.sigma_b)) - p.alpha * (p.X_j.array() * p.failure_vector.array()).sum() + (p.alpha)* ((((( p.epsilon * p.alpha).array() - (p.X_j * p.alpha).array() * x) - EuMasc).exp()) *
+/*	return (-(x/(p.sigma_b)) - p.alpha * (p.X_j.array() * p.failure_vector.array()).sum() + (p.alpha)* ((((( p.epsilon * p.alpha).array() - (p.X_j * p.alpha).array() * x) - EuMasc).exp()) *
 			(p.X_j).array()).sum())/
 			(-(1/(p.sigma_b)) - (p.alpha)*(p.alpha) *  ((((( p.epsilon * p.alpha).array() - (p.X_j* p.alpha).array() * x) - EuMasc).exp()) *
-					(p.X_j).array() * (p.X_j).array()).sum());
-}
+					(p.X_j).array() * (p.X_j).array()).sum());*/
 
-/* Function calculates the difference beta_dens(0) - beta_dens(x) */
-inline double beta_dens_diff(double x, void *norm_data){
-	double y;
-	pars p = *(static_cast<pars *>(norm_data));
-	y =  - (((p.epsilon) * p.alpha).array() - EuMasc).exp().sum() -
-			(-p.alpha * x * ((p.X_j).array() * (p.failure_vector).array()).sum() - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
-					x * x / (2 * p.sigma_b) );
 
-	return y;
+	VectorXd exp_vector= (p.epsilon.array() - p.X_j .array() * x)* p.alpha - EuMasc;
+
+	double max_val = exp_vector.maxCoeff();
+	if(max_val > 700){
+		// Subtract maximum from the vector (we are calculating the ratio assuming that , thus it does not change the final value)
+		exp_vector = exp_vector.array() - max_val;
+		exp_vector = exp_vector.array().exp();
+		// Part with the failure vectors is assumed to be 0 now
+		return((exp_vector.array() * p.X_j.array()).sum() / (exp_vector.array() * p.X_j.array() * p.X_j.array()).sum() / p.alpha);
+	}
+
+	exp_vector = exp_vector.array().exp();
+
+
+// This solution adds speed but the impact on power is not clear
+//	return (-(x/(p.sigma_b)) -  p.sum_failure + (exp_vector.array() * p.X_j.array()).sum())/
+//				(-(1/(p.sigma_b)) - (p.alpha)  * (exp_vector.array() * (p.X_j).array() * (p.X_j).array()).sum());
+
+
+
+	return (-(  x/(p.sigma_b)) - p.alpha * p.sum_failure + p.alpha*(exp_vector.array() * p.X_j.array()).sum())/
+			(-( 1/p.sigma_b) - (p.alpha)*(p.alpha)  * (exp_vector.array() * p.X_j.array() * p.X_j.array()).sum());
+
 }
 
 /* Function for the log density of mu */
@@ -133,7 +171,7 @@ inline double mu_dens(double x, void *norm_data)
 	pars p = *(static_cast<pars *>(norm_data));
 
 	/* cast voided pointer into pointer to struct norm_parm */
-	y = - p.alpha * x * p.failure_vector.sum() - (( (p.epsilon * p.alpha).array()  -  p.alpha * x) - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
+	y = - p.alpha * x * p.d - (( (p.epsilon).array()  - x) * p.alpha - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
 	return y;
 };
 
@@ -142,9 +180,10 @@ inline double alpha_dens(double x, void *norm_data)
 /* We are sampling alpha (denoted by x here) */
 {
 	double y;
+
 	/* In C++ we need to do a static cast for the void data */
-	pars p = *(static_cast<pars *>(norm_data));
-	y = (p.alpha_0 + p.failure_vector.sum() - 1) * log(x) + x * ((p.epsilon.array() * p.failure_vector.array()).sum() - p.kappa_0) -
+	pars_alpha p = *(static_cast<pars_alpha *>(norm_data));
+	y = (p.alpha_0 + p.d - 1) * log(x) + x * ((p.epsilon.array() * p.failure_vector.array()).sum() - p.kappa_0) -
 			((p.epsilon * x).array() - EuMasc).exp().sum() ;
 	return y;
 };
@@ -158,7 +197,7 @@ inline double beta_dens(double x, void *norm_data)
 	/* In C++ we need to do a static cast for the void data */
 	pars p = *(static_cast<pars *>(norm_data));
 
-	y = -p.alpha * x * ((p.X_j).array() * (p.failure_vector).array()).sum() - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
+	y = -p.alpha * x * p.sum_failure - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
 			x * x / (2 * p.mixture_classes(p.used_mixture) * p.sigma_b) ;
 	return y;
 };
@@ -172,7 +211,7 @@ inline double beta_dens_ck(double x,double C_k, void *norm_data)
 	/* In C++ we need to do a static cast for the void data */
 	pars p = *(static_cast<pars *>(norm_data));
 
-	y = -p.alpha * x * ((p.X_j).array() * (p.failure_vector).array()).sum() - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
+	y = -p.alpha * x * p.sum_failure - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
 			x * x / (2 * C_k * p.sigma_b) ;
 	return y;
 };
@@ -190,8 +229,8 @@ inline double beta_dens_0(void *norm_data)
 	return y;
 };
 
-/* Function to calculate the mode of the beta_j (assumed that C_k=1) */
-inline double betaMode(double initVal, void *my_data ,double error = 0.000001, int max_count = 20){
+/* Function to calculate the mode of the beta_j (assumed that C_k=inf) */
+inline double betaMode(double initVal, void *my_data , double error = 0.000001, int max_count = 20){
 	double x_i = initVal;
 	double x_i1 = initVal + 0.00001;
 	int counter = 0;
@@ -202,35 +241,37 @@ inline double betaMode(double initVal, void *my_data ,double error = 0.000001, i
 			return initVal;  //Failure if we repeat iteratio too many times
 		}
 		x_i1 = x_i;
-		//x_i = x_i1 - beta_dens_der1(x_i1,my_data)/beta_dens_der2(x_i1,my_data);
 		x_i = x_i1 - beta_dens_12_ratio(x_i1,my_data);
 	}
 	return x_i;
 }
+
+
 
 ///////////////////////////////////////////
 /* Similar functions for left truncation */
 ///////////////////////////////////////////
 
 /* Function for the log density of mu (LT)*/
+/*
 inline double mu_dens_ltrunc(double x, void *norm_data)
 {
 	double y;
 
-	/* In C++ we need to do a static cast for the void data */
+	// In C++ we need to do a static cast for the void data
 	pars p = *(static_cast<pars *>(norm_data));
 
-	/* cast voided pointer into pointer to struct norm_parm */
+	// cast voided pointer into pointer to struct norm_parm
 	y = - p.alpha * x * p.failure_vector.sum() - (( (p.epsilon * p.alpha).array()  -  p.alpha * x) - EuMasc).exp().sum() +
 			(( (p.epsilon_trunc * p.alpha).array()  -  p.alpha * x) - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
 	return y;
 };
 
-/* Function for the log density of alpha (LT)*/
+// Function for the log density of alpha (LT)
 inline double alpha_dens_ltrunc(double x, void *norm_data)
 {
 	double y;
-	/* In C++ we need to do a static cast for the void data */
+	// In C++ we need to do a static cast for the void data
 	pars p = *(static_cast<pars *>(norm_data));
 
 	y = (p.alpha_0 + p.failure_vector.sum() - 1) * log(x) + x * ((p.epsilon.array() * p.failure_vector.array()).sum() - p.kappa_0) -
@@ -238,12 +279,10 @@ inline double alpha_dens_ltrunc(double x, void *norm_data)
 	return y;
 };
 
-/* Function for the log density of beta (LT)*/
+// Function for the log density of beta (LT)
 inline double beta_dens_ltrunc(double x, void *norm_data)
 {
 	double y;
-
-	/* In C++ we need to do a static cast for the void data */
 	pars p = *(static_cast<pars *>(norm_data));
 
 	y = -p.alpha * x * ((p.X_j).array() * (p.failure_vector).array()).sum() - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() +
@@ -252,7 +291,7 @@ inline double beta_dens_ltrunc(double x, void *norm_data)
 	return y;
 };
 
-/* Function calculates the difference beta_dens(0) - beta_dens(x) */
+// Function calculates the difference beta_dens(0) - beta_dens(x)
 inline double beta_dens_diff_ltrunc(double x, void *norm_data){
 	double y;
 	pars p = *(static_cast<pars *>(norm_data));
@@ -265,12 +304,11 @@ inline double beta_dens_diff_ltrunc(double x, void *norm_data){
 	return y;
 }
 
-/* Function for the second derivative. It is assumed that the residual is adjusted before */
+// Function for the second derivative. It is assumed that the residual is adjusted before
 inline double beta_dens_der2_ltrunc(double x, void *norm_data)
 {
 	double y;
 
-	/* In C++ we need to do a static cast for the void data */
 	pars p = *(static_cast<pars *>(norm_data));
 
 	y = -(1/(p.sigma_b)) + pow(p.alpha,2) *  ((((( p.epsilon * p.alpha).array() - (p.X_j* p.alpha).array() * x) - EuMasc).exp() * (-1) +
@@ -279,7 +317,7 @@ inline double beta_dens_der2_ltrunc(double x, void *norm_data)
 	return y;
 };
 
-/* Function for the ratio of der2 and der1 */
+// Function for the ratio of der2 and der1
 inline double beta_dens_12_ratio_ltrunc(double x, void *norm_data){
 
 	pars p = *(static_cast<pars *>(norm_data));
@@ -292,7 +330,7 @@ inline double beta_dens_12_ratio_ltrunc(double x, void *norm_data){
 					(p.X_j).array() * (p.X_j).array()).sum());
 }
 
-/* Function for Beta mode */
+// Function for Beta mode
 inline double betaMode_ltrunc(double initVal, void *my_data ,double error = 0.000001, int max_count = 20){
 	double x_i = initVal;
 	double x_i1 = initVal + 0.01;
@@ -308,9 +346,12 @@ inline double betaMode_ltrunc(double initVal, void *my_data ,double error = 0.00
 	}
 	return x_i;
 }
+*/
 
 
-/* Function that calculates probability of excluding the marker from the model */
+
+
+// Function that calculates probability of excluding the marker from the model */
 inline double prob_calc0(double BETA_MODE, VectorXd prior_prob, void *norm_data){
 
 	pars p = *(static_cast<pars *>(norm_data));
@@ -622,24 +663,18 @@ int BayesW::runGibbs_notPreprocessed()
 /* Usual PP solution */
 int BayesW::runGibbs_Preprocessed()
 {
-
-
-	if(ltrunc){
-		mu_dens=mu_dens_ltrunc;
-	}else{
-		mu_dens=mu_dens_reg;
-	}
-
 	const unsigned int M(data.numIncdSnps);
 	const unsigned int N(data.numKeptInds);
 	const int K = opt.S.size()+1;  //number of mixtures + 0 class
 	const int km1 = K -1;
 
+	//init();
+
 	SampleWriter writer;
 	writer.setFileName(outputFile);
 	writer.setMarkerCount(M);
 	writer.setIndividualCount(N);
-	writer.open();
+	writer.open_bayesW();
 
 	// Sampler variables
 	VectorXd sample(2*M+5+K); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance,sigma_g
@@ -666,6 +701,7 @@ int BayesW::runGibbs_Preprocessed()
 
 	/* For ARS, we are keeping the data in this structure */
 	struct pars used_data;
+	struct pars_alpha used_data_alpha; // For alpha we keep it in a separate structure
 
 	//mean and residual variables
 	double mu; // mean or intercept
@@ -708,34 +744,41 @@ int BayesW::runGibbs_Preprocessed()
 
 	y = data.y.cast<double>();
 
-	VectorXi failure(N);   //Failure vector
-	failure = data.fail;
+	cout << data.y[0]<< endl;
+	cout <<y.size()<<endl;
 
-
-	(used_data.epsilon).resize(y.size());
-	(used_data.failure_vector).resize(failure.size());
+	used_data_alpha.failure_vector = data.fail.cast<double>();
 
 	beta.setZero();
 	//Initial value for intercept is the mean of the logarithms
+
 
 	mu = y.mean();
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
 	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
 
-
+	(used_data.epsilon).resize(y.size());
+	used_data_alpha.epsilon.resize(y.size());
 	for(int i=0; i<(y.size()); ++i){
 		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
-		(used_data.failure_vector)[i] = failure[i];
 	}
 
 	used_data.sigma_b = pow(PI,2)/ (6 * pow(used_data.alpha,2) * M ) ;
 
+	// Save the sum(X_j*failure) for each j
+	VectorXd sum_failure(M);
+	for(int marker=0; marker<M; marker++){
+		sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+	}
+	// Save the number of events
+	used_data.d = used_data_alpha.failure_vector.array().sum();
+	used_data_alpha.d = used_data_alpha.failure_vector.array().sum();
 
 	/* Prior value selection for the variables */
 	/* At the moment we set them to be uninformative */
 	/* alpha */
-	used_data.alpha_0 = alpha_0;
-	used_data.kappa_0 = kappa_0;
+	used_data_alpha.alpha_0 = alpha_0;
+	used_data_alpha.kappa_0 = kappa_0;
 	/* mu */
 	used_data.sigma_mu = sigma_mu;
 	/* sigma_b */
@@ -757,8 +800,9 @@ int BayesW::runGibbs_Preprocessed()
 			if (iteration % (int)std::ceil(max_iterations / 10) == 0)
 				std::cout << "iteration: "<<iteration <<"\n";
 		}
+
 		/* 1. Mu */
-		xl = -5; xr = 10.0;
+		xl = 3; xr = 5;
 		new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
 		assignArray(p_xinit,new_xinit);
 		used_data.epsilon = used_data.epsilon.array() + mu;//  we add the previous value
@@ -780,6 +824,8 @@ int BayesW::runGibbs_Preprocessed()
 			marker = markerI[j];
 			// Using the preprocessed solution
 			used_data.X_j = data.mappedZ.col(marker).cast<double>();
+			//Save sum(X_j*failure)
+			used_data.sum_failure = sum_failure(marker);
 
 			//Change the residual vector only if the previous beta was non-zero
 
@@ -790,15 +836,8 @@ int BayesW::runGibbs_Preprocessed()
 			}
 
 			/* Calculate the mixture probability */
-			BETA_MODE = betaMode(BETAmodes(marker),&used_data);   //Find the posterior mode using the last mode as the starting value
-			if(BETA_MODE != BETA_MODE){
-				BETA_MODE= betaMode(BETAmodes(marker),&used_data);
-
-				cout << BETAmodes(marker) << endl;
-				cout << marker << endl;
-			}
-			beta_diff_sum = beta_diff_sum + abs(BETA_MODE -BETAmodes(marker));
-
+			//VectorXd XjXj = used_data.X_j.array()*used_data.X_j.array();
+			BETA_MODE = betaMode(BETAmodes(marker) ,&used_data);   //Find the posterior mode using the last mode as the starting value
 
 			//TODO: For Multiple mixtures betaMode function needs to be defined
 			BETAmodes(marker) = BETA_MODE;
@@ -807,7 +846,6 @@ int BayesW::runGibbs_Preprocessed()
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
 			acum = prob_calc0(BETA_MODE,pi_L,&used_data);  // Calculate the probability that marker is 0
-
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
 				if (p <= acum) {
@@ -819,11 +857,12 @@ int BayesW::runGibbs_Preprocessed()
 					}
 					// If is not 0th component then sample using ARS
 					else {
-						//cout << marker << ": "  << k << endl;
-						xl = BETA_MODE - 0.1; xr = BETA_MODE + 0.1;
 						used_data.used_mixture = k-1; // Save the mixture class before sampling (-1 because we count from 0)
+						double safe_limit = 2 * sqrt(used_data.sigma_b * used_data.mixture_classes(k-1));
+						xl = BETA_MODE - safe_limit  ;
+						xr = BETA_MODE + safe_limit;
 						// Set initial values for constructing ARS hull
-						new_xinit << BETA_MODE - 0.01 , BETA_MODE,  BETA_MODE + 0.005, BETA_MODE + 0.01;
+						new_xinit << BETA_MODE - safe_limit/10 , BETA_MODE,  BETA_MODE + safe_limit/20, BETA_MODE + safe_limit/10;
 						assignArray(p_xinit,new_xinit);
 						// Sample using ARS
 
@@ -846,20 +885,25 @@ int BayesW::runGibbs_Preprocessed()
 				}
 			}
 		}
-		cout << beta_diff_sum << endl;
 		// 3. Alpha
 		xl = 0.0; xr = 400.0;
 		new_xinit << (used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3;  // New values for abscissae evaluation
 		assignArray(p_xinit,new_xinit);
 
-		err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data,&convex,
+		//Give the residual to alpha structure
+		used_data_alpha.epsilon = used_data.epsilon;
+
+		err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data_alpha,&convex,
 				npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 		errorCheck(err);
 		used_data.alpha = xsamp[0];
 
 		// 4. sigma_b
-		used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0])),
-				(double)(used_data.beta_sigma + 0.5 * betasqn));
+	//	used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0])),
+	//			(double)(used_data.beta_sigma + 0.5 * betasqn));
+
+		used_data.sigma_b = dist.inv_gamma_rng((double) (0.01 + 0.5 * (M - v[0])),
+				(double)(0.01 + 0.5 * betasqn));
 
 		// 5. Mixture probability
 
@@ -872,7 +916,7 @@ int BayesW::runGibbs_Preprocessed()
 				gi = y.array() - mu - used_data.epsilon.array();
 				sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
 
-				sample << iteration, used_data.alpha, mu, beta,components, used_data.sigma_b ,pi_L, sigma_g;
+				sample << iteration, used_data.alpha, mu, beta,components, used_data.sigma_b , sigma_g;
 				writer.write(sample);
 			}
 		}
