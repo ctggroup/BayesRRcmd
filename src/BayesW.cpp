@@ -44,19 +44,13 @@ BayesW::~BayesW()
 {
 }
 
-/*
-void BayesW::init()
-{
-	failure = data.fail;
-}
-*/
+
 
 // Keep the necessary parameters in structures
 // ARS uses the structure for using necessary parameters
 
 struct pars{
 	/* Common parameters for the densities */
-//	VectorXd failure_vector;	// Data for failures (per subject)
 	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
 //	 VectorXd epsilon_trunc;		// Difference of left truncation time and linear predictor (per subject)
 
@@ -154,8 +148,6 @@ inline double beta_dens_12_ratio(double x, void *norm_data){
 //	return (-(x/(p.sigma_b)) -  p.sum_failure + (exp_vector.array() * p.X_j.array()).sum())/
 //				(-(1/(p.sigma_b)) - (p.alpha)  * (exp_vector.array() * (p.X_j).array() * (p.X_j).array()).sum());
 
-
-
 	return (-(  x/(p.sigma_b)) - p.alpha * p.sum_failure + p.alpha*(exp_vector.array() * p.X_j.array()).sum())/
 			(-( 1/p.sigma_b) - (p.alpha)*(p.alpha)  * (exp_vector.array() * p.X_j.array() * p.X_j.array()).sum());
 
@@ -238,7 +230,7 @@ inline double betaMode(double initVal, void *my_data , double error = 0.000001, 
 	while(abs(x_i-x_i1) > error){
 		++counter;
 		if(counter > max_count){
-			return initVal;  //Failure if we repeat iteratio too many times
+			return initVal;  //Failure if we repeat iterations too many times
 		}
 		x_i1 = x_i;
 		x_i = x_i1 - beta_dens_12_ratio(x_i1,my_data);
@@ -704,7 +696,7 @@ int BayesW::runGibbs_Preprocessed()
 	struct pars_alpha used_data_alpha; // For alpha we keep it in a separate structure
 
 	//mean and residual variables
-	double mu; // mean or intercept
+	double mu;         // mean or intercept
 	double BETA_MODE;  //Beta mode at hand
 
 	//Precompute matrix of (1/2Ck - 1/2Cq)
@@ -744,9 +736,6 @@ int BayesW::runGibbs_Preprocessed()
 
 	y = data.y.cast<double>();
 
-	cout << data.y[0]<< endl;
-	cout <<y.size()<<endl;
-
 	used_data_alpha.failure_vector = data.fail.cast<double>();
 
 	beta.setZero();
@@ -772,7 +761,7 @@ int BayesW::runGibbs_Preprocessed()
 	}
 	// Save the number of events
 	used_data.d = used_data_alpha.failure_vector.array().sum();
-	used_data_alpha.d = used_data_alpha.failure_vector.array().sum();
+	used_data_alpha.d = used_data.d;
 
 	/* Prior value selection for the variables */
 	/* At the moment we set them to be uninformative */
@@ -899,11 +888,9 @@ int BayesW::runGibbs_Preprocessed()
 		used_data.alpha = xsamp[0];
 
 		// 4. sigma_b
-	//	used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0])),
-	//			(double)(used_data.beta_sigma + 0.5 * betasqn));
+		used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0])),
+				(double)(used_data.beta_sigma + 0.5 * betasqn));
 
-		used_data.sigma_b = dist.inv_gamma_rng((double) (0.01 + 0.5 * (M - v[0])),
-				(double)(0.01 + 0.5 * betasqn));
 
 		// 5. Mixture probability
 

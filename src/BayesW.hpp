@@ -30,14 +30,12 @@ class BayesW
     const double    sigma_mu    = 100;
     const double    alpha_sigma  = 0.01;
     const double    beta_sigma   = 0.01;
-   // static VectorXd failure;
 
     Distributions_boost dist;
 
 public:
     BayesW(Data &data, Options &opt, const long memPageSize);
     virtual ~BayesW();
-   // void init();
     int runGibbs_Preprocessed(); // where we run Gibbs sampling over the parametrised model
  //   int runGibbs_Preprocessed_LeftTruncated(); // Add also the starting time
  //   int runGibbs_notPreprocessed(); // Separate two functions for either preprocessed or not preprocessed data
