@@ -62,6 +62,10 @@ void ParallelGraph::exec(unsigned int numKeptInds,
                          unsigned int numIncdSnps,
                          const std::vector<unsigned int> &markerIndices)
 {
+    // Do not allow Eigen to parallalize during ParallelGraph execution.
+    const auto eigenThreadCount = Eigen::nbThreads( );
+    Eigen::setNbThreads(0);
+
     // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
     m_graph->reset();
 
@@ -73,4 +77,7 @@ void ParallelGraph::exec(unsigned int numKeptInds,
 
     // Wait for the graph to complete
     m_graph->wait_for_all();
+
+    // Turn Eigen threading back on.
+    Eigen::setNbThreads(eigenThreadCount);
 }

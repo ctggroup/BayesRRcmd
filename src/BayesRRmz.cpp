@@ -121,6 +121,9 @@ int BayesRRmz::runGibbs()
     m_components.resize(M);
     m_components.setZero();
 
+    long meanIterationTime = 0;
+    long meanFlowGraphIterationTime = 0;
+
     for (unsigned int iteration = 0; iteration < m_maxIterations; iteration++) {
         // Output progress
         const auto startTime = std::chrono::high_resolution_clock::now();
@@ -145,7 +148,9 @@ int BayesRRmz::runGibbs()
         // The flow graph is constructed to allow the data to be decompressed in parallel for enforce sequential processing of each column
         // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
         // of data.
+        const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
         m_flowGraph->exec(N, M, markerI);
+        const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
         m_m0 = int(M) - int(m_v[0]);
         m_sigmaG = m_dist.inv_scaled_chisq_rng(m_v0G + m_m0, (m_betasqn * m_m0 + m_v0G * m_s02G) / (m_v0G + m_m0));
@@ -167,12 +172,19 @@ int BayesRRmz::runGibbs()
 
         const auto endTime = std::chrono::high_resolution_clock::now();
         const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-        std::cout << iterationDuration / double(1000.0) << "s" << std::endl;
+        const auto flowGraphDuration = std::chrono::duration_cast<std::chrono::milliseconds>(flowGraphEndTime - flowGraphStartTime).count();
+        std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)" << std::endl;
+        meanIterationTime += iterationDuration;
+        meanFlowGraphIterationTime += flowGraphDuration;
     }
 
     const auto t2 = std::chrono::high_resolution_clock::now();
     const auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
     std::cout << "duration: " << duration << "s" << std::endl;
+    const double meanIterationDuration = (static_cast<double>(meanIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
+    const double meanFlowGraphIterationDuration = (static_cast<double>(meanFlowGraphIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
+    std::cout << "mean iteration duration: " << meanIterationDuration  << "s" << std::endl
+              << "mean flowgraph duration: " << meanFlowGraphIterationDuration << "s" << std::endl;
 
     return 0;
 }
@@ -364,6 +376,7 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         });
     }
     VectorXd v = VectorXd(K);
+    v.setZero();
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
@@ -385,24 +398,29 @@ void BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
         }
     }
 
+    // Only update m_epsilon if required
+    const bool skipUpdate = beta_old == 0.0 && beta == 0.0;
+
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
-    if (component != 0.0) {
-        epsilon = y_tilde - beta * Cx;
-    } else {
-        epsilon = y_tilde;
+    if (!skipUpdate) {
+        y_tilde -= beta * Cx;
     }
-    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+    // Now y_tilde contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
     // Lock to write updates (at end, or perhaps as updates are computed)
     {
         // Use a unique lock to ensure only one thread can write updates
         std::unique_lock lock(m_mutex);
-        std::memcpy(m_epsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
-        m_beta(marker) = beta;
-        m_betasqn += beta * beta - beta_old * beta_old;
-        m_components(marker) = component;
+        if (!skipUpdate) {
+            std::memcpy(m_epsilon.data(), y_tilde.data(), static_cast<size_t>(y_tilde.size()) * sizeof(double));
+            m_betasqn += beta * beta - beta_old * beta_old;
+        }
         m_v += v;
     }
+
+    // These updates do not need to be atomic
+    m_beta(marker) = beta;
+    m_components(marker) = component;
 }
 
 void BayesRRmz::printDebugInfo() const
