@@ -106,23 +106,23 @@ void SparseData::readBedFileSparse(const string &bedFile)
 
         // Create a vector of doubles for sds computation
         VectorXd doubles;
-        doubles.setZero(tuples.size());
+        doubles.resize(numInds);
+        doubles.fill(0 - mean);
 
         // Fill the SparseVector and doubles
-        auto i = 0;
         std::for_each(tuples.cbegin(), tuples.cend(), [&](const T &t) {
+            const auto index = std::get<0>(t);
             auto value = std::get<1>(t);
             // If the value is zero or smaller, impute using the mean.
             if (value <= 0)
                 value = mean;
 
-            vector.insertBack(std::get<0>(t)) = value;
-            doubles(i) = static_cast<double>(value);
+            vector.insertBack(index) = value;
+            doubles(index) = value - mean;
         });
 
         // Calculate sds
-        doubles.array() -= mean;
-        sds[snp] = sqrt(doubles.squaredNorm() / (static_cast<double>(numInds) - 1.0));
+        sds[snp] = std::sqrt(doubles.squaredNorm() / (static_cast<double>(numInds) - 1.0));
     }
 
     BIT.clear();
