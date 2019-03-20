@@ -6,7 +6,7 @@
 class SparseData : public Data
 {
 public:
-    using UnitDataType = char;
+    using UnitDataType = double;
 
     SparseData();
 
@@ -24,6 +24,9 @@ public:
     //This following function, reads the bed file and stores each columns mean, sd, sum of squares and sum of elements, additionally it saves
     //in memory either the sparse matrix Zg or the two vector of vectors of indexes.
     void readBedFileSparse(const string &bedFile);
+
+private:
+    static const UnitDataType kMissing;
 };
 
 #endif // SPARSEDATA_H

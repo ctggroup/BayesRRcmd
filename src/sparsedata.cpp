@@ -3,6 +3,8 @@
 using T = std::tuple<Eigen::Index, SparseData::UnitDataType>;
 using TupleList = std::vector<T>;
 
+const SparseData::UnitDataType SparseData::kMissing = std::numeric_limits<SparseData::UnitDataType>::lowest();
+
 SparseData::SparseData()
     : Data()
 {
@@ -52,6 +54,9 @@ void SparseData::readBedFileSparse(const string &bedFile)
         TupleList tuples;
         tuples.reserve(estimatedDataCount);
 
+        // Record the number of missing genotypes
+        auto missingGenotypeCount = 0;
+
         for (unsigned int i = 0; i < numInds;) {
             char ch;
             BIT.read(&ch, 1);
@@ -69,7 +74,8 @@ void SparseData::readBedFileSparse(const string &bedFile)
                     const unsigned int allele2 = (!b[k++]);
 
                     if (allele1 == 0 && allele2 == 1) {  // missing genotype
-                        // Ignore missing genotype
+                        tuples.emplace_back(i, kMissing);
+                        ++missingGenotypeCount;
                     } else if (allele1 == 1 || allele2 == 1) { // Not zero
                         // Populate data for 1 or 2
                         const double value = allele1 + allele2;
@@ -83,27 +89,39 @@ void SparseData::readBedFileSparse(const string &bedFile)
             }
         }
 
+        // Calculate mean
+        means[snp] /= static_cast<double>(numInds);
+        const double mean = means[snp];
+
+        // Update sqrdZ with imputed values
+        sqrdZ[snp] += (mean * mean) * missingGenotypeCount;
+
+        // Update Zsum with imputed values
+        Zsum[snp] += mean * missingGenotypeCount;
+
         // Create the SparseVector
         auto &vector = Zg.at(snp);
         vector.resize(numInds); // Number of rows
         vector.reserve(tuples.size()); // Number of rows that are not zero
 
-        // Create a vector of doubles for computation
+        // Create a vector of doubles for sds computation
         VectorXd doubles;
         doubles.setZero(tuples.size());
 
         // Fill the SparseVector and doubles
         auto i = 0;
         std::for_each(tuples.cbegin(), tuples.cend(), [&](const T &t) {
-            vector.insertBack(std::get<0>(t)) = std::get<1>(t);
-            doubles(i) = static_cast<double>(std::get<1>(t));
+            auto value = std::get<1>(t);
+            // If the value is zero or smaller, impute using the mean.
+            if (value <= 0)
+                value = mean;
+
+            vector.insertBack(std::get<0>(t)) = value;
+            doubles(i) = static_cast<double>(value);
         });
 
-        // Calculate mean
-        means[snp] /= static_cast<double>(numInds);
-
         // Calculate sds
-        doubles.array() -= means[snp];
+        doubles.array() -= mean;
         sds[snp] = sqrt(doubles.squaredNorm() / (static_cast<double>(numInds) - 1.0));
     }
 
