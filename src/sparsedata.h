@@ -1,6 +1,13 @@
+#ifndef SPARSEDATA_H
+#define SPARSEDATA_H
+
 #include "data.hpp"
 
-class DataG:Data{
+class SparseData : public Data
+{
+public:
+    SparseData();
+
     VectorXd means; //vector that contains the mean of each column of the bed file matrix
     VectorXd sds; //vector that contains the sd of each column of the bed file matrix
     VectorXd sqrdZ; //vector that contains the sum of squares of each column the bed file matrix
@@ -12,5 +19,7 @@ class DataG:Data{
     //
     //This following function, reads the bed file and stores each columns mean, sd, sum of squares and sum of elements, additionally it saves
     //in memory either the sparse matrix Zg or the two vector of vectors of indexes.
-    void readBedFile_G(const string &bedFile);
-}
+    void readBedFileSparse(const string &bedFile);
+};
+
+#endif // SPARSEDATA_H

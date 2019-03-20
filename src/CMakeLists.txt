@@ -50,6 +50,7 @@ add_library(libbrr-dev
     limitsequencegraph.cpp
     parallelgraph.cpp
     analysisgraph.cpp
+    sparsedata.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -65,6 +66,7 @@ add_executable(${PROJECT_NAME}
     limitsequencegraph.cpp
     parallelgraph.cpp
     analysisgraph.cpp
+    sparsedata.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)
