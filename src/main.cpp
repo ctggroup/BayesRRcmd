@@ -4,6 +4,7 @@
 #include "BayesRRmz.hpp"
 #include "data.hpp"
 #include "options.hpp"
+#include "sparsedata.h"
 
 using namespace std;
 
@@ -89,7 +90,14 @@ void processDenseData(Options opt) {
 }
 
 void processSparseData(const Options &options) {
-    // TODO
+    SparseData data;
+
+    // Read in the data for every possible option
+    data.readFamFile(options.bedFile + ".fam");
+    data.readBimFile(options.bedFile + ".bim");
+
+    // Read the data in sparse format
+    data.readBedFileSparse(options.bedFile + ".bed");
 }
 
 int main(int argc, const char * argv[]) {
