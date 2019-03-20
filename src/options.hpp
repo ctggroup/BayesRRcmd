@@ -38,6 +38,7 @@ public:
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
+    bool sparseData = false;
 
     Options(){
         chainLength             = 10000;

@@ -7,6 +7,91 @@
 
 using namespace std;
 
+void processDenseData(Options opt) {
+    Data data;
+
+    // Read in the data for every possible option
+    data.readFamFile(opt.bedFile + ".fam");
+    data.readBimFile(opt.bedFile + ".bim");
+
+    // RAM solution (analysisType = RAMBayes)
+    if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe")) {
+
+        clock_t start = clock();
+
+        // Read phenotype file and bed file for the option specified
+        data.readPhenotypeFile(opt.phenotypeFile);
+        data.readBedFile_noMPI(opt.bedFile+".bed");
+
+        // Option bayesType="bayesMmap" is going to be deprecated
+        if (opt.bayesType == "bayesMmap" || opt.bayesType == "bayes"){
+            BayesRRm analysis(data, opt, sysconf(_SC_PAGE_SIZE));
+            analysis.runGibbs();
+        } else if (opt.bayesType == "horseshoe") {
+            //TODO Finish horseshoe
+        } else if (opt.bayesType == "bayesW") {
+            //TODO Add BayesW
+        } else if (opt.bayesType == "bayesG") {
+            //TODO add Bayes groups
+        }
+
+        clock_t end   = clock();
+        printf("OVERALL read+compute time = %.3f sec.\n", (float)(end - start) / CLOCKS_PER_SEC);
+    }
+
+    // Pre-processing the data (centering and scaling)
+    else if (opt.analysisType == "Preprocess") {
+        cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
+
+        clock_t start_bed = clock();
+        data.preprocessBedFile(opt.bedFile + ".bed",
+                opt.bedFile + ".ppbed",
+                opt.bedFile + ".ppbedindex",
+                opt.compress);
+
+        clock_t end = clock();
+        printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+        cout << endl;
+    }else if (opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes") {
+        clock_t start = clock();
+        data.readPhenotypeFile(opt.phenotypeFile);
+        // Run analysis using mapped data files
+        if (opt.compress) {
+            cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+            clock_t start_bed = clock();
+            data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
+                    opt.bedFile + ".ppbedindex");
+            clock_t end = clock();
+            printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+            cout << endl;
+
+            BayesRRmz analysis(data, opt);
+            analysis.runGibbs();
+            data.unmapCompressedPreprocessedBedFile();
+        } else {
+            cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+            clock_t start_bed = clock();
+            data.mapPreprocessBedFile(opt.bedFile + ".ppbed");
+            clock_t end = clock();
+            printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+            cout << endl;
+
+            BayesRRm analysis(data, opt, sysconf(_SC_PAGE_SIZE));
+            analysis.runGibbs();
+
+            data.unmapPreprocessedBedFile();
+            end = clock();
+            printf("OVERALL read+compute time = %.3f sec.\n", double(end - start) / double(CLOCKS_PER_SEC));
+        }
+    }else {
+        throw(" Error: Wrong analysis type: " + opt.analysisType);
+    }
+}
+
+void processSparseData(const Options &options) {
+    // TODO
+}
+
 int main(int argc, const char * argv[]) {
 
 
@@ -29,84 +114,10 @@ int main(int argc, const char * argv[]) {
         Options opt;
         opt.inputOptions(argc, argv);
 
-        Data data;
-
-        // Read in the data for every possible option
-        data.readFamFile(opt.bedFile + ".fam");
-        data.readBimFile(opt.bedFile + ".bim");
-
-        // RAM solution (analysisType = RAMBayes)
-        if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe")) {
-
-            clock_t start = clock();
-
-            // Read phenotype file and bed file for the option specified
-            data.readPhenotypeFile(opt.phenotypeFile);
-            data.readBedFile_noMPI(opt.bedFile+".bed");
-
-            // Option bayesType="bayesMmap" is going to be deprecated
-            if (opt.bayesType == "bayesMmap" || opt.bayesType == "bayes"){
-                BayesRRm analysis(data, opt, sysconf(_SC_PAGE_SIZE));
-                analysis.runGibbs();
-            } else if (opt.bayesType == "horseshoe") {
-                //TODO Finish horseshoe
-            } else if (opt.bayesType == "bayesW") {
-                //TODO Add BayesW
-            } else if (opt.bayesType == "bayesG") {
-                //TODO add Bayes groups
-            }
-
-            clock_t end   = clock();
-            printf("OVERALL read+compute time = %.3f sec.\n", (float)(end - start) / CLOCKS_PER_SEC);
-        }
-
-        // Pre-processing the data (centering and scaling)
-        else if (opt.analysisType == "Preprocess") {
-            cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
-
-            clock_t start_bed = clock();
-            data.preprocessBedFile(opt.bedFile + ".bed",
-                    opt.bedFile + ".ppbed",
-                    opt.bedFile + ".ppbedindex",
-                    opt.compress);
-
-            clock_t end = clock();
-            printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-            cout << endl;
-        }else if (opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes") {
-            clock_t start = clock();
-            data.readPhenotypeFile(opt.phenotypeFile);
-            // Run analysis using mapped data files
-            if (opt.compress) {
-                cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
-                clock_t start_bed = clock();
-                data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
-                        opt.bedFile + ".ppbedindex");
-                clock_t end = clock();
-                printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-                cout << endl;
-
-                BayesRRmz analysis(data, opt);
-                analysis.runGibbs();
-                data.unmapCompressedPreprocessedBedFile();
-            } else {
-                cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
-                clock_t start_bed = clock();
-                data.mapPreprocessBedFile(opt.bedFile + ".ppbed");
-                clock_t end = clock();
-                printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-                cout << endl;
-
-                BayesRRm analysis(data, opt, sysconf(_SC_PAGE_SIZE));
-                analysis.runGibbs();
-
-                data.unmapPreprocessedBedFile();
-                end = clock();
-                printf("OVERALL read+compute time = %.3f sec.\n", double(end - start) / double(CLOCKS_PER_SEC));
-            }
-        }else {
-            throw(" Error: Wrong analysis type: " + opt.analysisType);
-        }
+        if (opt.sparseData)
+            processSparseData(opt);
+        else
+            processDenseData(opt);
     }
     catch (const string &err_msg) {
         cerr << "\n" << err_msg << endl;
