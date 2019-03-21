@@ -99,15 +99,14 @@ void SparseData::readBedFileSparse(const string &bedFile)
         // Update Zsum with imputed values
         Zsum[snp] += mean * missingGenotypeCount;
 
+        // Calculate sds
+        sds[snp] = std::sqrt((sqrdZ[snp] - 2 * mean * Zsum[snp] + static_cast<double>(numInds) * mean * mean) /
+                             (static_cast<double>(numInds) - 1.0));
+
         // Create the SparseVector
         auto &vector = Zg.at(snp);
         vector.resize(numInds); // Number of rows
         vector.reserve(tuples.size()); // Number of rows that are not zero
-
-        // Create a vector of doubles for sds computation
-        VectorXd doubles;
-        doubles.resize(numInds);
-        doubles.fill(0 - mean);
 
         // Fill the SparseVector and doubles
         std::for_each(tuples.cbegin(), tuples.cend(), [&](const T &t) {
@@ -118,11 +117,7 @@ void SparseData::readBedFileSparse(const string &bedFile)
                 value = mean;
 
             vector.insertBack(index) = value;
-            doubles(index) = value - mean;
         });
-
-        // Calculate sds
-        sds[snp] = std::sqrt(doubles.squaredNorm() / (static_cast<double>(numInds) - 1.0));
     }
 
     BIT.clear();
