@@ -1,5 +1,5 @@
-#ifndef PARALLELGRAPH_H
-#define PARALLELGRAPH_H
+#ifndef DENSEPARALLELGRAPH_H
+#define DENSEPARALLELGRAPH_H
 
 #include "analysisgraph.hpp"
 
@@ -11,10 +11,10 @@ class DenseBayesRRmz;
 
 using namespace tbb::flow;
 
-class ParallelGraph : public AnalysisGraph
+class DenseParallelGraph : public AnalysisGraph
 {
 public:
-    ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel = 6);
+    DenseParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel = 6);
 
 
     void exec(unsigned int numInds,
@@ -53,4 +53,4 @@ private:
     std::unique_ptr<function_node<Message>> m_globalComputeNode;
 };
 
-#endif // PARALLELGRAPH_H
+#endif // DENSEPARALLELGRAPH_H

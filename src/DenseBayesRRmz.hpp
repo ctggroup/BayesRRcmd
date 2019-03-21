@@ -15,7 +15,7 @@
 class DenseBayesRRmz : public BayesRBase
 {
     friend class LimitSequenceGraph;
-    friend class ParallelGraph;
+    friend class DenseParallelGraph;
 
 public:
     explicit DenseBayesRRmz(const Data *m_data, Options &m_opt);

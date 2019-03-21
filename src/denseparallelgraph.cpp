@@ -1,11 +1,11 @@
-#include "parallelgraph.hpp"
+#include "denseparallelgraph.hpp"
 
 #include "compression.h"
 #include "DenseBayesRRmz.hpp"
 
 #include <iostream>
 
-ParallelGraph::ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
+DenseParallelGraph::DenseParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
     : AnalysisGraph(maxParallel)
     , m_bayes(bayes)
     , m_graph(new graph)
@@ -97,7 +97,7 @@ ParallelGraph::ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
     make_edge(*m_globalComputeNode, m_limit->decrement);
 }
 
-void ParallelGraph::exec(unsigned int numInds,
+void DenseParallelGraph::exec(unsigned int numInds,
                          unsigned int numSnps,
                          const std::vector<unsigned int> &markerIndices)
 {

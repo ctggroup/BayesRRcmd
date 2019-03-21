@@ -47,7 +47,7 @@ add_library(libbrr-dev
     samplewriter.cpp
     compression.cpp
     limitsequencegraph.cpp
-    parallelgraph.cpp
+    denseparallelgraph.cpp
     analysisgraph.cpp
     sparsedata.cpp
     BayesRBase.cpp
@@ -66,7 +66,7 @@ add_executable(${PROJECT_NAME}
     samplewriter.cpp
     compression.cpp
     limitsequencegraph.cpp
-    parallelgraph.cpp
+    denseparallelgraph.cpp
     analysisgraph.cpp
     sparsedata.cpp
     BayesRBase.cpp
