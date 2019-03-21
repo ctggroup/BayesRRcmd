@@ -1,11 +1,11 @@
 #include "limitsequencegraph.hpp"
 
 #include "compression.h"
-#include "BayesRRmz.hpp"
+#include "DenseBayesRRmz.hpp"
 
 #include <iostream>
 
-LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
+LimitSequenceGraph::LimitSequenceGraph(DenseBayesRRmz *bayes, size_t maxParallel)
     : AnalysisGraph(bayes, maxParallel)
     , m_graph(new graph)
 {
@@ -16,8 +16,8 @@ LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
         const unsigned int colSize = msg.numInds * sizeof(double);
         msg.decompressBuffer = new unsigned char[colSize];
 
-        extractData(reinterpret_cast<unsigned char *>(m_bayes->m_data.ppBedMap) + m_bayes->m_data.ppbedIndex[msg.marker].pos,
-                    static_cast<unsigned int>(m_bayes->m_data.ppbedIndex[msg.marker].size),
+        extractData(reinterpret_cast<unsigned char *>(m_bayes->m_data->ppBedMap) + m_bayes->m_data->ppbedIndex[msg.marker].pos,
+                    static_cast<unsigned int>(m_bayes->m_data->ppbedIndex[msg.marker].size),
                     msg.decompressBuffer,
                     colSize);
 

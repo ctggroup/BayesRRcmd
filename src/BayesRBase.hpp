@@ -5,8 +5,8 @@
  *      Author: admin
  */
 
-#ifndef SRC_BAYESRRMZ_H_
-#define SRC_BAYESRRMZ_H_
+#ifndef SRC_BAYESRBASE_H_
+#define SRC_BAYESRBASE_H_
 
 #include "data.hpp"
 #include "options.hpp"
@@ -14,16 +14,24 @@
 
 #include <Eigen/Eigen>
 #include <memory>
-#include <shared_mutex>
 
 class AnalysisGraph;
 
-class BayesRRmz
+class BayesRBase
 {
-    friend class LimitSequenceGraph;
-    friend class ParallelGraph;
+public:
+    BayesRBase(const Data *m_data, Options &m_opt);
+    virtual ~BayesRBase();
+
+    int runGibbs(); // where we run Gibbs sampling over the parametrised model
+
+    void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
+    bool isDebugEnabled() const { return m_showDebug; }
+
+protected:
     std::unique_ptr<AnalysisGraph> m_flowGraph;
-    Data                &m_data; // data matrices
+
+    const Data          *m_data; // data matrices
     Options             &m_opt;
     const string        m_bedFile; // bed file
     const string        m_outputFile;
@@ -66,23 +74,12 @@ class BayesRRmz
     VectorXd m_y;
     VectorXd m_components;
 
-    mutable std::shared_mutex m_mutex;
-    mutable std::mutex m_rngMutex;
+    bool m_isAsync = false;
 
-public:
-    BayesRRmz(Data &m_data, Options &m_opt);
-    virtual ~BayesRRmz();
-    int runGibbs(); // where we run Gibbs sampling over the parametrised model
-    void processColumn(unsigned int marker, const Map<VectorXd> &Cx);
-    std::tuple<double, double> processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx);
-    void updateGlobal(double beta_old, double beta, const Map<VectorXd> &Cx);
+    void setAsynchronous(bool async) { m_isAsync = async; }
 
-    void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
-    bool isDebugEnabled() const { return m_showDebug; }
-
-private:
-    void init(int K, unsigned int markerCount, unsigned int individualCount);
+    virtual void init(int K, unsigned int markerCount, unsigned int individualCount);
     void printDebugInfo() const;
 };
 
-#endif /* SRC_BAYESRRM_H_ */
+#endif /* SRC_BAYESRBASE_H_ */

@@ -7,14 +7,14 @@
 #include <functional>
 #include <memory>
 
-class BayesRRmz;
+class DenseBayesRRmz;
 
 using namespace tbb::flow;
 
 class ParallelGraph : public AnalysisGraph
 {
 public:
-    ParallelGraph(BayesRRmz *bayes, size_t maxParallel = 6);
+    ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel = 6);
 
 
     void exec(unsigned int numInds,

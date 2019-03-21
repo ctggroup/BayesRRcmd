@@ -1,6 +1,6 @@
 #include "analysisgraph.hpp"
 
-AnalysisGraph::AnalysisGraph(BayesRRmz *bayes, size_t maxParallel)
+AnalysisGraph::AnalysisGraph(DenseBayesRRmz *bayes, size_t maxParallel)
     : m_bayes(bayes)
     , m_maxParallel(maxParallel)
 {

@@ -4,12 +4,12 @@
 #include <cstddef>
 #include <vector>
 
-class BayesRRmz;
+class DenseBayesRRmz;
 
 class AnalysisGraph
 {
 public:
-    AnalysisGraph(BayesRRmz *bayes, size_t maxParallel = 12);
+    AnalysisGraph(DenseBayesRRmz *bayes, size_t maxParallel = 12);
     virtual ~AnalysisGraph();
 
     virtual void exec(unsigned int numInds,
@@ -17,7 +17,7 @@ public:
                       const std::vector<unsigned int> &markerIndices) = 0;
 
 protected:
-    BayesRRmz *m_bayes = nullptr;
+    DenseBayesRRmz *m_bayes = nullptr;
     size_t m_maxParallel = 12;
 };
 

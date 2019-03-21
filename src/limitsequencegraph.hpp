@@ -7,14 +7,14 @@
 #include <functional>
 #include <memory>
 
-class BayesRRmz;
+class DenseBayesRRmz;
 
 using namespace tbb::flow;
 
 class LimitSequenceGraph : public AnalysisGraph
 {
 public:
-    LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel = 12);
+    LimitSequenceGraph(DenseBayesRRmz *bayes, size_t maxParallel = 12);
 
     void exec(unsigned int numKeptInds,
               unsigned int numIncdSnps,

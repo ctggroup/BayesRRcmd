@@ -40,7 +40,6 @@ endif()
 
 add_library(libbrr-dev
     BayesRRm.cpp
-    BayesRRmz.cpp
     data.cpp
     distributions_boost.cpp
     gadgets.cpp
@@ -51,12 +50,13 @@ add_library(libbrr-dev
     parallelgraph.cpp
     analysisgraph.cpp
     sparsedata.cpp
+    BayesRBase.cpp
+    DenseBayesRRmz.cpp
 )
 
 add_executable(${PROJECT_NAME}
     main.cpp
     BayesRRm.cpp
-    BayesRRmz.cpp
     data.cpp
     distributions_boost.cpp
     gadgets.cpp
@@ -67,6 +67,8 @@ add_executable(${PROJECT_NAME}
     parallelgraph.cpp
     analysisgraph.cpp
     sparsedata.cpp
+    BayesRBase.cpp
+    DenseBayesRRmz.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)

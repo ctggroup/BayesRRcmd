@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include "BayesRRm.h"
-#include "BayesRRmz.hpp"
+#include "DenseBayesRRmz.hpp"
 #include "data.hpp"
 #include "options.hpp"
 #include "sparsedata.h"
@@ -66,7 +66,7 @@ void processDenseData(Options opt) {
             printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
             cout << endl;
 
-            BayesRRmz analysis(data, opt);
+            DenseBayesRRmz analysis(&data, opt);
             analysis.runGibbs();
             data.unmapCompressedPreprocessedBedFile();
         } else {
