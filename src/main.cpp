@@ -91,7 +91,7 @@ void processDenseData(Options opt) {
 }
 
 void processSparseData(Options options) {
-    if (options.analysisType != "PPBayes") {
+    if (options.analysisType != "PPBayes" && options.analysisType != "PPAsyncBayes") {
         std::cout << "Error: Wrong analysis type: " << options.analysisType << std::endl;
         return;
     }
