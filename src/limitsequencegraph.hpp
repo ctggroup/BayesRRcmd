@@ -28,6 +28,7 @@ private:
         unsigned char *decompressBuffer = nullptr;
     };
 
+    DenseBayesRRmz *m_bayes = nullptr;
     std::unique_ptr<graph> m_graph;
     std::unique_ptr<function_node<Message, Message>> m_decompressNode;
     std::unique_ptr<limiter_node<Message>> m_limit;

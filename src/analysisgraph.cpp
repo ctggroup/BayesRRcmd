@@ -1,8 +1,7 @@
 #include "analysisgraph.hpp"
 
-AnalysisGraph::AnalysisGraph(DenseBayesRRmz *bayes, size_t maxParallel)
-    : m_bayes(bayes)
-    , m_maxParallel(maxParallel)
+AnalysisGraph::AnalysisGraph(size_t maxParallel)
+    : m_maxParallel(maxParallel)
 {
 
 }

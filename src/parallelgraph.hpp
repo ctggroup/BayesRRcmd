@@ -42,6 +42,7 @@ private:
         double beta = 0.0;
     };
 
+    DenseBayesRRmz *m_bayes = nullptr;
     std::unique_ptr<graph> m_graph;
     std::unique_ptr<function_node<Message, Message>> m_asyncComputeNode;
     std::unique_ptr<limiter_node<Message>> m_limit;

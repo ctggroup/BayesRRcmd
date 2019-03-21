@@ -9,7 +9,7 @@ class DenseBayesRRmz;
 class AnalysisGraph
 {
 public:
-    AnalysisGraph(DenseBayesRRmz *bayes, size_t maxParallel = 12);
+    AnalysisGraph(size_t maxParallel = 12);
     virtual ~AnalysisGraph();
 
     virtual void exec(unsigned int numInds,

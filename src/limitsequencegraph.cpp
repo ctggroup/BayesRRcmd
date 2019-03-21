@@ -6,7 +6,8 @@
 #include <iostream>
 
 LimitSequenceGraph::LimitSequenceGraph(DenseBayesRRmz *bayes, size_t maxParallel)
-    : AnalysisGraph(bayes, maxParallel)
+    : AnalysisGraph(maxParallel)
+    , m_bayes(bayes)
     , m_graph(new graph)
 {
     // Decompress the column for this marker
