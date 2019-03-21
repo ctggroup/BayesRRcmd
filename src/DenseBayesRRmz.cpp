@@ -255,3 +255,16 @@ void DenseBayesRRmz::updateGlobal(double beta_old, double beta, const Map<Vector
     // No mutex required here whilst m_globalComputeNode uses the serial policy
     m_epsilon -= Cx * (beta - beta_old);
 }
+
+void DenseBayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCount)
+{
+    BayesRBase::init(K, markerCount, individualCount);
+
+    m_async_epsilon = VectorXd(individualCount);
+}
+
+void DenseBayesRRmz::prepareForAnylsis()
+{
+    if (m_isAsync)
+        std::memcpy(m_async_epsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
+}

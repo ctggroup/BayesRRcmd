@@ -28,6 +28,11 @@ public:
 protected:
     mutable std::shared_mutex m_mutex;
     mutable std::mutex m_rngMutex;
+
+    VectorXd m_async_epsilon;
+
+    void init(int K, unsigned int markerCount, unsigned int individualCount) override;
+    void prepareForAnylsis() override;
 };
 
 #endif /* SRC_DENSEBAYESRRMZ_H_ */
