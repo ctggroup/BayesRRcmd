@@ -60,11 +60,7 @@ void SparseBayesRRG::processColumn(unsigned int marker)
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
-    //DANIEL here we either use the column of the sparse matrix or the two index vectors
-    double num = m_means(marker) * m_epsilonSum / m_sds(marker) + beta_old * NM1 + dot(marker, m_epsilon, m_sds(marker));
-    //OR the indexing solution, which using the development branch of eigen should be this
-    //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
-    //maybe you can come up with a better way to index the elements of epsilon
+    const double num = computeNum(marker, beta_old, m_epsilon);
 
     //The rest of the algorithm remains the same
     
@@ -114,23 +110,41 @@ void SparseBayesRRG::processColumn(unsigned int marker)
     //we skip update if old and new beta equals zero
     const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
     if (!skipUpdate) {
-        const double dBeta = beta_old - beta_new;
-        //Either
-        m_epsilon += dBeta * m_sparseData->Zg[marker] / m_sds(marker) - dBeta * m_means(marker) / m_sds(marker) * m_ones;
-
-        //OR
-        //epsilon(Zones[marker])+=(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
-        //epsilon(Ztwos[marker])+=2*(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
-
-        //Regardless of which scheme, the update of epsilonSum is the same
-        m_epsilonSum += dBeta * m_Zsum(marker) / m_sds(marker) - dBeta * m_means(marker) * static_cast<double>(N) / m_sds(marker);
+        m_epsilon += computeEpsilonUpdate(marker, beta_old, beta_new);
+        m_epsilonSum += computeEpsilonSumUpdate(marker, beta_old, beta_new);
     }
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+}
+
+double SparseBayesRRG::computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon) const
+{
+    //DANIEL here we either use the column of the sparse matrix or the two index vectors
+    return m_means(marker) * m_epsilonSum / m_sds(marker) + beta_old * (static_cast<double>(m_data->numInds) - 1.0) + dot(marker, epsilon, m_sds(marker));
+    //OR the indexing solution, which using the development branch of eigen should be this
+    //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
 }
 
 double SparseBayesRRG::dot(const unsigned int marker, const VectorXd &epsilon, const double sd) const
 {
     return m_sparseData->Zg[marker].dot(epsilon) / sd;
+}
+
+VectorXd SparseBayesRRG::computeEpsilonUpdate(const unsigned int marker, const double beta_old, const double beta) const
+{
+    const double dBeta = beta_old - beta;
+    //Either
+    return dBeta * m_sparseData->Zg[marker] / m_sds(marker) - dBeta * m_means(marker) / m_sds(marker) * m_ones;
+
+    //OR
+    //epsilon(Zones[marker])+=(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
+    //epsilon(Ztwos[marker])+=2*(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
+}
+
+double SparseBayesRRG::computeEpsilonSumUpdate(const unsigned int marker, const double beta_old, const double beta) const
+{
+    //Regardless of which scheme, the update of epsilonSum is the same
+    const double dBeta = beta_old - beta;
+    return dBeta * m_Zsum(marker) / m_sds(marker) - dBeta * m_means(marker) * static_cast<double>(m_data->numInds) / m_sds(marker);
 }
 
 #if 0
