@@ -1,12 +1,12 @@
 #include "sparsedata.h"
 
-using T = std::tuple<Eigen::Index, SparseData::UnitDataType>;
-using TupleList = std::vector<T>;
-
-const SparseData::UnitDataType SparseData::kMissing = std::numeric_limits<SparseData::UnitDataType>::lowest();
-
 SparseData::SparseData()
     : Data()
+{
+
+}
+
+SparseData::~SparseData()
 {
 
 }
@@ -35,10 +35,7 @@ void SparseData::readBedFileSparse(const string &bedFile)
     sqrdZ.setZero(numSnps);
     Zsum.setZero(numSnps);
 
-    Zg.resize(numSnps);
-
-    // Data is expected to be about 80% zeros, so reserve a bit more than 20% of the expected space
-    const TupleList::size_type estimatedDataCount = static_cast<TupleList::size_type>(static_cast<double>(numInds) * 0.25);
+    initialise();
 
     // Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
     for (unsigned int snp = 0; snp < numSnps; snp++) {
@@ -50,12 +47,10 @@ void SparseData::readBedFileSparse(const string &bedFile)
             continue;
         }
 
-        // Create the triplet list for our sparse data representation
-        TupleList tuples;
-        tuples.reserve(estimatedDataCount);
+        beginSnpColumn(snp);
 
         // Record the number of missing genotypes
-        auto missingGenotypeCount = 0;
+        unsigned int missingGenotypeCount = 0;
 
         for (unsigned int i = 0; i < numInds;) {
             char ch;
@@ -73,13 +68,13 @@ void SparseData::readBedFileSparse(const string &bedFile)
                     const unsigned int allele1 = (!b[k++]);
                     const unsigned int allele2 = (!b[k++]);
 
+                    processAllele(snp, i, allele1, allele2);
+
                     if (allele1 == 0 && allele2 == 1) {  // missing genotype
-                        tuples.emplace_back(i, kMissing);
                         ++missingGenotypeCount;
                     } else if (allele1 == 1 || allele2 == 1) { // Not zero
                         // Populate data for 1 or 2
                         const double value = allele1 + allele2;
-                        tuples.emplace_back(i, static_cast<UnitDataType>(value));
                         means[snp] += value;
                         sqrdZ[snp] += value * value;
                         Zsum[snp] += value;
@@ -91,33 +86,16 @@ void SparseData::readBedFileSparse(const string &bedFile)
 
         // Calculate mean
         means[snp] /= static_cast<double>(numInds);
-        const double mean = means[snp];
 
-        // Update sqrdZ with imputed values
-        sqrdZ[snp] += (mean * mean) * missingGenotypeCount;
-
-        // Update Zsum with imputed values
-        Zsum[snp] += mean * missingGenotypeCount;
+        // Call endSnpColumn before we calculate the standard deviation to allow us to
+        // impute missing values if required.
+        endSnpColumn(snp, missingGenotypeCount);
 
         // Calculate sds
+        const double mean = means[snp];
         sds[snp] = std::sqrt((sqrdZ[snp] - 2 * mean * Zsum[snp] + static_cast<double>(numInds) * mean * mean) /
                              (static_cast<double>(numInds) - 1.0));
 
-        // Create the SparseVector
-        auto &vector = Zg.at(snp);
-        vector.resize(numInds); // Number of rows
-        vector.reserve(tuples.size()); // Number of rows that are not zero
-
-        // Fill the SparseVector and doubles
-        std::for_each(tuples.cbegin(), tuples.cend(), [&](const T &t) {
-            const auto index = std::get<0>(t);
-            auto value = std::get<1>(t);
-            // If the value is zero or smaller, impute using the mean.
-            if (value <= 0)
-                value = mean;
-
-            vector.insertBack(index) = value;
-        });
     }
 
     BIT.clear();

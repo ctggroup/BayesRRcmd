@@ -55,6 +55,7 @@ add_library(libbrr-dev
     SparseBayesRRG.cpp
     sparsesequentialanalysis.cpp
     sparseparallelgraph.cpp
+    eigensparsedata.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -75,6 +76,7 @@ add_executable(${PROJECT_NAME}
     SparseBayesRRG.cpp
     sparsesequentialanalysis.cpp
     sparseparallelgraph.cpp
+    eigensparsedata.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)

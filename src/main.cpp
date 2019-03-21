@@ -4,7 +4,7 @@
 #include "DenseBayesRRmz.hpp"
 #include "data.hpp"
 #include "options.hpp"
-#include "sparsedata.h"
+#include "eigensparsedata.h"
 #include "SparseBayesRRG.hpp"
 
 using namespace std;
@@ -96,7 +96,7 @@ void processSparseData(Options options) {
         return;
     }
 
-    SparseData data;
+    EigenSparseData data;
 
     // Read in the data for every possible option
     data.readFamFile(options.bedFile + ".fam");
