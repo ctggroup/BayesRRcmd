@@ -1,3 +1,8 @@
+#include "SparseBayesRRG.hpp"
+
+#include "sparsedata.h"
+#include "sparsesequentialanalysis.h"
+
 // this code skeleton only highlights which would be the proposal of code changes
 //Additional variables
 // VectorXd means; //vector that contains the mean of each column of the bed file matrix
@@ -13,20 +18,33 @@
 //std::vector<std:vector<int>> Ztwos(M)//vector containing the vectors the indexes of elements of the bed matrix which are two for each column
 //
 
-BayesRRG:BayesRRmz() // BayesRG would inherit from BayesRmz, or not
-
-BsyesRRG::init(){
-    epsilonSum = y.sum();// we initialise with the current sum of y elements
-}
-
-BayesRRG:runGibbs(){
-//Unlike the BayesRRmz, we would not need to compress and decompress the matrix, but we would like to have the sequential and async execution as options 
-}
-
-
-void BayesRRG::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
+SparseBayesRRG::SparseBayesRRG(const SparseData *data, Options &opt)
+    : BayesRBase(data, opt)
+    , m_sparseData(data)
+    , m_means(data->means)
+    , m_sds(data->sds)
+    , m_sqrdZ(data->sqrdZ)
+    , m_Zsum(data->Zsum)
 {
-    const unsigned int N(m_data.numInds);
+    m_flowGraph.reset(new SparseSequentialAnalysis(this));
+}
+
+SparseBayesRRG::~SparseBayesRRG()
+{
+
+}
+
+void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individualCount)
+{
+    BayesRBase::init(K, markerCount, individualCount);
+
+    m_epsilonSum = m_y.sum(); // we initialise with the current sum of y elements
+    m_ones.setOnes(m_data->numInds);
+}
+
+void SparseBayesRRG::processColumn(unsigned int marker)
+{
+    const unsigned int N(m_data->numInds);
     const double NM1 = double(N - 1);
     const int K(int(m_cva.size()) + 1);
     const int km1 = K - 1;
@@ -35,7 +53,6 @@ void BayesRRG::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
 
     beta_old = m_beta(marker);
 
-  
     // muk for the zeroth component=0
     m_muk[0] = 0.0;
 
@@ -44,11 +61,11 @@ void BayesRRG::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
     //DANIEL here we either use the column of the sparse matrix or the two index vectors
-    //num= means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +Zg.col(marker).dot(epsilon)/sds(marker)
+    double num = m_means(marker) * m_epsilonSum / m_sds(marker) + beta_old * NM1 + dot(marker, m_epsilon, m_sds(marker));
     //OR the indexing solution, which using the development branch of eigen should be this
     //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
-    //maybe you can come up with a better way to index the elements of epsilon  
-      
+    //maybe you can come up with a better way to index the elements of epsilon
+
     //The rest of the algorithm remains the same
     
     // muk for the other components is computed according to equaitons
@@ -90,27 +107,41 @@ void BayesRRG::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
             }
         }
     }
-    m_betasqn += m_beta(marker) * m_beta(marker) - beta_old * beta_old;
+    const double beta_new = m_beta(marker);
+    m_betasqn += beta_new * beta_new - beta_old * beta_old;
     
     //until here
     //we skip update if old and new beta equals zero
-     const bool skipUpdate = beta_old == 0.0 && beta == 0.0;
-     if (!skipUpdate) {
+    const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
+    if (!skipUpdate) {
+        const double dBeta = beta_old - beta_new;
         //Either
-        //epsilon+=(beta_old-beta_new)*Zsum(marker)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker)*ONES;
-    
-       //OR
-       //epsilon(Zones[marker])+=(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
-       //epsilon(Ztwos[marker])+=2*(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);  
-       //Regardless of which scheme, the update of epsilonSum is the same
-         epsilonSum+= (beta_old-beta_new)*Zsum(marker)
-       
-       }
-       // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
+        m_epsilon += dBeta * m_sparseData->Zg[marker] / m_sds(marker) - dBeta * m_means(marker) / m_sds(marker) * m_ones;
+
+        //OR
+        //epsilon(Zones[marker])+=(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
+        //epsilon(Ztwos[marker])+=2*(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
+
+        //Regardless of which scheme, the update of epsilonSum is the same
+        m_epsilonSum += dBeta * m_Zsum(marker) / m_sds(marker) - dBeta * m_means(marker) * static_cast<double>(N) / m_sds(marker);
+    }
+    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 }
 
-void BayesRRmz::updateGlobal(double beta_old, double beta, const Map<VectorXd> &Cx)
+double SparseBayesRRG::dot(const unsigned int marker, const VectorXd &epsilon, const double sd) const
 {
+    return m_sparseData->Zg[marker].dot(epsilon) / sd;
+}
+
+#if 0
+void SparseBayesRRG::updateGlobal(double beta_old, double beta, const Map<VectorXd> &Cx)
+{
+    // Not yet implemented
+    (void)beta_old;
+    (void)beta;
+    (void)Cx;
+    assert(false);
+
     // No mutex required here whilst m_globalComputeNode uses the serial policy
     //Either
     
@@ -118,7 +149,9 @@ void BayesRRmz::updateGlobal(double beta_old, double beta, const Map<VectorXd> &
     //OR
     //epsilon(Zones[marker])+=(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
     //epsilon(Ztwos[marker])+=2*(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
+
     //Regardless of which scheme, the update of epsilonSum is the same
-    epsilonSum+= (beta_old-beta_new)*Zsum(marker)
+    //    epsilonSum+= (beta_old-beta_new)*Zsum(marker)
     
 }
+#endif

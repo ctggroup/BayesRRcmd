@@ -5,6 +5,7 @@
 #include "data.hpp"
 #include "options.hpp"
 #include "sparsedata.h"
+#include "SparseBayesRRG.hpp"
 
 using namespace std;
 
@@ -89,15 +90,24 @@ void processDenseData(Options opt) {
     }
 }
 
-void processSparseData(const Options &options) {
+void processSparseData(Options options) {
+    if (options.analysisType != "PPBayes") {
+        std::cout << "Error: Wrong analysis type: " << options.analysisType << std::endl;
+        return;
+    }
+
     SparseData data;
 
     // Read in the data for every possible option
     data.readFamFile(options.bedFile + ".fam");
     data.readBimFile(options.bedFile + ".bim");
+    data.readPhenotypeFile(options.phenotypeFile);
 
     // Read the data in sparse format
     data.readBedFileSparse(options.bedFile + ".bed");
+
+    SparseBayesRRG analysis(&data, options);
+    analysis.runGibbs();
 }
 
 int main(int argc, const char * argv[]) {
