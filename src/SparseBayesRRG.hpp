@@ -16,7 +16,7 @@ public:
 protected:
     const SparseData *m_sparseData;
 
-    double m_epsilonSum = 0.0;
+//    double m_epsilonSum = 0.0;
     VectorXd m_ones;
 
     // Helper references into our sparse data

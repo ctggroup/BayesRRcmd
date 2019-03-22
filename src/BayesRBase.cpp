@@ -81,6 +81,7 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
 
     m_epsilon = (m_y).array() - m_mu;
     m_sigmaE = m_epsilon.squaredNorm() / individualCount * 0.5;
+    m_epsilonSum=m_epsilon.sum();
 }
 
 int BayesRBase::runGibbs()
@@ -122,11 +123,11 @@ int BayesRBase::runGibbs()
         const auto startTime = std::chrono::high_resolution_clock::now();
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
         std::cout << "iteration " << iteration << ": ";
-
+        double old_mu=m_mu;
         m_epsilon = m_epsilon.array() + m_mu;//  we substract previous value
         m_mu = m_dist.norm_rng(m_epsilon.sum() / (double)N, m_sigmaE / (double)N); //update mu
         m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
-
+        m_epsilonSum+=(old_mu-m_mu)*double(N);
         if (m_isAsync)
             std::memcpy(m_async_epsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
 

@@ -70,7 +70,7 @@ protected:
     VectorXd m_epsilon;    // variable containing the residuals
     VectorXd m_async_epsilon;
     double m_betasqn = 0.0;
-
+    double m_epsilonSum=0.0;
     VectorXd m_y;
     VectorXd m_components;
 

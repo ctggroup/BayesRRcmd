@@ -38,7 +38,7 @@ void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individu
 {
     BayesRBase::init(K, markerCount, individualCount);
 
-    m_epsilonSum = m_y.sum(); // we initialise with the current sum of y elements
+//    m_epsilonSum = m_y.sum(); // we initialise with the current sum of y elements
     m_ones.setOnes(m_data->numInds);
 }
 
@@ -61,7 +61,12 @@ void SparseBayesRRG::processColumn(unsigned int marker)
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
     //DANIEL here we either use the column of the sparse matrix or the two index vectors
-    double num = m_means(marker) * m_epsilonSum / m_sds(marker) + beta_old * NM1 + dot(marker, m_epsilon, m_sds(marker));
+   double num =  beta_old * NM1 - m_means(marker) * m_epsilonSum / m_sds(marker) + dot(marker, m_epsilon, m_sds(marker));
+    //VectorXd Centered(N);
+    //Centered=(m_sparseData->Zg[marker]-m_means(marker)*m_ones)/m_sds(marker);
+    //double num =  (Centered).dot(m_epsilon+beta_old*Centered) ;
+
+
     //OR the indexing solution, which using the development branch of eigen should be this
     //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
     //maybe you can come up with a better way to index the elements of epsilon
@@ -116,14 +121,15 @@ void SparseBayesRRG::processColumn(unsigned int marker)
     if (!skipUpdate) {
         const double dBeta = beta_old - beta_new;
         //Either
-        m_epsilon += dBeta * m_sparseData->Zg[marker] / m_sds(marker) - dBeta * m_means(marker) / m_sds(marker) * m_ones;
+        //m_epsilon += dBeta * m_sparseData->Zg[marker] / m_sds(marker) - dBeta * m_means(marker) / m_sds(marker) * m_ones;
 
+        m_epsilon+=dBeta*(m_sparseData->Zg[marker]-m_means(marker)*m_ones)/m_sds(marker);
         //OR
         //epsilon(Zones[marker])+=(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
         //epsilon(Ztwos[marker])+=2*(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
 
         //Regardless of which scheme, the update of epsilonSum is the same
-        m_epsilonSum += dBeta * m_Zsum(marker) / m_sds(marker) - dBeta * m_means(marker) * static_cast<double>(N) / m_sds(marker);
+         m_epsilonSum += dBeta * m_Zsum(marker) / m_sds(marker) - dBeta * m_means(marker) * static_cast<double>(N) / m_sds(marker); 
     }
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 }
