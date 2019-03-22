@@ -16,6 +16,9 @@ public:
     // this is a sparse matrix that contains the uncentered and unscaled elements of the bed matrix
     std::vector<SparseVector<UnitDataType>> Zg;
 
+    double dot(const unsigned int marker, const VectorXd &epsilon) const override;
+    void updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const override;
+
 protected:
     static const UnitDataType kMissing;
 
@@ -23,6 +26,8 @@ protected:
 
     using TupleListPtr = std::shared_ptr<TupleList>;
     TupleListPtr m_tuples = nullptr;
+
+    VectorXd m_ones;
 
     void initialise() override;
     void beginSnpColumn(unsigned int snp) override;

@@ -24,10 +24,6 @@
 SparseBayesRRG::SparseBayesRRG(const EigenSparseData *data, Options &opt)
     : BayesRBase(data, opt)
     , m_sparseData(data)
-    , m_means(data->means)
-    , m_sds(data->sds)
-    , m_sqrdZ(data->sqrdZ)
-    , m_Zsum(data->Zsum)
 {
     if (opt.analysisType == "PPAsyncBayes") {
         m_flowGraph.reset(new SparseParallelGraph(this, opt.numThread));
@@ -50,8 +46,6 @@ void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individu
 
     m_epsilonSum = m_y.sum(); // we initialise with the current sum of y elements
     m_asyncEpsilonSum = m_epsilonSum;
-
-    m_ones.setOnes(m_data->numInds);
 }
 
 void SparseBayesRRG::prepareForAnylsis()
@@ -84,7 +78,7 @@ void SparseBayesRRG::processColumn(unsigned int marker)
     //OR the indexing solution, which using the development branch of eigen should be this
     //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
     //maybe you can come up with a better way to index the elements of epsilon
-    const double num = computeNum(marker, beta_old, m_epsilon);
+    const double num = m_sparseData->computeNum(marker, beta_old, m_epsilon, m_epsilonSum);
 
     //The rest of the algorithm remains the same
     
@@ -134,10 +128,8 @@ void SparseBayesRRG::processColumn(unsigned int marker)
     //we skip update if old and new beta equals zero
     const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
     if (!skipUpdate) {
-        const double dBeta = beta_old - beta_new;
-
-        m_epsilon += computeEpsilonUpdate(marker, beta_old, beta_new);
-        m_epsilonSum += computeEpsilonSumUpdate(marker, beta_old, beta_new);
+        m_sparseData->updateEpsilon(m_epsilon, marker, beta_old, beta_new);
+        m_epsilonSum += m_sparseData->computeEpsilonSumUpdate(marker, beta_old, beta_new);
     }
     // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 }
@@ -165,7 +157,7 @@ std::tuple<double, double> SparseBayesRRG::processColumnAsync(unsigned int marke
     const double N = static_cast<double>(m_data->numInds);
     const double NM1 = N - 1.0;
 
-    const double num = computeNum(marker, beta_old, epsilon);
+    const double num = m_sparseData->computeNum(marker, beta_old, epsilon, epsilonSum);
 
     // Do work
 
@@ -242,8 +234,8 @@ std::tuple<double, double> SparseBayesRRG::processColumnAsync(unsigned int marke
 
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {
-        epsilon += computeEpsilonUpdate(marker, beta_old, beta);
-        epsilonSum += computeEpsilonSumUpdate(marker, beta_old, beta);
+        m_sparseData->updateEpsilon(epsilon, marker, beta_old, beta);
+        epsilonSum += m_sparseData->computeEpsilonSumUpdate(marker, beta_old, beta);
     }
 
     // Lock to write updates (at end, or perhaps as updates are computed)
@@ -268,37 +260,6 @@ std::tuple<double, double> SparseBayesRRG::processColumnAsync(unsigned int marke
 void SparseBayesRRG::updateGlobal(const unsigned int marker, double beta_old, double beta)
 {
     // No mutex required here whilst m_globalComputeNode uses the serial policy
-    m_epsilon += computeEpsilonUpdate(marker, beta_old, beta);
-    m_epsilonSum += computeEpsilonSumUpdate(marker, beta_old, beta);
-}
-
-double SparseBayesRRG::computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon) const
-{
-    //DANIEL here we either use the column of the sparse matrix or the two index vectors
-    return beta_old * (static_cast<double>(m_data->numInds) - 1.0) - m_means(marker) * m_epsilonSum / m_sds(marker) + dot(marker, m_epsilon, m_sds(marker));;
-    //OR the indexing solution, which using the development branch of eigen should be this
-    //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
-}
-
-double SparseBayesRRG::dot(const unsigned int marker, const VectorXd &epsilon, const double sd) const
-{
-    return m_sparseData->Zg[marker].dot(epsilon) / sd;
-}
-
-VectorXd SparseBayesRRG::computeEpsilonUpdate(const unsigned int marker, const double beta_old, const double beta) const
-{
-    const double dBeta = beta_old - beta;
-    //Either
-    return dBeta * m_sparseData->Zg[marker] / m_sds(marker) - dBeta * m_means(marker) / m_sds(marker) * m_ones;
-
-    //OR
-    //epsilon(Zones[marker])+=(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
-    //epsilon(Ztwos[marker])+=2*(beta_old-beta_new)/sds(marker)+(beta_new-beta_old)*means(marker)/sds(marker);
-}
-
-double SparseBayesRRG::computeEpsilonSumUpdate(const unsigned int marker, const double beta_old, const double beta) const
-{
-    //Regardless of which scheme, the update of epsilonSum is the same
-    const double dBeta = beta_old - beta;
-    return dBeta * m_Zsum(marker) / m_sds(marker) - dBeta * m_means(marker) * static_cast<double>(m_data->numInds) / m_sds(marker);
+    m_sparseData->updateEpsilon(m_epsilon, marker, beta_old, beta);
+    m_epsilonSum += m_sparseData->computeEpsilonSumUpdate(marker, beta_old, beta);
 }

@@ -103,3 +103,15 @@ void SparseData::readBedFileSparse(const string &bedFile)
 
     cout << "Genotype data for " << numInds << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
 }
+
+double SparseData::computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon, const double epsilonSum) const
+{
+    return beta_old * (static_cast<double>(numInds) - 1.0) - means(marker) * epsilonSum / sds(marker) + dot(marker, epsilon);
+}
+
+double SparseData::computeEpsilonSumUpdate(const unsigned int marker, const double beta_old, const double beta) const
+{
+    //Regardless of which scheme, the update of epsilonSum is the same
+    const double dBeta = beta_old - beta;
+    return dBeta * Zsum(marker) / sds(marker) - dBeta * means(marker) * static_cast<double>(numInds) / sds(marker);
+}

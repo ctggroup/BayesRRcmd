@@ -18,6 +18,9 @@ public:
     // vector containing the vectors the indexes of elements of the bed matrix which are missing for each column
     RaggedVector Zmissing;
 
+    double dot(const unsigned int marker, const VectorXd &epsilon) const override;
+    void updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const override;
+
 protected:
     IndexVector* m_currentOnes = nullptr;
     IndexVector* m_currentTwos = nullptr;

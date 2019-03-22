@@ -6,6 +6,16 @@ RaggedSparseData::RaggedSparseData()
 
 }
 
+double RaggedSparseData::dot(const unsigned int marker, const VectorXd &epsilon) const
+{
+    // TODO
+}
+
+void RaggedSparseData::updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const
+{
+    // TODO
+}
+
 void RaggedSparseData::initialise()
 {
     // Initialise our RaggedVectors with IndexVectors with the estimated amount of reserved space.

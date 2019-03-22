@@ -8,12 +8,25 @@ EigenSparseData::EigenSparseData()
 
 }
 
+double EigenSparseData::dot(const unsigned int marker, const VectorXd &epsilon) const
+{
+    return Zg[marker].dot(epsilon) / sds(marker);
+}
+
+void EigenSparseData::updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const
+{
+    const double dBeta = beta_old - beta;
+    epsilon += dBeta * Zg[marker] / sds(marker) - dBeta * means(marker) / sds(marker) * m_ones;
+}
+
 void EigenSparseData::initialise()
 {
     Zg.resize(numSnps);
 
     // Data is expected to be about 80% zeros, so reserve a bit more than 20% of the expected space
     m_estimatedDataCount = static_cast<TupleList::size_type>(static_cast<double>(numInds) * 0.25);
+
+    m_ones.setOnes(numInds);
 }
 
 void EigenSparseData::beginSnpColumn(unsigned int snp)
