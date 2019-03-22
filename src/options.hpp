@@ -39,6 +39,7 @@ public:
     string optionFile;
     bool compress = false;
     bool sparseData = false;
+    string sparseDataType;
 
     Options(){
         chainLength             = 10000;
@@ -60,6 +61,7 @@ public:
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;
+        sparseDataType          = "";
     }
 
     void inputOptions(const int argc, const char* argv[]);

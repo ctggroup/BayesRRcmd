@@ -100,7 +100,8 @@ void Options::inputOptions(const int argc, const char* argv[]){
         }
         else if (!strcmp(argv[i], "--sparse-data")) {
             sparseData = true;
-            ss << "--sparse-data\n";
+            sparseDataType = argv[++i];
+            ss << "--sparse-data " << sparseDataType << "\n";
         }
         else {
             stringstream errmsg;

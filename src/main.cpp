@@ -6,6 +6,7 @@
 #include "options.hpp"
 #include "eigensparsedata.h"
 #include "SparseBayesRRG.hpp"
+#include "raggedsparsedata.h"
 
 using namespace std;
 
@@ -96,18 +97,33 @@ void processSparseData(Options options) {
         return;
     }
 
-    EigenSparseData data;
+    if (options.sparseDataType == "eigen") {
+        EigenSparseData data;
 
-    // Read in the data for every possible option
-    data.readFamFile(options.bedFile + ".fam");
-    data.readBimFile(options.bedFile + ".bim");
-    data.readPhenotypeFile(options.phenotypeFile);
+        // Read in the data for every possible option
+        data.readFamFile(options.bedFile + ".fam");
+        data.readBimFile(options.bedFile + ".bim");
+        data.readPhenotypeFile(options.phenotypeFile);
 
-    // Read the data in sparse format
-    data.readBedFileSparse(options.bedFile + ".bed");
+        // Read the data in sparse format
+        data.readBedFileSparse(options.bedFile + ".bed");
 
-    SparseBayesRRG analysis(&data, options);
-    analysis.runGibbs();
+        SparseBayesRRG analysis(&data, options);
+        analysis.runGibbs();
+    } else if (options.sparseDataType == "ragged") {
+        RaggedSparseData data;
+
+        // Read in the data for every possible option
+        data.readFamFile(options.bedFile + ".fam");
+        data.readBimFile(options.bedFile + ".bim");
+        data.readPhenotypeFile(options.phenotypeFile);
+
+        // Read the data in sparse format
+        data.readBedFileSparse(options.bedFile + ".bed");
+    } else {
+        std::cout << "Error: Unsupported --sparse-data argument: " << options.sparseDataType << std::endl;
+        return;
+    }
 }
 
 int main(int argc, const char * argv[]) {
