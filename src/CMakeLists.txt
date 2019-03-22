@@ -4,8 +4,11 @@ project(brr)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Eigen3)
-include_directories(${EIGEN3_INCLUDE_DIR})
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../eigen/Eigen/)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../eigen/)
+else()
+    message(FATAL_ERROR "Cound not find Eigen submodule!")
+endif()
 
 find_package(Boost REQUIRED)
 if(Boost_FOUND)
