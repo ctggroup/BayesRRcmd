@@ -44,7 +44,6 @@ void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individu
 
     m_asyncEpsilon = VectorXd(individualCount);
 
-    m_epsilonSum = m_y.sum(); // we initialise with the current sum of y elements
     m_asyncEpsilonSum = m_epsilonSum;
 }
 
