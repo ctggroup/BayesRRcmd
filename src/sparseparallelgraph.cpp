@@ -1,30 +1,17 @@
-#include "parallelgraph.hpp"
+#include "sparseparallelgraph.hpp"
 
-#include "compression.h"
-#include "DenseBayesRRmz.hpp"
+#include "SparseBayesRRG.hpp"
 
 #include <iostream>
 
-ParallelGraph::ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
+SparseParallelGraph::SparseParallelGraph(SparseBayesRRG *bayes, size_t maxParallel)
     : AnalysisGraph(maxParallel)
     , m_bayes(bayes)
     , m_graph(new graph)
 {
     // Decompress the column for this marker then process the column using the algorithm class
     auto f = [this] (Message msg) -> Message {
-        // Decompress the column
-        const unsigned int colSize = msg.numInds * sizeof(double);
-
-        msg.data.reset(new unsigned char[colSize]);
-
-        extractData(reinterpret_cast<unsigned char *>(m_bayes->m_data->ppBedMap) + m_bayes->m_data->ppbedIndex[msg.marker].pos,
-                    static_cast<unsigned int>(m_bayes->m_data->ppbedIndex[msg.marker].size),
-                    msg.data.get(),
-                    colSize);
-
-        // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.data.get()), msg.numInds);
-        const auto betas = m_bayes->processColumnAsync(msg.marker, Cx);
+        const auto betas = m_bayes->processColumnAsync(msg.marker);
 
         msg.old_beta = std::get<0>(betas);
         msg.beta = std::get<1>(betas);
@@ -57,7 +44,7 @@ ParallelGraph::ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
 
         // Delegate the processing of this column to the algorithm class
         Map<VectorXd> Cx(reinterpret_cast<double *>(msg.data.get()), msg.numInds);
-        m_bayes->updateGlobal(msg.old_beta, msg.beta, Cx);
+        m_bayes->updateGlobal(msg.marker, msg.old_beta, msg.beta);
 
         return continue_msg();
     };
@@ -74,7 +61,7 @@ ParallelGraph::ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
 
     // Set up the graph topology:
     //
-    // orderingNode -> limitNode -> decompressionAndSamplingNode (parallel)
+    // orderingNode -> limitNode --------> samplingNode (parallel)
     //                      ^                   |
     //                      |___discard____decisionNode (parallel)
     //                      ^                   |
@@ -82,7 +69,7 @@ ParallelGraph::ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
     //                      |                   |
     //                      |______________globalCompute (serial)
     //
-    // Run the decompressionAndSampling node in the correct order, but do not
+    // Run the sampling node in the correct order, but do not
     // wait for the most up-to-date data.
     make_edge(*m_ordering, *m_limit);
     make_edge(*m_limit, *m_asyncComputeNode);
@@ -97,7 +84,7 @@ ParallelGraph::ParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
     make_edge(*m_globalComputeNode, m_limit->decrement);
 }
 
-void ParallelGraph::exec(unsigned int numInds,
+void SparseParallelGraph::exec(unsigned int numInds,
                          unsigned int numSnps,
                          const std::vector<unsigned int> &markerIndices)
 {

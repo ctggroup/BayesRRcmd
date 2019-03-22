@@ -56,7 +56,6 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_beta = VectorXd(markerCount);           // effect sizes
     m_y_tilde = VectorXd(individualCount);    // variable containing the adjusted residuals to exclude the effects of a given marker
     m_epsilon = VectorXd(individualCount);    // variable containing the residuals
-    m_async_epsilon = VectorXd(individualCount);
 
     m_y = VectorXd();
     //Cx = VectorXd();
@@ -82,6 +81,11 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_epsilon = (m_y).array() - m_mu;
     m_sigmaE = m_epsilon.squaredNorm() / individualCount * 0.5;
     m_epsilonSum=m_epsilon.sum();
+}
+
+void BayesRBase::prepareForAnylsis()
+{
+    // Empty in BayesRBase
 }
 
 int BayesRBase::runGibbs()
@@ -128,8 +132,8 @@ int BayesRBase::runGibbs()
         m_mu = m_dist.norm_rng(m_epsilon.sum() / (double)N, m_sigmaE / (double)N); //update mu
         m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
         m_epsilonSum+=(old_mu-m_mu)*double(N);
-        if (m_isAsync)
-            std::memcpy(m_async_epsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
+
+        prepareForAnylsis();
 
         std::random_shuffle(markerI.begin(), markerI.end());
 

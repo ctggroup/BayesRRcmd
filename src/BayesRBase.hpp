@@ -68,7 +68,6 @@ protected:
     VectorXd m_beta;       // effect sizes
     VectorXd m_y_tilde;    // variable containing the adjusted residuals to exclude the effects of a given marker
     VectorXd m_epsilon;    // variable containing the residuals
-    VectorXd m_async_epsilon;
     double m_betasqn = 0.0;
     double m_epsilonSum=0.0;
     VectorXd m_y;
@@ -79,6 +78,9 @@ protected:
     void setAsynchronous(bool async) { m_isAsync = async; }
 
     virtual void init(int K, unsigned int markerCount, unsigned int individualCount);
+
+    virtual void prepareForAnylsis();
+
     void printDebugInfo() const;
 };
 
