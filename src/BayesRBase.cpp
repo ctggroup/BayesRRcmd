@@ -129,7 +129,7 @@ int BayesRBase::runGibbs()
         std::cout << "iteration " << iteration << ": ";
         double old_mu=m_mu;
         m_epsilon = m_epsilon.array() + m_mu;//  we substract previous value
-        m_mu = m_dist.norm_rng(m_epsilon.sum() / (double)N, m_sigmaE / (double)N); //update mu
+        m_mu = m_dist.norm_rng(m_epsilonSum / (double)N, m_sigmaE / (double)N); //update mu
         m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
         m_epsilonSum+=(old_mu-m_mu)*double(N);
 
