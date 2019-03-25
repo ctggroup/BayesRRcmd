@@ -1,6 +1,6 @@
 #include "SparseBayesRRG.hpp"
 
-#include "eigensparsedata.h"
+#include "sparsedata.h"
 #include "sparseparallelgraph.hpp"
 #include "sparsesequentialanalysis.h"
 
@@ -21,7 +21,7 @@
 //std::vector<std:vector<int>> Ztwos(M)//vector containing the vectors the indexes of elements of the bed matrix which are two for each column
 //
 
-SparseBayesRRG::SparseBayesRRG(const EigenSparseData *data, Options &opt)
+SparseBayesRRG::SparseBayesRRG(const SparseData *data, Options &opt)
     : BayesRBase(data, opt)
     , m_sparseData(data)
 {

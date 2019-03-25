@@ -97,33 +97,28 @@ void processSparseData(Options options) {
         return;
     }
 
+    using DataPtr = std::unique_ptr<SparseData>;
+    DataPtr data;
+
     if (options.sparseDataType == "eigen") {
-        EigenSparseData data;
-
-        // Read in the data for every possible option
-        data.readFamFile(options.bedFile + ".fam");
-        data.readBimFile(options.bedFile + ".bim");
-        data.readPhenotypeFile(options.phenotypeFile);
-
-        // Read the data in sparse format
-        data.readBedFileSparse(options.bedFile + ".bed");
-
-        SparseBayesRRG analysis(&data, options);
-        analysis.runGibbs();
+        data = DataPtr(new EigenSparseData);
     } else if (options.sparseDataType == "ragged") {
-        RaggedSparseData data;
-
-        // Read in the data for every possible option
-        data.readFamFile(options.bedFile + ".fam");
-        data.readBimFile(options.bedFile + ".bim");
-        data.readPhenotypeFile(options.phenotypeFile);
-
-        // Read the data in sparse format
-        data.readBedFileSparse(options.bedFile + ".bed");
+        data = DataPtr(new RaggedSparseData);
     } else {
         std::cout << "Error: Unsupported --sparse-data argument: " << options.sparseDataType << std::endl;
         return;
     }
+
+    // Read in the data for every possible option
+    data->readFamFile(options.bedFile + ".fam");
+    data->readBimFile(options.bedFile + ".bim");
+    data->readPhenotypeFile(options.phenotypeFile);
+
+    // Read the data in sparse format
+    data->readBedFileSparse(options.bedFile + ".bed");
+
+    SparseBayesRRG analysis(data.get(), options);
+    analysis.runGibbs();
 }
 
 int main(int argc, const char * argv[]) {

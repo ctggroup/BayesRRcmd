@@ -5,14 +5,14 @@
 
 #include <shared_mutex>
 
-class EigenSparseData;
+class SparseData;
 
 class SparseBayesRRG : public BayesRBase
 {
     friend class SparseParallelGraph;
 
 public:
-    explicit SparseBayesRRG(const EigenSparseData *m_data, Options &m_opt);
+    explicit SparseBayesRRG(const SparseData *m_data, Options &m_opt);
     ~SparseBayesRRG() override;
 
     void processColumn(unsigned int marker);
@@ -20,7 +20,7 @@ public:
     void updateGlobal(const unsigned int marker, double beta_old, double beta);
 
 protected:
-    const EigenSparseData *m_sparseData;
+    const SparseData *m_sparseData;
 
     VectorXd m_asyncEpsilon;
 
