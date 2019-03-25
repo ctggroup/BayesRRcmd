@@ -103,6 +103,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             sparseDataType = argv[++i];
             ss << "--sparse-data " << sparseDataType << "\n";
         }
+        else if(!strcmp(argv[i], "--thread-spawned")) {
+            numThreadSpawned = atoi(argv[++i]);
+            ss << "--thread-spawned " << argv[i] << "\n";
+        }
         else {
             stringstream errmsg;
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";

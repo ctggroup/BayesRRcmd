@@ -7,6 +7,7 @@
 #include "eigensparsedata.h"
 #include "SparseBayesRRG.hpp"
 #include "raggedsparsedata.h"
+#include "tbb/task_scheduler_init.h"
 
 using namespace std;
 
@@ -68,6 +69,10 @@ void processDenseData(Options opt) {
             printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
             cout << endl;
 
+            std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+            if (opt.numThreadSpawned > 0)
+                taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
+
             DenseBayesRRmz analysis(&data, opt);
             analysis.runGibbs();
             data.unmapCompressedPreprocessedBedFile();
@@ -116,6 +121,10 @@ void processSparseData(Options options) {
 
     // Read the data in sparse format
     data->readBedFileSparse(options.bedFile + ".bed");
+
+    std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+    if (options.numThreadSpawned > 0)
+        taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
     SparseBayesRRG analysis(data.get(), options);
     analysis.runGibbs();
