@@ -40,7 +40,7 @@ protected:
     void init(int K, unsigned int markerCount, unsigned int individualCount) override;
     void prepareForAnylsis() override;
 
-    double computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon) const;
+    double computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon,double epsilonSum) const;
     double dot(const unsigned int marker, const VectorXd &epsilon, const double sd) const;
     VectorXd computeEpsilonUpdate(const unsigned int marker, const double beta_old, const double beta) const;
     double computeEpsilonSumUpdate(const unsigned int marker, const double beta_old, const double beta) const;

@@ -84,7 +84,7 @@ void SparseBayesRRG::processColumn(unsigned int marker)
     //OR the indexing solution, which using the development branch of eigen should be this
     //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
     //maybe you can come up with a better way to index the elements of epsilon
-    const double num = computeNum(marker, beta_old, m_epsilon);
+    const double num = computeNum(marker, beta_old, m_epsilon,m_epsilonSum);
 
     //The rest of the algorithm remains the same
     
@@ -165,7 +165,7 @@ std::tuple<double, double> SparseBayesRRG::processColumnAsync(unsigned int marke
     const double N = static_cast<double>(m_data->numInds);
     const double NM1 = N - 1.0;
 
-    const double num = computeNum(marker, beta_old, epsilon);
+    const double num = computeNum(marker, beta_old, epsilon,epsilonSum);
 
     // Do work
 
@@ -272,10 +272,10 @@ void SparseBayesRRG::updateGlobal(const unsigned int marker, double beta_old, do
     m_epsilonSum += computeEpsilonSumUpdate(marker, beta_old, beta);
 }
 
-double SparseBayesRRG::computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon) const
+double SparseBayesRRG::computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon,double epsilonSum) const
 {
     //DANIEL here we either use the column of the sparse matrix or the two index vectors
-    return beta_old * (static_cast<double>(m_data->numInds) - 1.0) - m_means(marker) * m_epsilonSum / m_sds(marker) + dot(marker, m_epsilon, m_sds(marker));;
+    return beta_old * (static_cast<double>(m_data->numInds) - 1.0) - m_means(marker) * epsilonSum / m_sds(marker) + dot(marker, epsilon, m_sds(marker));;
     //OR the indexing solution, which using the development branch of eigen should be this
     //num = means(marker)*epsilonSum/sds(marker)+beta_old*sqrdZ(marker)-N*means(marker)/sds(marker) +(epsilon(Zones[marker]).sum()+2*epsilon(Ztwos[marker]).sum())/sds(marker)
 }
