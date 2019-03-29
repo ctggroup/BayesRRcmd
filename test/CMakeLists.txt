@@ -41,7 +41,7 @@ endif()
 
 # Now simply link against gtest or gtest_main as needed. 
 
-add_executable(tests functionTest.cpp)
+add_executable(tests eigenSparseTest.cpp)
 
 set_property(TARGET tests PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET tests PROPERTY CXX_STANDARD 17)
