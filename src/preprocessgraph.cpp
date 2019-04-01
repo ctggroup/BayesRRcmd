@@ -11,7 +11,7 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
 {
     auto processAndCompress = [] (Message msg) -> Message {
         const auto columnSize = (msg.data->numInds + 3) >> 2;
-        const auto maxCompressedOutputSize = maxCompressedDataSize(msg.data->numInds);
+        const auto maxCompressedOutputSize = maxCompressedDataSize<double>(msg.data->numInds);
 
         ifstream inStream(msg.bedFile.c_str(), ios::binary);
         if (!inStream) {

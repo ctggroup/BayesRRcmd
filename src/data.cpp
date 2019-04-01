@@ -42,7 +42,7 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         throw ("Error: Incorrect first three bytes of bed file: " + bedFile);
 
     // How much space do we need to compress the data (if requested)
-    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize(numInds) : 0;
+    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(numInds) : 0;
     unsigned char *compressedBuffer = nullptr;
     unsigned long pos = 0;
     if (compress)

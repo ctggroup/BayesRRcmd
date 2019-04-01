@@ -1,54 +1,18 @@
 #include "compression.h"
 
-#include <zlib.h>
 #include <iostream>
 
-unsigned long maxCompressedDataSize(const unsigned int numFloats)
-{
-    // Initialise zlib
-    z_stream strm;
+int prepareStream(z_stream &strm) {
     strm.zalloc = nullptr;
     strm.zfree = nullptr;
     strm.opaque = nullptr;
     const int level = -1;
-    auto ret = deflateInit(&strm, level);
-    if (ret != Z_OK)
-        return 0;
-
-    // Calculate the maximum buffer size needed to hold the compressed data
-    const unsigned int inputSize = numFloats * sizeof(double);
-    strm.avail_in = inputSize;
-    const auto maxOutputSize = deflateBound(&strm, inputSize);
-    //std::cout << "maxSize = " << maxOutputSize << " bytes = " << maxOutputSize / 1024 << " KiB" << std::endl;
-
-    // Clean up
-    (void) deflateEnd(&strm);
-
-    return maxOutputSize;
+    return deflateInit(&strm, level);
 }
 
-unsigned long compressData(const VectorXd &snpData, unsigned char *outputBuffer, unsigned long outputSize)
-{
-    // Initialise zlib
-    z_stream strm;
-    strm.zalloc = nullptr;
-    strm.zfree = nullptr;
-    strm.opaque = nullptr;
-    const int level = -1;
-    auto ret = deflateInit(&strm, level);
-    if (ret != Z_OK)
-        return 0;
-
-    // Compress the data
-    const unsigned int inputSize = static_cast<unsigned int>(snpData.size()) * sizeof(double);
-    strm.avail_in = inputSize;
-    strm.next_in = reinterpret_cast<unsigned char *>(const_cast<double*>(&snpData[0]));
-    strm.avail_out = static_cast<unsigned int>(outputSize);
-    strm.next_out = outputBuffer;
-
+unsigned long compressData(z_stream &strm, unsigned long outputSize) {
     const int flush = Z_FINISH;
-    ret = deflate(&strm, flush);
-    if (ret != Z_STREAM_END) {
+    if (deflate(&strm, flush) != Z_STREAM_END) {
         std::cout << "Error compressing data" << std::endl;
         return 0;
     }
@@ -96,6 +60,23 @@ unsigned long compressData(const VectorXd &snpData, unsigned char *outputBuffer,
     */
 
     return compressedSize;
+}
+
+unsigned long compressData(const VectorXd &snpData, unsigned char *outputBuffer, unsigned long outputSize)
+{
+    // Initialise zlib
+    z_stream strm;
+    if (prepareStream(strm) != Z_OK)
+        return 0;
+
+    // Compress the data
+    const unsigned int inputSize = static_cast<unsigned int>(snpData.size()) * sizeof(double);
+    strm.avail_in = inputSize;
+    strm.next_in = reinterpret_cast<unsigned char *>(const_cast<double*>(&snpData[0]));
+    strm.avail_out = static_cast<unsigned int>(outputSize);
+    strm.next_out = outputBuffer;
+
+    return compressData(strm, outputSize);
 }
 
 void extractData(unsigned char *compressedData,
