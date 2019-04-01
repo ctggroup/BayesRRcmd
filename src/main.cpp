@@ -55,12 +55,16 @@ void processDenseData(Options opt) {
                 taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
             PreprocessGraph graph(opt.numThread);
+            std::cout << "Preprocessing with " << opt.numThread << " threads ("
+                      << (opt.numThreadSpawned > 0 ? std::to_string(opt.numThreadSpawned) : "auto") << " spawned) and "
+                      << opt.preprocessChunks << " columns per thread."
+                      << endl;
             graph.preprocessBedFile(opt.bedFile + ".bed",
                                     opt.bedFile + ".ppbed",
                                     opt.bedFile + ".ppbedindex",
                                     opt.compress,
                                     &data,
-                                    4);
+                                    opt.preprocessChunks);
         } else {
             data.preprocessBedFile(opt.bedFile + ".bed",
                     opt.bedFile + ".ppbed",
