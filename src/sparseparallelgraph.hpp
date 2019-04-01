@@ -35,9 +35,6 @@ private:
         unsigned int marker = 0;
         unsigned int numInds = 0;
 
-        using DataPtr = std::shared_ptr<unsigned char[]>;
-        DataPtr data = nullptr;
-
         double old_beta = 0.0;
         double beta = 0.0;
     };

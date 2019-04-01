@@ -43,7 +43,6 @@ SparseParallelGraph::SparseParallelGraph(SparseBayesRRG *bayes, size_t maxParall
     auto h = [this] (Message msg) -> continue_msg {
 
         // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.data.get()), msg.numInds);
         m_bayes->updateGlobal(msg.marker, msg.old_beta, msg.beta);
 
         return continue_msg();
