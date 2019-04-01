@@ -105,3 +105,27 @@ void extractData(unsigned char *compressedData,
 
     (void) inflateEnd(&strm);
 }
+
+void writeCompressedDataWithIndex(const unsigned char *data,
+                     const unsigned long compressedSize,
+                     std::ostream &outStream,
+                     std::ostream &indexStream,
+                     unsigned long &pos)
+{
+    outStream.write(reinterpret_cast<const char *>(data), static_cast<std::streamsize>(compressedSize));
+
+    indexStream.write(reinterpret_cast<char *>(&pos), sizeof(unsigned long));
+    indexStream.write(reinterpret_cast<const char *>(&compressedSize), sizeof(unsigned long));
+    pos += compressedSize;
+}
+
+void compressAndWriteWithIndex(const VectorXd &data,
+                      std::ostream &outStream,
+                      std::ostream &indexStream,
+                      unsigned long &pos,
+                      unsigned char *compressedBuffer,
+                      const unsigned long maxCompressedOutputSize)
+{
+    const unsigned long compressedSize = compressData(data, compressedBuffer, maxCompressedOutputSize);
+    writeCompressedDataWithIndex(compressedBuffer, compressedSize, outStream, indexStream, pos);
+}

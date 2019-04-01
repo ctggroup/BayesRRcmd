@@ -58,6 +58,19 @@ unsigned long compressData(const std::vector<T> &vector,
     return compressData(strm, outputSize);
 }
 
+void writeCompressedDataWithIndex(const unsigned char *data,
+                     const unsigned long compressedSize,
+                     std::ostream &outStream,
+                     std::ostream &indexStream,
+                     unsigned long &pos);
+
+void compressAndWriteWithIndex(const VectorXd &data,
+        std::ostream &outStream,
+        std::ostream &indexStream,
+        unsigned long &pos,
+        unsigned char *compressedBuffer,
+        const unsigned long maxCompressedOutputSize);
+
 void extractData(unsigned char *compressedData,
                  unsigned int compressedDataSize,
                  unsigned char *outputBuffer,

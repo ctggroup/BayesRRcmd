@@ -121,13 +121,7 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         if (!compress) {
             ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(double));
         } else {
-            const unsigned long compressedSize = compressData(snpData, compressedBuffer, maxCompressedOutputSize);
-            ppBedOutput.write(reinterpret_cast<char *>(compressedBuffer), long(compressedSize));
-
-            // Calculate the index data for this column
-            ppBedIndexOutput.write(reinterpret_cast<char *>(&pos), sizeof(unsigned long));
-            ppBedIndexOutput.write(reinterpret_cast<const char *>(&compressedSize), sizeof(unsigned long));
-            pos += compressedSize;
+            compressAndWriteWithIndex(snpData, ppBedOutput, ppBedIndexOutput, pos, compressedBuffer, maxCompressedOutputSize);
         }
 
         // Compute allele frequency and any other required data and write out to file

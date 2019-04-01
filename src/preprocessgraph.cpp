@@ -132,13 +132,11 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
                 if (!compressedData)
                     continue; // We might not have a full chunk of data
 
-                unsigned long compressedSize = msg.sizes.at(i);
-                m_output->write(reinterpret_cast<char *>(compressedData.get()), long(compressedSize));
-
-                // Calculate the index data for this column
-                m_indexOutput->write(reinterpret_cast<char *>(&m_position), sizeof(unsigned long));
-                m_indexOutput->write(reinterpret_cast<const char *>(&compressedSize), sizeof(unsigned long));
-                m_position += compressedSize;
+                writeCompressedDataWithIndex(compressedData.get(),
+                                 msg.sizes.at(i),
+                                *m_output,
+                                *m_indexOutput,
+                                m_position);
             }
         }
         return msg;
