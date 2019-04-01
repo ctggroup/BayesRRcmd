@@ -8,6 +8,7 @@
 #include "SparseBayesRRG.hpp"
 #include "raggedsparsedata.h"
 #include "tbb/task_scheduler_init.h"
+#include "preprocessgraph.h"
 
 using namespace std;
 
@@ -48,10 +49,24 @@ void processDenseData(Options opt) {
         cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
 
         clock_t start_bed = clock();
-        data.preprocessBedFile(opt.bedFile + ".bed",
-                opt.bedFile + ".ppbed",
-                opt.bedFile + ".ppbedindex",
-                opt.compress);
+        if (opt.numThread > 1) {
+            std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+            if (opt.numThreadSpawned > 0)
+                taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
+
+            PreprocessGraph graph(opt.numThread);
+            graph.preprocessBedFile(opt.bedFile + ".bed",
+                                    opt.bedFile + ".ppbed",
+                                    opt.bedFile + ".ppbedindex",
+                                    opt.compress,
+                                    &data,
+                                    4);
+        } else {
+            data.preprocessBedFile(opt.bedFile + ".bed",
+                    opt.bedFile + ".ppbed",
+                    opt.bedFile + ".ppbedindex",
+                    opt.compress);
+        }
 
         clock_t end = clock();
         printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));

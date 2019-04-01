@@ -60,6 +60,7 @@ add_library(libbrr-dev
     sparseparallelgraph.cpp
     eigensparsedata.cpp
     raggedsparsedata.cpp
+    preprocessgraph.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -82,6 +83,7 @@ add_executable(${PROJECT_NAME}
     sparseparallelgraph.cpp
     eigensparsedata.cpp
     raggedsparsedata.cpp
+    preprocessgraph.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)
