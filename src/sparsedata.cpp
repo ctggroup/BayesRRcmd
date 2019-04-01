@@ -1,5 +1,7 @@
 #include "sparsedata.h"
 
+#include "compression.h"
+
 SparseData::SparseData()
     : Data()
 {
@@ -114,4 +116,50 @@ double SparseData::computeEpsilonSumUpdate(const unsigned int marker, const doub
     //Regardless of which scheme, the update of epsilonSum is the same
     const double dBeta = beta_old - beta;
     return dBeta * Zsum(marker) / sds(marker) - dBeta * means(marker) * static_cast<double>(numInds) / sds(marker);
+}
+
+bool SparseData::writeStatistics(std::ofstream &outStream) const
+{
+    if (outStream.fail()) {
+        std::cerr << "Error: unable to write SparseData statistics!" << std::endl;
+        return false;
+    }
+
+    outStream.write(reinterpret_cast<const char *>(&numSnps), sizeof(numSnps));
+
+    const std::streamsize size = sizeof(double) * numSnps;
+    outStream.write(reinterpret_cast<const char *>(&means[0]), size);
+    outStream.write(reinterpret_cast<const char *>(&sds[0]), size);
+    outStream.write(reinterpret_cast<const char *>(&sqrdZ[0]), size);
+    outStream.write(reinterpret_cast<const char *>(&Zsum[0]), size);
+    outStream.flush();
+
+    return true;
+}
+
+unsigned long SparseData::writeStatisticsCompressed(ofstream &outStream, ofstream &indexStream) const
+{
+    if (outStream.fail()) {
+        std::cerr << "Error: unable to write compressed SparseData statistics!" << std::endl;
+        return 0;
+    }
+
+    if (indexStream.fail()) {
+        std::cerr << "Error: unable to write compressed SparseData statistics index!" << std::endl;
+        return 0;
+    }
+
+    unsigned long pos = sizeof(numSnps);
+    outStream.write(reinterpret_cast<const char *>(&numSnps), pos);
+
+    const auto maxCompressedOutputSize = maxCompressedDataSize<double>(numInds);
+    unsigned char *compressedBuffer = new unsigned char[maxCompressedOutputSize];
+
+    compressAndWriteWithIndex(means, outStream, indexStream, pos, compressedBuffer, maxCompressedOutputSize);
+    compressAndWriteWithIndex(sds, outStream, indexStream, pos, compressedBuffer, maxCompressedOutputSize);
+    compressAndWriteWithIndex(sqrdZ, outStream, indexStream, pos, compressedBuffer, maxCompressedOutputSize);
+    compressAndWriteWithIndex(Zsum, outStream, indexStream, pos, compressedBuffer, maxCompressedOutputSize);
+
+    delete[] compressedBuffer;
+    return pos;
 }

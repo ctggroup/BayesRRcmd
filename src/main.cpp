@@ -116,7 +116,9 @@ void processDenseData(Options opt) {
 }
 
 void processSparseData(Options options) {
-    if (options.analysisType != "PPBayes" && options.analysisType != "PPAsyncBayes") {
+    if (options.analysisType != "PPBayes" &&
+            options.analysisType != "PPAsyncBayes" &&
+            options.analysisType != "Preprocess") {
         std::cout << "Error: Wrong analysis type: " << options.analysisType << std::endl;
         return;
     }
@@ -140,6 +142,12 @@ void processSparseData(Options options) {
 
     // Read the data in sparse format
     data->readBedFileSparse(options.bedFile + ".bed");
+
+    if (options.analysisType == "Preprocess") {
+        data->writeSparseData(options.bedFile + "." + options.sparseDataType + ".sparsebed",
+                              options.compress);
+        return;
+    }
 
     std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
     if (options.numThreadSpawned > 0)

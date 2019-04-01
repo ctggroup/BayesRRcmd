@@ -16,6 +16,8 @@ public:
 
     void readBedFileSparse(const string &bedFile);
 
+    virtual bool writeSparseData(const string &outFile, const bool compress) const = 0;
+
     virtual void updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const = 0;
 
     virtual double computeNum(const unsigned int marker, const double beta_old, const VectorXd &epsilon, const double epsilonSum) const;
@@ -28,6 +30,9 @@ protected:
     virtual void beginSnpColumn(unsigned int snp) = 0;
     virtual void processAllele(unsigned int snp, unsigned int individual, unsigned int allele1, unsigned int allele2) = 0;
     virtual void endSnpColumn(unsigned int snp, unsigned int missingGenotypeCount) = 0;
+
+    bool writeStatistics(std::ofstream& outStream) const;
+    unsigned long writeStatisticsCompressed(std::ofstream& outStream, ofstream &indexStream) const;
 };
 
 #endif // SPARSEDATA_H

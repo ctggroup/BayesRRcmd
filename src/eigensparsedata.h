@@ -19,6 +19,8 @@ public:
     double dot(const unsigned int marker, const VectorXd &epsilon) const override;
     void updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const override;
 
+    bool writeSparseData(const std::string &outFile, const bool compressed) const override;
+
 protected:
     static const UnitDataType kMissing;
 

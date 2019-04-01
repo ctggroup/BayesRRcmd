@@ -1,5 +1,9 @@
 #include "raggedsparsedata.h"
 
+#include <iterator>
+
+#include "compression.h"
+
 RaggedSparseData::RaggedSparseData()
     : SparseData()
 {
@@ -27,6 +31,37 @@ void RaggedSparseData::updateEpsilon(VectorXd &epsilon, const unsigned int marke
 
     // 4. For missing values, undo step 1
     epsilon(Zmissing[marker]).array() += meanAdjustment;
+}
+
+bool RaggedSparseData::writeSparseData(const std::string &outFile, const bool compressed) const
+{
+    std::ofstream outStream(outFile.c_str(), std::ios::binary);
+    if (outStream.fail()) {
+        std::cerr << "Error: unable to open the output file for writing: " << outFile << std::endl;
+        return false;
+    }
+
+    if (compressed) {
+        const auto indexFile = outFile + "index";
+        std::ofstream indexStream(indexFile.c_str(), std::ios::binary);
+        if (indexStream.fail()) {
+            std::cerr << "Error: unable to open the output index file for writing: " << indexFile << std::endl;
+            return false;
+        }
+
+        unsigned long position = writeStatisticsCompressed(outStream, indexStream);
+        if (position == 0)
+            return false;
+
+        return writeRaggedVectorCompressed(Zones, outStream, indexStream, position) &&
+                writeRaggedVectorCompressed(Ztwos, outStream, indexStream, position) &&
+                writeRaggedVectorCompressed(Zmissing, outStream, indexStream, position);
+    } else {
+        return writeStatistics(outStream) &&
+                writeRaggedVector(Zones, outStream) &&
+                writeRaggedVector(Ztwos, outStream) &&
+                writeRaggedVector(Zmissing, outStream);
+    }
 }
 
 void RaggedSparseData::initialise()
@@ -80,4 +115,56 @@ void RaggedSparseData::endSnpColumn(unsigned int snp, unsigned int missingGenoty
     m_currentOnes = nullptr;
     m_currentTwos = nullptr;
     m_currentMissing = nullptr;
+}
+
+bool RaggedSparseData::writeRaggedVector(const RaggedSparseData::RaggedVector &vector, ostream &outStream) const
+{
+    if (outStream.fail()) {
+        std::cerr << "Error: unable to write RaggedVector!" << std::endl;
+        return false;
+    }
+
+    // Assumes numSnps has been written in SparseData::writeStatistics
+    for (const auto& indices : vector) {
+        const IndexVector::size_type size = indices.size();
+        outStream.write(reinterpret_cast<const char *>(&size), sizeof(IndexVector::size_type));
+
+        if (size > 0)
+            std::copy(indices.cbegin(), indices.cend(), std::ostream_iterator<IndexVector::value_type>(outStream));
+    }
+
+    outStream.flush();
+    return true;
+}
+
+bool RaggedSparseData::writeRaggedVectorCompressed(const RaggedSparseData::RaggedVector &vector,
+                                                   ostream &outStream,
+                                                   ostream &indexStream,
+                                                   unsigned long &position) const
+{
+    if (outStream.fail()) {
+        std::cerr << "Error: unable to write compressed RaggedVector!" << std::endl;
+        return false;
+    }
+
+    if (indexStream.fail()) {
+        std::cerr << "Error: unable to write compressed RaggedVector index!" << std::endl;
+        return false;
+    }
+
+    const auto maxCompressedOutputSize = maxCompressedDataSize<IndexVector::value_type>(numInds);
+    unsigned char *compressedBuffer = new unsigned char[maxCompressedOutputSize];
+
+    // Assumes numSnps has been written in SparseData::writeStatistics
+    for (const auto& indices : vector) {
+        compressAndWriteWithIndex<IndexVector::value_type>(indices,
+                                                           outStream,
+                                                           indexStream,
+                                                           position,
+                                                           compressedBuffer,
+                                                           maxCompressedOutputSize);
+    }
+
+    delete[] compressedBuffer;
+    return true;
 }

@@ -19,6 +19,11 @@ void EigenSparseData::updateEpsilon(VectorXd &epsilon, const unsigned int marker
     epsilon += dBeta * Zg[marker] / sds(marker) - dBeta * means(marker) / sds(marker) * m_ones;
 }
 
+bool EigenSparseData::writeSparseData(const string &outFile, const bool compressed) const
+{
+    return false;
+}
+
 void EigenSparseData::initialise()
 {
     Zg.resize(numSnps);
