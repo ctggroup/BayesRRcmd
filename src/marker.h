@@ -19,4 +19,12 @@ struct Marker
                                const double beta) = 0;
 };
 
+template<typename MarkerType>
+unsigned long compress(const MarkerType* marker,
+                       unsigned char *outputBuffer,
+                       unsigned long outputSize);
+
+template<typename MarkerType>
+void write(const MarkerType* marker, std::ofstream *outStream);
+
 #endif // MARKER_H
