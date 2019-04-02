@@ -28,6 +28,8 @@ public:
 
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
 
+    virtual void processColumn(Marker *marker);
+
     virtual std::tuple<double, double> processColumnAsync(Marker *marker);
 
     virtual void updateGlobal(Marker *marker, const double beta_old, const double beta) = 0;

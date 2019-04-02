@@ -201,6 +201,78 @@ int BayesRBase::runGibbs()
     return 0;
 }
 
+void BayesRBase::processColumn(Marker *marker)
+{
+    const unsigned int N(m_data->numInds);
+    const double NM1 = double(N - 1);
+    const int K(int(m_cva.size()) + 1);
+    const int km1 = K - 1;
+    double acum = 0.0;
+    double beta_old;
+
+    beta_old = m_beta(marker->i);
+
+    // muk for the zeroth component=0
+    m_muk[0] = 0.0;
+
+    // We compute the denominator in the variance expression to save computations
+    const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
+    m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
+
+    const double num = marker->computeNum(m_epsilon, beta_old);
+
+    //The rest of the algorithm remains the same
+
+    // muk for the other components is computed according to equaitons
+    m_muk.segment(1, km1) = num / m_denom.array();
+
+    // Update the log likelihood for each component
+    VectorXd logL(K);
+    const double logLScale = m_sigmaG / m_sigmaE * NM1;
+    logL = m_pi.array().log(); // First component probabilities remain unchanged
+    logL.segment(1, km1) = logL.segment(1, km1).array()
+            - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
+            + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
+
+    double p(m_dist.unif_rng());
+
+    if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
+        acum = 0;
+    } else {
+        acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
+    }
+
+    for (int k = 0; k < K; k++) {
+        if (p <= acum) {
+            //if zeroth component
+            if (k == 0) {
+                m_beta(marker->i) = 0;
+            } else {
+                m_beta(marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+            }
+            m_v[k] += 1.0;
+            m_components[marker->i] = k;
+            break;
+        } else {
+            //if too big or too small
+            if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
+                acum += 0;
+            } else {
+                acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
+            }
+        }
+    }
+    const double beta_new = m_beta(marker->i);
+    m_betasqn += beta_new * beta_new - beta_old * beta_old;
+
+    //until here
+    //we skip update if old and new beta equals zero
+    const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
+    if (!skipUpdate) {
+        marker->updateEpsilon(m_epsilon, beta_old, beta_new);
+    }
+}
+
 std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
 {
     double beta = 0;
