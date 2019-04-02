@@ -30,40 +30,4 @@ protected:
                                            const double beta) const;
 };
 
-
-struct EigenSparseMarker : public SparseMarker
-{
-    using UnitDataType = double;
-    SparseVector<UnitDataType> Zg;
-
-    const VectorXd *ones = nullptr;
-
-    void updateEpsilon(VectorXd &epsilon,
-                       const double beta_old,
-                       const double beta) override;
-
-protected:
-    double dot(const VectorXd &epsilon) const override;
-};
-
-
-struct RaggedSparseMarker : public SparseMarker
-{
-    using IndexVector = std::vector<int>;
-    // the indexes of elements of the bed matrix which are one for this column
-    IndexVector Zones;
-    // the indexes of elements of the bed matrix which are two for this column
-    IndexVector Ztwos;
-
-    // the indexes of elements of the bed matrix which are missing for this column
-    IndexVector Zmissing;
-
-    void updateEpsilon(VectorXd &epsilon,
-                       const double beta_old,
-                       const double beta) override;
-
-protected:
-    double dot(const VectorXd &epsilon) const override;
-};
-
 #endif // SPARSEMARKER_H

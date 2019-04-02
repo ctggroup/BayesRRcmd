@@ -63,6 +63,8 @@ add_library(libbrr-dev
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
+    raggedsparsemarker.cpp
+    eigensparsemarker.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -88,6 +90,8 @@ add_executable(${PROJECT_NAME}
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
+    raggedsparsemarker.cpp
+    eigensparsemarker.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)

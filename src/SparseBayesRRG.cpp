@@ -1,5 +1,6 @@
 #include "SparseBayesRRG.hpp"
 
+#include "eigensparsemarker.h"
 #include "sparsedata.h"
 #include "sparsemarker.h"
 #include "sparseparallelgraph.hpp"
