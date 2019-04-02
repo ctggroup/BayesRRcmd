@@ -9,6 +9,7 @@
 #include "raggedsparsedata.h"
 #include "tbb/task_scheduler_init.h"
 #include "preprocessgraph.h"
+#include "densemarker.h"
 
 using namespace std;
 
@@ -54,7 +55,7 @@ void processDenseData(Options opt) {
             if (opt.numThreadSpawned > 0)
                 taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
-            PreprocessGraph graph(opt.numThread);
+            PreprocessGraph<DenseMarker> graph(opt.numThread);
             std::cout << "Preprocessing with " << opt.numThread << " threads ("
                       << (opt.numThreadSpawned > 0 ? std::to_string(opt.numThreadSpawned) : "auto") << " spawned) and "
                       << opt.preprocessChunks << " columns per thread."

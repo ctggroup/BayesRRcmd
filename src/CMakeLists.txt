@@ -60,7 +60,6 @@ add_library(libbrr-dev
     sparseparallelgraph.cpp
     eigensparsedata.cpp
     raggedsparsedata.cpp
-    preprocessgraph.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
@@ -86,7 +85,6 @@ add_executable(${PROJECT_NAME}
     sparseparallelgraph.cpp
     eigensparsedata.cpp
     raggedsparsedata.cpp
-    preprocessgraph.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
