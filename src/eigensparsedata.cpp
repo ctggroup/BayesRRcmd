@@ -8,18 +8,23 @@ EigenSparseData::EigenSparseData()
 
 }
 
-double EigenSparseData::dot(const unsigned int marker, const VectorXd &epsilon) const
+double EigenSparseData::dot(const unsigned int marker,
+                            const VectorXd &epsilon) const
 {
     return Zg[marker].dot(epsilon) / sds(marker);
 }
 
-void EigenSparseData::updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const
+void EigenSparseData::updateEpsilon(VectorXd &epsilon,
+                                    const unsigned int marker,
+                                    const double beta_old,
+                                    const double beta) const
 {
     const double dBeta = beta_old - beta;
     epsilon += dBeta * Zg[marker] / sds(marker) - dBeta * means(marker) / sds(marker) * m_ones;
 }
 
-bool EigenSparseData::writeSparseData(const string &outFile, const bool compressed) const
+bool EigenSparseData::writeSparseData(const string &outFile,
+                                      const bool compressed) const
 {
     return false;
 }
@@ -43,7 +48,10 @@ void EigenSparseData::beginSnpColumn(unsigned int snp)
     m_tuples->reserve(m_estimatedDataCount);
 }
 
-void EigenSparseData::processAllele(unsigned int snp, unsigned int individual, unsigned int allele1, unsigned int allele2)
+void EigenSparseData::processAllele(unsigned int snp,
+                                    unsigned int individual,
+                                    unsigned int allele1,
+                                    unsigned int allele2)
 {
     (void) snp; // Unused
 
@@ -56,7 +64,8 @@ void EigenSparseData::processAllele(unsigned int snp, unsigned int individual, u
     }
 }
 
-void EigenSparseData::endSnpColumn(unsigned int snp, unsigned int missingGenotypeCount)
+void EigenSparseData::endSnpColumn(unsigned int snp,
+                                   unsigned int missingGenotypeCount)
 {
     const double mean = means[snp];
 

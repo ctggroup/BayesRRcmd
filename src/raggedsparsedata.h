@@ -18,10 +18,15 @@ public:
     // vector containing the vectors the indexes of elements of the bed matrix which are missing for each column
     RaggedVector Zmissing;
 
-    double dot(const unsigned int marker, const VectorXd &epsilon) const override;
-    void updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const override;
+    double dot(const unsigned int marker,
+               const VectorXd &epsilon) const override;
+    void updateEpsilon(VectorXd &epsilon,
+                       const unsigned int marker,
+                       const double beta_old,
+                       const double beta) const override;
 
-    bool writeSparseData(const std::string &outFile, const bool compressed) const override;
+    bool writeSparseData(const std::string &outFile,
+                         const bool compressed) const override;
 
 protected:
     IndexVector* m_currentOnes = nullptr;
@@ -30,10 +35,15 @@ protected:
 
     void initialise() override;
     void beginSnpColumn(unsigned int snp) override;
-    void processAllele(unsigned int snp, unsigned int individual, unsigned int allele1, unsigned int allele2) override;
-    void endSnpColumn(unsigned int snp, unsigned int missingGenotypeCount) override;
+    void processAllele(unsigned int snp,
+                       unsigned int individual,
+                       unsigned int allele1,
+                       unsigned int allele2) override;
+    void endSnpColumn(unsigned int snp,
+                      unsigned int missingGenotypeCount) override;
 
-    bool writeRaggedVector(const RaggedVector &vector, std::ostream &outStream) const;
+    bool writeRaggedVector(const RaggedVector &vector,
+                           std::ostream &outStream) const;
     bool writeRaggedVectorCompressed(const RaggedVector &vector,
                                      std::ostream &outStream,
                                      std::ostream &indexStream,

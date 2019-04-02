@@ -10,12 +10,16 @@ RaggedSparseData::RaggedSparseData()
 
 }
 
-double RaggedSparseData::dot(const unsigned int marker, const VectorXd &epsilon) const
+double RaggedSparseData::dot(const unsigned int marker,
+                             const VectorXd &epsilon) const
 {
     return (epsilon(Zones[marker]).sum() + 2 * epsilon(Ztwos[marker]).sum()) / sds(marker);
 }
 
-void RaggedSparseData::updateEpsilon(VectorXd &epsilon, const unsigned int marker, const double beta_old, const double beta) const
+void RaggedSparseData::updateEpsilon(VectorXd &epsilon,
+                                     const unsigned int marker,
+                                     const double beta_old,
+                                     const double beta) const
 {
     const double dBeta = beta_old - beta;
     const auto meanAdjustment = dBeta * means(marker) / sds(marker);
@@ -33,7 +37,8 @@ void RaggedSparseData::updateEpsilon(VectorXd &epsilon, const unsigned int marke
     epsilon(Zmissing[marker]).array() += meanAdjustment;
 }
 
-bool RaggedSparseData::writeSparseData(const std::string &outFile, const bool compressed) const
+bool RaggedSparseData::writeSparseData(const std::string &outFile,
+                                       const bool compressed) const
 {
     std::ofstream outStream(outFile.c_str(), std::ios::binary);
     if (outStream.fail()) {
@@ -88,7 +93,10 @@ void RaggedSparseData::beginSnpColumn(unsigned int snp)
     m_currentMissing = &Zmissing[snp];
 }
 
-void RaggedSparseData::processAllele(unsigned int snp, unsigned int individual, unsigned int allele1, unsigned int allele2)
+void RaggedSparseData::processAllele(unsigned int snp,
+                                     unsigned int individual,
+                                     unsigned int allele1,
+                                     unsigned int allele2)
 {
     assert(m_currentOnes);
     assert(m_currentTwos);
@@ -105,7 +113,8 @@ void RaggedSparseData::processAllele(unsigned int snp, unsigned int individual, 
     }
 }
 
-void RaggedSparseData::endSnpColumn(unsigned int snp, unsigned int missingGenotypeCount)
+void RaggedSparseData::endSnpColumn(unsigned int snp,
+                                    unsigned int missingGenotypeCount)
 {
     (void) snp; // Unused
     (void) missingGenotypeCount; // Unused
@@ -117,7 +126,8 @@ void RaggedSparseData::endSnpColumn(unsigned int snp, unsigned int missingGenoty
     m_currentMissing = nullptr;
 }
 
-bool RaggedSparseData::writeRaggedVector(const RaggedSparseData::RaggedVector &vector, ostream &outStream) const
+bool RaggedSparseData::writeRaggedVector(const RaggedSparseData::RaggedVector &vector,
+                                         ostream &outStream) const
 {
     if (outStream.fail()) {
         std::cerr << "Error: unable to write RaggedVector!" << std::endl;
