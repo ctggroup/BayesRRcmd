@@ -1,10 +1,9 @@
 #include "SparseBayesRRG.hpp"
 
 #include "sparsedata.h"
+#include "sparsemarker.h"
 #include "sparseparallelgraph.hpp"
 #include "sparsesequentialanalysis.h"
-
-#include <mutex>
 
 // this code skeleton only highlights which would be the proposal of code changes
 //Additional variables
@@ -45,6 +44,8 @@ void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individu
     m_asyncEpsilon = VectorXd(individualCount);
 
     m_asyncEpsilonSum = m_epsilonSum;
+
+    m_ones.setOnes(individualCount);
 }
 
 void SparseBayesRRG::prepareForAnylsis()
@@ -53,6 +54,35 @@ void SparseBayesRRG::prepareForAnylsis()
         std::memcpy(m_asyncEpsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
         m_asyncEpsilonSum = m_epsilonSum;
     }
+}
+
+void SparseBayesRRG::prepare(Marker *marker)
+{
+    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
+    assert(sparseMarker);
+
+    sparseMarker->numInds = static_cast<double>(m_data->numInds);
+
+    // Hmmm
+    if (auto* eigenSparseMarker = dynamic_cast<EigenSparseMarker*>(marker)) {
+        eigenSparseMarker->ones = &m_ones;
+    }
+}
+
+void SparseBayesRRG::readWithSharedLock(Marker *marker)
+{
+    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
+    assert(sparseMarker);
+
+    sparseMarker->epsilonSum = m_asyncEpsilonSum;
+}
+
+void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
+{
+    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
+    assert(sparseMarker);
+
+    m_asyncEpsilonSum = sparseMarker->epsilonSum;
 }
 
 void SparseBayesRRG::processColumn(unsigned int marker)
@@ -261,4 +291,13 @@ void SparseBayesRRG::updateGlobal(const unsigned int marker, double beta_old, do
     // No mutex required here whilst m_globalComputeNode uses the serial policy
     m_sparseData->updateEpsilon(m_epsilon, marker, beta_old, beta);
     m_epsilonSum += m_sparseData->computeEpsilonSumUpdate(marker, beta_old, beta);
+}
+
+void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta)
+{
+    // No mutex required here whilst m_globalComputeNode uses the serial policy
+    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
+    assert(sparseMarker);
+
+    sparseMarker->updateEpsilon(m_epsilon, beta_old, beta);
 }

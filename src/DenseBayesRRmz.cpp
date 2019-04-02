@@ -8,8 +8,7 @@
 #include "DenseBayesRRmz.hpp"
 #include "limitsequencegraph.hpp"
 #include "denseparallelgraph.hpp"
-
-#include <mutex>
+#include "densemarker.h"
 
 DenseBayesRRmz::DenseBayesRRmz(const Data *data, Options &opt)
     : BayesRBase (data, opt)
@@ -129,7 +128,6 @@ std::tuple<double, double> DenseBayesRRmz::processColumnAsync(unsigned int marke
     double beta = 0;
     double component = 0;
     VectorXd y_tilde(m_data->numInds);
-    VectorXd epsilon(m_data->numInds);
 
     {
         // Use a shared lock to allow multiple threads to read updates
@@ -138,7 +136,7 @@ std::tuple<double, double> DenseBayesRRmz::processColumnAsync(unsigned int marke
         // std::memcpy is faster than epsilon = m_epsilon which compiles down to a loop over pairs of
         // doubles and uses _mm_load_pd(source) SIMD intrinsics. Just be careful if we change the type
         // contained in the vector back to floats.
-        std::memcpy(y_tilde.data(), m_async_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+        std::memcpy(y_tilde.data(), m_asyncEpsilon.data(), static_cast<size_t>(y_tilde.size()) * sizeof(double));
         beta = m_beta(marker);
         component = m_components(marker);
     }
@@ -237,7 +235,7 @@ std::tuple<double, double> DenseBayesRRmz::processColumnAsync(unsigned int marke
         // Use a unique lock to ensure only one thread can write updates
         std::unique_lock lock(m_mutex);
         if (!skipUpdate) {
-            std::memcpy(m_async_epsilon.data(), y_tilde.data(), static_cast<size_t>(y_tilde.size()) * sizeof(double));
+            std::memcpy(m_asyncEpsilon.data(), y_tilde.data(), static_cast<size_t>(y_tilde.size()) * sizeof(double));
             m_betasqn += beta * beta - beta_old * beta_old;
         }
         m_v += v;
@@ -256,15 +254,32 @@ void DenseBayesRRmz::updateGlobal(double beta_old, double beta, const Map<Vector
     m_epsilon -= Cx * (beta - beta_old);
 }
 
+void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const double beta)
+{
+    // No mutex required here whilst m_globalComputeNode uses the serial policy
+    auto* denseMarker = dynamic_cast<DenseMarker*>(marker);
+    assert(denseMarker);
+
+    m_epsilon -= *denseMarker->Cx * (beta - beta_old);
+}
+
 void DenseBayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCount)
 {
     BayesRBase::init(K, markerCount, individualCount);
 
-    m_async_epsilon = VectorXd(individualCount);
+    m_asyncEpsilon = VectorXd(individualCount);
 }
 
 void DenseBayesRRmz::prepareForAnylsis()
 {
     if (m_isAsync)
-        std::memcpy(m_async_epsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
+        std::memcpy(m_asyncEpsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
+}
+
+void DenseBayesRRmz::readWithSharedLock(Marker *marker)
+{
+    auto* denseMarker = dynamic_cast<DenseMarker*>(marker);
+    assert(denseMarker);
+
+    denseMarker->component = m_components(denseMarker->i);
 }

@@ -3,8 +3,6 @@
 
 #include "BayesRBase.hpp"
 
-#include <shared_mutex>
-
 class SparseData;
 
 class SparseBayesRRG : public BayesRBase
@@ -17,20 +15,23 @@ public:
 
     void processColumn(unsigned int marker);
     std::tuple<double, double> processColumnAsync(unsigned int marker);
+
     void updateGlobal(const unsigned int marker, double beta_old, double beta);
+    void updateGlobal(Marker *marker, const double beta_old, const double beta) override;
 
 protected:
     const SparseData *m_sparseData;
 
-    VectorXd m_asyncEpsilon;
-
     double m_asyncEpsilonSum = 0.0;
 
-    mutable std::shared_mutex m_mutex;
-    mutable std::mutex m_rngMutex;
+    VectorXd m_ones;
 
     void init(int K, unsigned int markerCount, unsigned int individualCount) override;
     void prepareForAnylsis() override;
+
+    void prepare(Marker *marker) override;
+    void readWithSharedLock(Marker *marker) override;
+    void writeWithUniqueLock(Marker *marker) override;
 };
 
 #endif /* SRC_SPARSEBAYESRRG_H_ */

@@ -8,8 +8,10 @@
 #include "BayesRBase.hpp"
 #include "samplewriter.h"
 #include "analysisgraph.hpp"
+#include "marker.h"
 
 #include <chrono>
+#include <mutex>
 
 BayesRBase::BayesRBase(const Data *data, Options &opt)
     : m_flowGraph(nullptr)
@@ -86,6 +88,24 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
 void BayesRBase::prepareForAnylsis()
 {
     // Empty in BayesRBase
+}
+
+void BayesRBase::prepare(Marker *marker)
+{
+    // Empty in BayesRBase
+    (void) marker; // Unused
+}
+
+void BayesRBase::readWithSharedLock(Marker *marker)
+{
+    // Empty in BayesRBase
+    (void) marker; // Unused
+}
+
+void BayesRBase::writeWithUniqueLock(Marker *marker)
+{
+    // Empty in BayesRBase
+    (void) marker; // Unused
 }
 
 int BayesRBase::runGibbs()
@@ -179,6 +199,128 @@ int BayesRBase::runGibbs()
               << "mean flowgraph duration: " << meanFlowGraphIterationDuration << "s" << std::endl;
 
     return 0;
+}
+
+std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
+{
+    double beta = 0;
+    double component = 0;
+    VectorXd epsilon(m_data->numInds);
+    double epsilonSum = 0;
+
+    {
+        // Use a shared lock to allow multiple threads to read updates
+        std::shared_lock lock(m_mutex);
+
+        // std::memcpy is faster than epsilon = m_epsilon which compiles down to a loop over pairs of
+        // doubles and uses _mm_load_pd(source) SIMD intrinsics. Just be careful if we change the type
+        // contained in the vector back to floats.
+        std::memcpy(epsilon.data(), m_asyncEpsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+        beta = m_beta(marker->i);
+        component = m_components(marker->i);
+        readWithSharedLock(marker);
+    }
+    const double beta_old = beta;
+    const double N = static_cast<double>(m_data->numInds);
+    const double NM1 = N - 1.0;
+
+    const double num = marker->computeNum(epsilon, beta_old);
+
+    // Do work
+
+    // We compute the denominator in the variance expression to save computations
+    const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
+
+    const int K(int(m_cva.size()) + 1);
+    const int km1 = K - 1;
+    VectorXd denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
+
+    // muk for the zeroth component=0
+    VectorXd muk(K);
+    muk[0] = 0.0;
+    // muk for the other components is computed according to equaitons
+    muk.segment(1, km1) = num / denom.array();
+
+    // Update the log likelihood for each component
+    VectorXd logL(K);
+    const double logLScale = m_sigmaG / m_sigmaE * NM1;
+    logL = m_pi.array().log(); // First component probabilities remain unchanged
+    logL.segment(1, km1) = logL.segment(1, km1).array()
+            - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
+            + 0.5 * (muk.segment(1, km1).array() * num) / m_sigmaE;
+
+
+    double acum = 0.0;
+    if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
+        acum = 0;
+    } else {
+        acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
+    }
+
+    double p = 0;
+    std::vector<double> randomNumbers(static_cast<std::vector<double>::size_type>(K), 0);
+    {
+        // Generate all the numbers we are going to need in one go.
+        // Use a unique lock to ensure only one thread can use the random number engine
+        // at a time.
+        std::unique_lock lock(m_rngMutex);
+        p = m_dist.unif_rng();
+
+        auto beginItr = randomNumbers.begin();
+        std::advance(beginItr, 1);
+        std::generate(beginItr, randomNumbers.end(), [&, k = 0] () mutable {
+            ++k;
+            return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
+        });
+    }
+    VectorXd v = VectorXd(K);
+    v.setZero();
+    for (int k = 0; k < K; k++) {
+        if (p <= acum) {
+            //if zeroth component
+            if (k == 0) {
+                beta = 0;
+            } else {
+                beta = randomNumbers.at(static_cast<std::vector<double>::size_type>(k));
+            }
+            v[k] += 1.0;
+            component = k;
+            break;
+        } else {
+            //if too big or too small
+            if (((logL.segment(1, km1).array() - logL[k+1]).abs().array() > 700).any()) {
+                acum += 0;
+            } else {
+                acum += 1.0 / ((logL.array() - logL[k+1]).exp().sum());
+            }
+        }
+    }
+
+    // Only update m_epsilon if required
+    const bool skipUpdate = beta_old == 0.0 && beta == 0.0;
+
+    // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
+    if (!skipUpdate) {
+        marker->updateEpsilon(epsilon, beta_old, beta);
+    }
+
+    // Lock to write updates (at end, or perhaps as updates are computed)
+    {
+        // Use a unique lock to ensure only one thread can write updates
+        std::unique_lock lock(m_mutex);
+        if (!skipUpdate) {
+            std::memcpy(m_asyncEpsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+            m_betasqn += beta * beta - beta_old * beta_old;
+            writeWithUniqueLock(marker);
+        }
+        m_v += v;
+    }
+
+    // These updates do not need to be atomic
+    m_beta(marker->i) = beta;
+    m_components(marker->i) = component;
+
+    return {beta_old, beta};
 }
 
 void BayesRBase::printDebugInfo() const

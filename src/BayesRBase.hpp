@@ -14,8 +14,11 @@
 
 #include <Eigen/Eigen>
 #include <memory>
+#include <shared_mutex>
 
 class AnalysisGraph;
+
+struct Marker;
 
 class BayesRBase
 {
@@ -24,6 +27,10 @@ public:
     virtual ~BayesRBase();
 
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
+
+    virtual std::tuple<double, double> processColumnAsync(Marker *marker);
+
+    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta) = 0;
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
     bool isDebugEnabled() const { return m_showDebug; }
@@ -75,11 +82,20 @@ protected:
 
     bool m_isAsync = false;
 
+    VectorXd m_asyncEpsilon;
+
+    mutable std::shared_mutex m_mutex;
+    mutable std::mutex m_rngMutex;
+
     void setAsynchronous(bool async) { m_isAsync = async; }
 
     virtual void init(int K, unsigned int markerCount, unsigned int individualCount);
 
     virtual void prepareForAnylsis();
+
+    virtual void prepare(Marker *marker);
+    virtual void readWithSharedLock(Marker *marker);
+    virtual void writeWithUniqueLock(Marker *marker);
 
     void printDebugInfo() const;
 };
