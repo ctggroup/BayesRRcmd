@@ -17,11 +17,9 @@ struct DenseMarker : public Marker
                        const double beta) override;
 };
 
-template<>
-unsigned long compress(const DenseMarker *marker,
-                       unsigned char *outputBuffer,
-                       unsigned long outputSize);
 
+template<>
+CompressedMarker compress(const DenseMarker* marker);
 
 template<>
 void write(const DenseMarker* marker, std::ofstream *outStream);

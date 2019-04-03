@@ -40,12 +40,8 @@ protected:
         using MarkerPtrList = std::vector<MarkerPtr>;
         MarkerPtrList snpData;
 
-        using CompressedData = unsigned char[];
-        using CompressedDataPtr = std::shared_ptr<CompressedData>;
-        using CompressedDataPtrList = std::vector<CompressedDataPtr>;
-        CompressedDataPtrList compressedSnpData;
-
-        std::vector<unsigned long> sizes;
+        using CompressedMarkerList = std::vector<CompressedMarker>;
+        CompressedMarkerList compressedSnpData;
     };
 
     size_t m_maxParallel = 1;
@@ -68,7 +64,6 @@ PreprocessGraph<MarkerType>::PreprocessGraph(size_t maxParallel)
 {
     auto processAndCompress = [] (Message msg) -> Message {
         const auto columnSize = (msg.data->numInds + 3) >> 2;
-        const auto maxCompressedOutputSize = maxCompressedDataSize<double>(msg.data->numInds);
 
         ifstream inStream(msg.bedFile.c_str(), ios::binary);
         if (!inStream) {
@@ -121,10 +116,9 @@ PreprocessGraph<MarkerType>::PreprocessGraph(size_t maxParallel)
 
             // Compress the data
             if (msg.compress) {
-                msg.compressedSnpData.at(chunk).reset(new unsigned char[maxCompressedOutputSize]);
-                msg.sizes.at(chunk) = compress(msg.snpData.at(chunk).get(),
-                                               msg.compressedSnpData.at(chunk).get(),
-                                               maxCompressedOutputSize);
+                const auto* marker = msg.snpData.at(chunk).get();
+                msg.compressedSnpData.at(chunk) = compress(marker);
+
                 // Delete the uncompressed snp data
                 msg.snpData.at(chunk).reset();
             }
@@ -157,17 +151,18 @@ PreprocessGraph<MarkerType>::PreprocessGraph(size_t maxParallel)
                 write(dataPtr.get(), m_output.get());
             }
         } else {
-            for (size_t i = 0; i < msg.compressedSnpData.size(); ++i) {
-                auto& compressedData = msg.compressedSnpData.at(i);
-                if (!compressedData)
-                    continue; // We might not have a full chunk of data
+            std::for_each(msg.compressedSnpData.cbegin(),
+                          msg.compressedSnpData.cend(),
+                          [&] (const CompressedMarker& compressed) {
+                if (!compressed.buffer)
+                    return;
 
-                writeCompressedDataWithIndex(compressedData.get(),
-                                 msg.sizes.at(i),
-                                *m_output,
-                                *m_indexOutput,
-                                m_position);
-            }
+                writeCompressedDataWithIndex(compressed.buffer.get(),
+                                             compressed.size,
+                                             *m_output,
+                                             *m_indexOutput,
+                                             m_position);
+            });
         }
         return msg;
     };
@@ -262,8 +257,7 @@ void PreprocessGraph<MarkerType>::preprocessBedFile(const string &bedFile,
             bedFile,
             data,
             {chunkSize, nullptr}, // snpData
-            {chunkSize, nullptr}, // compressedData
-            std::vector<unsigned long>(chunkSize, 0)
+            {chunkSize, {nullptr, 0}}, // compressedData
         };
 
         m_ordering->try_put(msg);

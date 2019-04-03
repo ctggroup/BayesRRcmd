@@ -2,6 +2,7 @@
 #define MARKER_H
 
 #include <Eigen/Eigen>
+#include <memory>
 
 using namespace Eigen;
 
@@ -20,10 +21,14 @@ struct Marker
                                const double beta) = 0;
 };
 
+struct CompressedMarker
+{
+    std::shared_ptr<unsigned char[]> buffer = nullptr;
+    unsigned long size = 0;
+};
+
 template<typename MarkerType>
-unsigned long compress(const MarkerType* marker,
-                       unsigned char *outputBuffer,
-                       unsigned long outputSize);
+CompressedMarker compress(const MarkerType* marker);
 
 template<typename MarkerType>
 void write(const MarkerType* marker, std::ofstream *outStream);

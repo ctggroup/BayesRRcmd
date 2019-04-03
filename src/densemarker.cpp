@@ -20,11 +20,15 @@ void DenseMarker::updateEpsilon(VectorXd &epsilon, const double beta_old, const 
 
 
 template<>
-unsigned long compress(const DenseMarker *marker,
-                       unsigned char *outputBuffer,
-                       unsigned long outputSize)
+CompressedMarker compress(const DenseMarker *marker)
 {
-    return compressData(*marker->Cx, outputBuffer, outputSize);
+    CompressedMarker compressed;
+    const auto maxCompressedOutputSize = maxCompressedDataSize<double>(marker->numInds);
+    compressed.buffer.reset(new unsigned char[maxCompressedOutputSize]);
+    compressed.size = compressData(*marker->Cx,
+                                   compressed.buffer.get(),
+                                   maxCompressedOutputSize);
+    return compressed;
 }
 
 template<>
