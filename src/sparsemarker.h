@@ -18,6 +18,11 @@ struct SparseMarker : public Marker
                        const double beta_old,
                        const double beta) override;
 
+    virtual void updateStatistics(unsigned int allele1, unsigned int allele2);
+
+    size_t size() const override;
+    void write(std::ostream *outStream) const override;
+
 protected:
     virtual double computeNum(VectorXd &epsilon,
                               const double beta_old,
@@ -28,13 +33,5 @@ protected:
     virtual double computeEpsilonSumUpdate(const double beta_old,
                                            const double beta) const;
 };
-
-void updateStatistics(SparseMarker* marker,
-                      unsigned int allele1,
-                      unsigned int allele2);
-
-std::size_t statisticsSize();
-
-bool writeStatistics(const SparseMarker* marker, std::ostream *outStream);
 
 #endif // SPARSEMARKER_H

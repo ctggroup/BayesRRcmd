@@ -6,6 +6,12 @@
 
 using namespace Eigen;
 
+struct CompressedMarker
+{
+    std::shared_ptr<unsigned char[]> buffer = nullptr;
+    unsigned long size = 0;
+};
+
 struct Marker
 {
     virtual ~Marker();
@@ -19,18 +25,11 @@ struct Marker
     virtual void updateEpsilon(VectorXd &epsilon,
                                const double beta_old,
                                const double beta) = 0;
+
+    virtual CompressedMarker compress() const = 0;
+
+    virtual size_t size() const { return 0; }
+    virtual void write(std::ostream *outStream) const = 0;
 };
-
-struct CompressedMarker
-{
-    std::shared_ptr<unsigned char[]> buffer = nullptr;
-    unsigned long size = 0;
-};
-
-template<typename MarkerType>
-CompressedMarker compress(const MarkerType* marker);
-
-template<typename MarkerType>
-void write(const MarkerType* marker, std::ostream *outStream);
 
 #endif // MARKER_H

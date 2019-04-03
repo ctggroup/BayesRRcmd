@@ -57,14 +57,14 @@ void processDenseData(Options opt) {
             if (opt.numThreadSpawned > 0)
                 taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
-            PreprocessGraph<DenseMarker> graph(opt.numThread);
             std::cout << "Preprocessing with " << opt.numThread << " threads ("
                       << (opt.numThreadSpawned > 0 ? std::to_string(opt.numThreadSpawned) : "auto") << " spawned) and "
                       << opt.preprocessChunks << " columns per thread."
                       << endl;
-            graph.preprocessBedFile(opt.bedFile + ".bed",
-                                    opt.bedFile + ".ppbed",
-                                    opt.bedFile + ".ppbedindex",
+
+            PreprocessGraph graph(opt.numThread);
+            graph.preprocessBedFile(opt.bedFile,
+                                    opt.dataType,
                                     opt.compress,
                                     &data,
                                     opt.preprocessChunks);
@@ -148,45 +148,27 @@ void processSparseData(Options options) {
     data->readBimFile(options.bedFile + ".bim");
     data->readPhenotypeFile(options.phenotypeFile);
 
-    const auto sparseDataType = options.dataType  == DataType::SparseEigen ? ".eigen" : ".ragged";
-
     if (options.analysisType == "Preprocess") {
-        const auto bedFile = options.bedFile + ".bed";
-        const auto sparsebedFile = options.bedFile + sparseDataType + ".sparsebed";
-        const auto sparsebedIndexFile = options.bedFile + sparseDataType + ".sparsebedindex";
-
         cout << "Start preprocessing " << options.bedFile + ".bed" << endl;
 
         clock_t start_bed = clock();
-        if (options.numThread > 1) {
-            std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
-            if (options.numThreadSpawned > 0)
-                taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
-            std::cout << "Preprocessing with " << options.numThread << " threads ("
-                      << (options.numThreadSpawned > 0 ? std::to_string(options.numThreadSpawned) : "auto") << " spawned) and "
-                      << options.preprocessChunks << " columns per thread."
-                      << endl;
+        std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+        if (options.numThreadSpawned > 0)
+            taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
-            if (options.dataType == DataType::SparseRagged) {
-                PreprocessGraph<RaggedSparseMarker> graph(options.numThread);
-                graph.preprocessBedFile(bedFile,
-                                        sparsebedFile,
-                                        sparsebedIndexFile,
-                                        options.compress,
-                                        data.get(),
-                                        options.preprocessChunks);
-            } else {
-                cerr << "DataType: "
-                     << options.dataType
-                     << " does not support more than one thread!"
-                     << endl;
-                return;
-            }
-        } else {
-            data->writeSparseData(options.bedFile + sparseDataType + ".sparsebed",
-                                  options.compress);
-        }
+        std::cout << "Preprocessing with " << options.numThread << " threads ("
+                  << (options.numThreadSpawned > 0 ? std::to_string(options.numThreadSpawned) : "auto") << " spawned) and "
+                  << options.preprocessChunks << " columns per thread."
+                  << endl;
+
+
+        PreprocessGraph graph(options.numThread);
+        graph.preprocessBedFile(options.bedFile,
+                                options.dataType,
+                                options.compress,
+                                data.get(),
+                                options.preprocessChunks);
 
         clock_t end = clock();
         printf("Finished preprocessing the bed file in %.3f sec.\n",

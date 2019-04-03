@@ -19,27 +19,13 @@ struct RaggedSparseMarker : public SparseMarker
                        const double beta_old,
                        const double beta) override;
 
+    CompressedMarker compress() const override;
+
+    size_t size() const override;
+    void write(std::ostream *outStream) const override;
+
 protected:
     double dot(const VectorXd &epsilon) const override;
 };
-
-
-template<>
-CompressedMarker compress(const RaggedSparseMarker* marker);
-
-
-template<>
-void write(const RaggedSparseMarker* marker, std::ostream *outStream);
-
-template<>
-void MarkerBuilder<RaggedSparseMarker>::initialise(const unsigned int snp,
-                                                   const unsigned int numInds);
-
-template<>
-void MarkerBuilder<RaggedSparseMarker>::processAllele(unsigned int individual,
-                                                      unsigned int allele1,
-                                                      unsigned int allele2);
-template<>
-void MarkerBuilder<RaggedSparseMarker>::endColumn();
 
 #endif // RAGGEDSPARSEMARKER_H

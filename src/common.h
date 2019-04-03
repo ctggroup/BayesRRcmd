@@ -8,4 +8,7 @@ enum DataType : unsigned int {
     SparseRagged
 };
 
+class MarkerBuilder;
+MarkerBuilder* builderForType(const DataType type);
+
 #endif // COMMON_H

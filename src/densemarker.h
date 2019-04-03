@@ -15,24 +15,9 @@ struct DenseMarker : public Marker
     void updateEpsilon(VectorXd &epsilon,
                        const double beta_old,
                        const double beta) override;
+
+    CompressedMarker compress() const override;
+    void write(std::ostream *outStream) const override;
 };
-
-
-template<>
-CompressedMarker compress(const DenseMarker* marker);
-
-template<>
-void write(const DenseMarker* marker, std::ostream *outStream);
-
-template<>
-void MarkerBuilder<DenseMarker>::initialise(const unsigned int snp,
-                                            const unsigned int numInds);
-
-template<>
-void MarkerBuilder<DenseMarker>::processAllele(unsigned int individual,
-                                               unsigned int allele1,
-                                               unsigned int allele2);
-template<>
-void MarkerBuilder<DenseMarker>::endColumn();
 
 #endif // DENSEMARKER_H
