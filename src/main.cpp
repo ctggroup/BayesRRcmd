@@ -11,6 +11,7 @@
 #include "preprocessgraph.h"
 #include "densemarker.h"
 #include "raggedsparsemarker.h"
+#include "common.h"
 
 using namespace std;
 
@@ -128,12 +129,17 @@ void processSparseData(Options options) {
     using DataPtr = std::unique_ptr<SparseData>;
     DataPtr data;
 
-    if (options.sparseDataType == "eigen") {
+    switch (options.dataType) {
+    case DataType::SparseEigen:
         data = DataPtr(new EigenSparseData);
-    } else if (options.sparseDataType == "ragged") {
+        break;
+
+    case DataType::SparseRagged:
         data = DataPtr(new RaggedSparseData);
-    } else {
-        std::cout << "Error: Unsupported --sparse-data argument: " << options.sparseDataType << std::endl;
+        break;
+
+    default:
+        std::cout << "Error: Unsupported --sparse-data argument: " << options.dataType << std::endl;
         return;
     }
 
@@ -142,11 +148,12 @@ void processSparseData(Options options) {
     data->readBimFile(options.bedFile + ".bim");
     data->readPhenotypeFile(options.phenotypeFile);
 
-    if (options.analysisType == "Preprocess") {
+    const auto sparseDataType = options.dataType  == DataType::SparseEigen ? ".eigen" : ".ragged";
 
+    if (options.analysisType == "Preprocess") {
         const auto bedFile = options.bedFile + ".bed";
-        const auto sparsebedFile = options.bedFile + "." + options.sparseDataType + ".sparsebed";
-        const auto sparsebedIndexFile = options.bedFile + "." + options.sparseDataType + ".sparsebedindex";
+        const auto sparsebedFile = options.bedFile + sparseDataType + ".sparsebed";
+        const auto sparsebedIndexFile = options.bedFile + sparseDataType + ".sparsebedindex";
 
         cout << "Start preprocessing " << options.bedFile + ".bed" << endl;
 
@@ -161,9 +168,7 @@ void processSparseData(Options options) {
                       << options.preprocessChunks << " columns per thread."
                       << endl;
 
-            if (options.sparseDataType == "eigen") {
-                data = DataPtr(new EigenSparseData);
-            } else if (options.sparseDataType == "ragged") {
+            if (options.dataType == DataType::SparseRagged) {
                 PreprocessGraph<RaggedSparseMarker> graph(options.numThread);
                 graph.preprocessBedFile(bedFile,
                                         sparsebedFile,
@@ -171,9 +176,15 @@ void processSparseData(Options options) {
                                         options.compress,
                                         data.get(),
                                         options.preprocessChunks);
+            } else {
+                cerr << "DataType: "
+                     << options.dataType
+                     << " does not support more than one thread!"
+                     << endl;
+                return;
             }
         } else {
-            data->writeSparseData(options.bedFile + "." + options.sparseDataType + ".sparsebed",
+            data->writeSparseData(options.bedFile + sparseDataType + ".sparsebed",
                                   options.compress);
         }
 
@@ -217,10 +228,20 @@ int main(int argc, const char * argv[]) {
         Options opt;
         opt.inputOptions(argc, argv);
 
-        if (opt.sparseData)
-            processSparseData(opt);
-        else
+        switch (opt.dataType) {
+        case DataType::Dense:
             processDenseData(opt);
+            break;
+
+        case DataType::SparseEigen:
+            // Fall through
+        case DataType::SparseRagged:
+            processSparseData(opt);
+            break;
+
+        default:
+            cerr << "Unsupported DataType: " << opt.dataType << endl;
+        }
     }
     catch (const string &err_msg) {
         cerr << "\n" << err_msg << endl;

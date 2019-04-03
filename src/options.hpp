@@ -11,6 +11,7 @@
 #include <boost/format.hpp>
 #include "gadgets.hpp"
 #include <Eigen/Eigen>
+#include "common.h"
 
 using namespace std;
 using namespace boost;
@@ -40,8 +41,7 @@ public:
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
-    bool sparseData = false;
-    string sparseDataType;
+    DataType dataType = DataType::Dense;
 
     Options(){
         chainLength             = 10000;
@@ -65,7 +65,7 @@ public:
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;
-        sparseDataType          = "";
+        dataType                = DataType::Dense;
     }
 
     void inputOptions(const int argc, const char* argv[]);

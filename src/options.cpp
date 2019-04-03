@@ -99,8 +99,14 @@ void Options::inputOptions(const int argc, const char* argv[]){
             ss << "--thread " << argv[i] << "\n";
         }
         else if (!strcmp(argv[i], "--sparse-data")) {
-            sparseData = true;
-            sparseDataType = argv[++i];
+            string sparseDataType = argv[++i];
+            if (sparseDataType == "eigen")
+                dataType = DataType::SparseEigen;
+            else if (sparseDataType == "ragged")
+                dataType = DataType::SparseRagged;
+            else
+                dataType = DataType::None;
+
             ss << "--sparse-data " << sparseDataType << "\n";
         }
         else if(!strcmp(argv[i], "--thread-spawned")) {
