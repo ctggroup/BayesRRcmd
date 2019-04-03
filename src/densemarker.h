@@ -28,7 +28,7 @@ void write(const DenseMarker* marker, std::ofstream *outStream);
 
 template<>
 void MarkerBuilder<DenseMarker>::initialise(const unsigned int snp,
-                                            const double numInds);
+                                            const unsigned int numInds);
 
 template<>
 void MarkerBuilder<DenseMarker>::processAllele(unsigned int individual,

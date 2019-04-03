@@ -8,7 +8,7 @@ template <typename MarkerType>
 class MarkerBuilder
 {
 public:
-    void initialise(const unsigned int snp, const double numInds);
+    void initialise(const unsigned int snp, const unsigned int numInds);
     void processAllele(unsigned int individual,
                        unsigned int allele1,
                        unsigned int allele2);

@@ -37,14 +37,15 @@ void write(const DenseMarker *marker, std::ofstream *outStream)
 
 template<>
 void MarkerBuilder<DenseMarker>::initialise(const unsigned int snp,
-                                            const double numInds)
+                                            const unsigned int numInds)
 {
     reset(numInds);
 
     m_marker.reset(new DenseMarker);
     m_marker->i = snp;
+    m_marker->numInds = numInds;
 
-    const unsigned int colSize = static_cast<unsigned int>(numInds) * sizeof (double);
+    const unsigned int colSize = numInds * sizeof (double);
     m_marker->buffer.reset(new unsigned char[colSize]);
     m_marker->Cx = std::make_shared<Map<VectorXd>>(reinterpret_cast<double *>(m_marker->buffer.get()),
                                                    numInds);

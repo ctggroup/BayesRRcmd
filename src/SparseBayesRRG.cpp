@@ -59,11 +59,6 @@ void SparseBayesRRG::prepareForAnylsis()
 
 void SparseBayesRRG::prepare(Marker *marker)
 {
-    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
-    assert(sparseMarker);
-
-    sparseMarker->numInds = static_cast<double>(m_data->numInds);
-
     // Hmmm
     if (auto* eigenSparseMarker = dynamic_cast<EigenSparseMarker*>(marker)) {
         eigenSparseMarker->ones = &m_ones;

@@ -10,7 +10,6 @@ struct SparseMarker : public Marker
     double squrdZ= 0;
     double Zsum = 0;
 
-    double numInds = 0;
     double epsilonSum = 0;
 
     double computeNum(VectorXd &epsilon, const double beta_old) override;

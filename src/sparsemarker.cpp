@@ -13,12 +13,12 @@ void SparseMarker::updateEpsilon(VectorXd &epsilon, const double beta_old, const
 
 double SparseMarker::computeNum(VectorXd &epsilon, const double beta_old, const double epsilonSum)
 {
-    return beta_old * (numInds - 1.0) - mean * epsilonSum / sd + dot(epsilon);
+    return beta_old * (static_cast<double>(numInds) - 1.0) - mean * epsilonSum / sd + dot(epsilon);
 }
 
 double SparseMarker::computeEpsilonSumUpdate(const double beta_old, const double beta) const
 {
     //Regardless of which scheme, the update of epsilonSum is the same
     const double dBeta = beta_old - beta;
-    return dBeta * Zsum / sd - dBeta * mean * numInds / sd;
+    return dBeta * Zsum / sd - dBeta * mean * static_cast<double>(numInds) / sd;
 }

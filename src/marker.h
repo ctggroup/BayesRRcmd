@@ -10,6 +10,7 @@ struct Marker
     virtual ~Marker();
 
     unsigned int i = 0;
+    unsigned int numInds = 0;
 
     virtual double computeNum(VectorXd &epsilon,
                               const double beta_old) = 0;
