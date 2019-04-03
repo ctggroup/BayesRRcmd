@@ -22,7 +22,7 @@ template<>
 CompressedMarker compress(const DenseMarker* marker);
 
 template<>
-void write(const DenseMarker* marker, std::ofstream *outStream);
+void write(const DenseMarker* marker, std::ostream *outStream);
 
 template<>
 void MarkerBuilder<DenseMarker>::initialise(const unsigned int snp,

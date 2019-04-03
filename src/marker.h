@@ -31,6 +31,6 @@ template<typename MarkerType>
 CompressedMarker compress(const MarkerType* marker);
 
 template<typename MarkerType>
-void write(const MarkerType* marker, std::ofstream *outStream);
+void write(const MarkerType* marker, std::ostream *outStream);
 
 #endif // MARKER_H

@@ -32,7 +32,7 @@ CompressedMarker compress(const DenseMarker *marker)
 }
 
 template<>
-void write(const DenseMarker *marker, std::ofstream *outStream)
+void write(const DenseMarker *marker, std::ostream *outStream)
 {
     outStream->write(reinterpret_cast<char *>(marker->buffer.get()),
                      marker->Cx->size() * sizeof(double));
