@@ -79,6 +79,25 @@ unsigned long compressData(const VectorXd &snpData, unsigned char *outputBuffer,
     return compressData(strm, outputSize);
 }
 
+unsigned long compressData(char *inputBuffer,
+                           unsigned int inputSize,
+                           unsigned char *outputBuffer,
+                           unsigned long outputSize)
+{
+    // Initialise zlib
+    z_stream strm;
+    if (prepareStream(strm) != Z_OK)
+        return 0;
+
+    // Compress the data
+    strm.avail_in = inputSize;
+    strm.next_in = reinterpret_cast<unsigned char *>(inputBuffer);
+    strm.avail_out = static_cast<unsigned int>(outputSize);
+    strm.next_out = outputBuffer;
+
+    return compressData(strm, outputSize);
+}
+
 void extractData(unsigned char *compressedData,
                  unsigned int compressedDataSize,
                  unsigned char *outputBuffer,

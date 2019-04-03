@@ -1,5 +1,10 @@
 #include "sparsemarker.h"
 
+#include "compression.h"
+
+#include <fstream>
+#include <iostream>
+
 double SparseMarker::computeNum(VectorXd &epsilon, const double beta_old)
 {
     return computeNum(epsilon, beta_old, epsilonSum);
@@ -21,4 +26,47 @@ double SparseMarker::computeEpsilonSumUpdate(const double beta_old, const double
     //Regardless of which scheme, the update of epsilonSum is the same
     const double dBeta = beta_old - beta;
     return dBeta * Zsum / sd - dBeta * mean * static_cast<double>(numInds) / sd;
+}
+
+void updateStatistics(SparseMarker *marker, unsigned int allele1, unsigned int allele2)
+{
+    if (!marker)
+        return;
+
+    if (allele1 == 0 && allele2 == 1) {  // missing genotype
+        return;
+    } else if (allele1 == 1 || allele2 == 1) { // Not zero
+        // Populate data for 1 or 2
+        const double value = allele1 + allele2;
+        marker->mean += value;
+        marker->sqrdZ += value * value;
+        marker->Zsum += value;
+    }
+}
+
+std::size_t statisticsSize()
+{
+    return sizeof(double) * 4;
+}
+
+bool writeStatistics(const SparseMarker *marker, std::ostream *outStream)
+{
+    if (!marker)
+        return false;
+
+    if (outStream->fail()) {
+        std::cerr << "Error: unable to write SparseMarker statistics!" << std::endl;
+        return false;
+    }
+
+    auto writeDouble = [&](const double d) {
+        outStream->write(reinterpret_cast<const char *>(&d), sizeof(double));
+    };
+
+    writeDouble(marker->mean);
+    writeDouble(marker->sd);
+    writeDouble(marker->sqrdZ);
+    writeDouble(marker->Zsum);
+
+    return outStream->good();
 }

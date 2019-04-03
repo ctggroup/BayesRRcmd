@@ -10,6 +10,7 @@
 #include "tbb/task_scheduler_init.h"
 #include "preprocessgraph.h"
 #include "densemarker.h"
+#include "raggedsparsemarker.h"
 
 using namespace std;
 
@@ -141,14 +142,50 @@ void processSparseData(Options options) {
     data->readBimFile(options.bedFile + ".bim");
     data->readPhenotypeFile(options.phenotypeFile);
 
-    // Read the data in sparse format
-    data->readBedFileSparse(options.bedFile + ".bed");
-
     if (options.analysisType == "Preprocess") {
-        data->writeSparseData(options.bedFile + "." + options.sparseDataType + ".sparsebed",
-                              options.compress);
+
+        const auto bedFile = options.bedFile + ".bed";
+        const auto sparsebedFile = options.bedFile + "." + options.sparseDataType + ".sparsebed";
+        const auto sparsebedIndexFile = options.bedFile + "." + options.sparseDataType + ".sparsebedindex";
+
+        cout << "Start preprocessing " << options.bedFile + ".bed" << endl;
+
+        clock_t start_bed = clock();
+        if (options.numThread > 1) {
+            std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+            if (options.numThreadSpawned > 0)
+                taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
+
+            std::cout << "Preprocessing with " << options.numThread << " threads ("
+                      << (options.numThreadSpawned > 0 ? std::to_string(options.numThreadSpawned) : "auto") << " spawned) and "
+                      << options.preprocessChunks << " columns per thread."
+                      << endl;
+
+            if (options.sparseDataType == "eigen") {
+                data = DataPtr(new EigenSparseData);
+            } else if (options.sparseDataType == "ragged") {
+                PreprocessGraph<RaggedSparseMarker> graph(options.numThread);
+                graph.preprocessBedFile(bedFile,
+                                        sparsebedFile,
+                                        sparsebedIndexFile,
+                                        options.compress,
+                                        data.get(),
+                                        options.preprocessChunks);
+            }
+        } else {
+            data->writeSparseData(options.bedFile + "." + options.sparseDataType + ".sparsebed",
+                                  options.compress);
+        }
+
+        clock_t end = clock();
+        printf("Finished preprocessing the bed file in %.3f sec.\n",
+               double(end - start_bed) / double(CLOCKS_PER_SEC));
+        cout << endl;
         return;
     }
+
+    // Read the data in sparse format
+    data->readBedFileSparse(options.bedFile + ".bed");
 
     std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
     if (options.numThreadSpawned > 0)

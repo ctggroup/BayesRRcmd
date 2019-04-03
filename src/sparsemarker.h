@@ -7,7 +7,7 @@ struct SparseMarker : public Marker
 {
     double mean = 0;
     double sd = 0;
-    double squrdZ= 0;
+    double sqrdZ= 0;
     double Zsum = 0;
 
     double epsilonSum = 0;
@@ -28,5 +28,13 @@ protected:
     virtual double computeEpsilonSumUpdate(const double beta_old,
                                            const double beta) const;
 };
+
+void updateStatistics(SparseMarker* marker,
+                      unsigned int allele1,
+                      unsigned int allele2);
+
+std::size_t statisticsSize();
+
+bool writeStatistics(const SparseMarker* marker, std::ostream *outStream);
 
 #endif // SPARSEMARKER_H

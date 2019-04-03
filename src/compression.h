@@ -38,6 +38,11 @@ unsigned long compressData(const VectorXd &snpData,
                            unsigned char *outputBuffer,
                            unsigned long outputSize);
 
+unsigned long compressData(char *inputBuffer,
+                           unsigned int inputSize,
+                           unsigned char *outputBuffer,
+                           unsigned long outputSize);
+
 template<typename T>
 unsigned long compressData(const std::vector<T> &vector,
                            unsigned char *outputBuffer,
