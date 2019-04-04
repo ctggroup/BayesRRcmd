@@ -54,7 +54,24 @@ CompressedMarker RaggedSparseMarker::compress() const
 
 void RaggedSparseMarker::decompress(unsigned char *data, const IndexEntry &index)
 {
-    // TODO
+    // Prepare a buffer to decompress into
+    const auto bufferSize = static_cast<unsigned int>(index.originalSize);
+    std::unique_ptr<char[]> buffer;
+    buffer.reset(new char[bufferSize]);
+
+    // Decompress into the buffer
+    extractData(data + index.pos,
+                static_cast<unsigned int>(index.compressedSize),
+                reinterpret_cast<unsigned char*>(buffer.get()),
+                bufferSize);
+
+    // Prepare a stream to read from
+    std::istringstream stream;
+    stream.rdbuf()->pubsetbuf(buffer.get(),
+                              static_cast<std::streamsize>(index.originalSize));
+
+    // Read the marker from the stream
+    read(&stream);
 }
 
 std::streamsize RaggedSparseMarker::size() const
@@ -71,7 +88,28 @@ std::streamsize RaggedSparseMarker::size() const
 
 void RaggedSparseMarker::read(std::istream *inStream)
 {
-    // TODO
+    if (inStream->fail()) {
+        std::cerr << "Error: unable to read RaggedSparseMarker!" << std::endl;
+        return;
+    }
+
+    SparseMarker::read(inStream);
+
+    auto readIndexVector = [&](IndexVector &v) {
+        IndexVector::size_type size = 0;
+        inStream->read(reinterpret_cast<char *>(&size),
+                         sizeof(IndexVector::size_type));
+
+        v.clear();
+        v.resize(size);
+        if (size > 0)
+            inStream->read(reinterpret_cast<char *>(v.data()),
+                           static_cast<std::streamsize>(size * sizeof (IndexVector::value_type)));
+    };
+
+    readIndexVector(Zones);
+    readIndexVector(Ztwos);
+    readIndexVector(Zmissing);
 }
 
 void RaggedSparseMarker::write(std::ostream *outStream) const
@@ -90,9 +128,8 @@ void RaggedSparseMarker::write(std::ostream *outStream) const
                          sizeof(IndexVector::size_type));
 
         if (size > 0)
-            std::copy(v.cbegin(),
-                      v.cend(),
-                      std::ostream_iterator<IndexVector::value_type>(*outStream));
+            outStream->write(reinterpret_cast<const char *>(v.data()),
+                             static_cast<std::streamsize>(size * sizeof (IndexVector::value_type)));
     };
 
     writeIndexVector(Zones);

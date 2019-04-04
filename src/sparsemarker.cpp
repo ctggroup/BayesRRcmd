@@ -36,7 +36,19 @@ std::streamsize SparseMarker::size() const
 
 void SparseMarker::read(std::istream *inStream)
 {
-    // TODO
+    if (inStream->fail()) {
+        std::cerr << "Error: unable to read SparseMarker statistics!" << std::endl;
+        return;
+    }
+
+    auto readDouble = [&](double *d) {
+        inStream->read(reinterpret_cast<char *>(d), sizeof(double));
+    };
+
+    readDouble(&mean);
+    readDouble(&sd);
+    readDouble(&sqrdZ);
+    readDouble(&Zsum);
 }
 
 void SparseMarker::write(std::ostream *outStream) const
