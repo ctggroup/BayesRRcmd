@@ -53,7 +53,7 @@ void RaggedSparseMarkerBuilder::endColumn()
     assert(raggedMarker);
 
     // Calculate mean
-    raggedMarker->mean /= static_cast<double>(raggedMarker->Zmissing.size());
+    raggedMarker->mean /= m_numInds;
 
     // Calculate sd
     const double mean = raggedMarker->mean;
