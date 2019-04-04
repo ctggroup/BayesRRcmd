@@ -14,8 +14,7 @@
 #include <mutex>
 
 BayesRBase::BayesRBase(const Data *data, Options &opt)
-    : m_flowGraph(nullptr)
-    , m_data(data)
+    : m_data(data)
     , m_opt(opt)
     , m_bedFile(opt.bedFile + ".bed")
     , m_outputFile(opt.mcmcSampleFile)
@@ -124,9 +123,9 @@ void BayesRBase::writeWithUniqueLock(Marker *marker)
     (void) marker; // Unused
 }
 
-int BayesRBase::runGibbs()
+int BayesRBase::runGibbs(AnalysisGraph *analysis)
 {
-    if (!m_flowGraph) {
+    if (!analysis) {
         std::cout << "Cannot run Gibbs analysis without a flow graph!" << std::endl;
         return 1;
     }
@@ -181,7 +180,7 @@ int BayesRBase::runGibbs()
         // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
         // of data.
         const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
-        m_flowGraph->exec(N, M, markerI);
+        analysis->exec(this, N, M, markerI);
         const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
         m_m0 = int(M) - int(m_v[0]);
@@ -227,6 +226,9 @@ void BayesRBase::processColumn(Marker *marker)
     double beta_old;
 
     beta_old = m_beta(marker->i);
+
+    prepare(marker);
+    readWithSharedLock(marker);
 
     // muk for the zeroth component=0
     m_muk[0] = 0.0;
@@ -286,6 +288,7 @@ void BayesRBase::processColumn(Marker *marker)
     const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
     if (!skipUpdate) {
         marker->updateEpsilon(m_epsilon, beta_old, beta_new);
+        writeWithUniqueLock(marker);
     }
 }
 
@@ -294,7 +297,8 @@ std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
     double beta = 0;
     double component = 0;
     VectorXd epsilon(m_data->numInds);
-    double epsilonSum = 0;
+
+    prepare(marker);
 
     {
         // Use a shared lock to allow multiple threads to read updates

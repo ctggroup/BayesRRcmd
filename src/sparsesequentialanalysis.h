@@ -12,7 +12,7 @@ public:
 
     void exec(unsigned int numKeptInds,
               unsigned int numIncdSnps,
-              const std::vector<unsigned int> &markerIndices) override;
+              const std::vector<unsigned int> &markerIndices);
 
 private:
     SparseBayesRRG *m_bayes;

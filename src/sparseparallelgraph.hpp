@@ -19,7 +19,7 @@ public:
 
     void exec(unsigned int numInds,
               unsigned int numSnps,
-              const std::vector<unsigned int> &markerIndices) override;
+              const std::vector<unsigned int> &markerIndices);
 
 private:
     struct Message {

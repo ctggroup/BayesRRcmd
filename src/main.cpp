@@ -12,6 +12,7 @@
 #include "densemarker.h"
 #include "raggedsparsemarker.h"
 #include "common.h"
+#include "limitsequencegraph.hpp"
 
 using namespace std;
 
@@ -95,8 +96,15 @@ void processDenseData(Options opt) {
             if (opt.numThreadSpawned > 0)
                 taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
+            std::unique_ptr<AnalysisGraph> graph {nullptr};
+            if (opt.analysisType == "PPAsyncBayes") {
+                // TODO
+                return;
+            } else {
+                graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
+            }
             DenseBayesRRmz analysis(&data, opt);
-            analysis.runGibbs();
+            analysis.runGibbs(graph.get());
             data.unmapCompressedPreprocessedBedFile();
         } else {
             cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
@@ -184,8 +192,8 @@ void processSparseData(Options options) {
     if (options.numThreadSpawned > 0)
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
-    SparseBayesRRG analysis(data.get(), options);
-    analysis.runGibbs();
+//    SparseBayesRRG analysis(data.get(), options);
+//    analysis.runGibbs();
 }
 
 int main(int argc, const char * argv[]) {

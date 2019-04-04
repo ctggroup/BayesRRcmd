@@ -14,12 +14,7 @@
 DenseBayesRRmz::DenseBayesRRmz(const Data *data, Options &opt)
     : BayesRBase (data, opt)
 {
-    if (opt.analysisType == "PPAsyncBayes") {
-        m_flowGraph.reset(new DenseParallelGraph(this, opt.numThread));
-        setAsynchronous(true);
-    } else {
-        m_flowGraph.reset(new LimitSequenceGraph(this, opt.numThread));
-    }
+
 }
 
 DenseBayesRRmz::~DenseBayesRRmz()

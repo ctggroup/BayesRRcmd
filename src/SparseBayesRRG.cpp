@@ -27,12 +27,6 @@ SparseBayesRRG::SparseBayesRRG(const SparseData *data, Options &opt)
     : BayesRBase(data, opt)
     , m_sparseData(data)
 {
-    if (opt.analysisType == "PPAsyncBayes") {
-        m_flowGraph.reset(new SparseParallelGraph(this, opt.numThread));
-        setAsynchronous(true);
-    } else {
-        m_flowGraph.reset(new SparseSequentialAnalysis(this));
-    }
 }
 
 SparseBayesRRG::~SparseBayesRRG()

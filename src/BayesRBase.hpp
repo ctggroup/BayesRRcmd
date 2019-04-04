@@ -27,10 +27,11 @@ public:
     BayesRBase(const Data *m_data, Options &m_opt);
     virtual ~BayesRBase();
 
-    int runGibbs(); // where we run Gibbs sampling over the parametrised model
     virtual MarkerBuilder* markerBuilder() const = 0;
     IndexEntry indexEntry(unsigned int i) const;
     unsigned char* compressedData() const;
+
+    int runGibbs(AnalysisGraph* analysis); // where we run Gibbs sampling over the parametrised model
 
     virtual void processColumn(Marker *marker);
 
@@ -42,8 +43,6 @@ public:
     bool isDebugEnabled() const { return m_showDebug; }
 
 protected:
-    std::unique_ptr<AnalysisGraph> m_flowGraph;
-
     const Data          *m_data; // data matrices
     Options             &m_opt;
     const string        m_bedFile; // bed file
