@@ -16,6 +16,9 @@ public:
                        unsigned int allele2) override;
 
     void endColumn() override;
+
+    void decompress(unsigned char *data,
+                    const IndexEntry &index) const override;
 };
 
 #endif // RAGGEDMARKERBUILDER_H

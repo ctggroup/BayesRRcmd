@@ -6,6 +6,8 @@
 
 using namespace Eigen;
 
+struct IndexEntry;
+
 struct CompressedMarker
 {
     std::shared_ptr<unsigned char[]> buffer = nullptr;
@@ -27,6 +29,8 @@ struct Marker
                                const double beta) = 0;
 
     virtual CompressedMarker compress() const = 0;
+    virtual void decompress(unsigned char* data,
+                            const IndexEntry& index) = 0;
 
     virtual size_t size() const { return 0; }
     virtual void write(std::ostream *outStream) const = 0;

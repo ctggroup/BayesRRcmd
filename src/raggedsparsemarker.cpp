@@ -51,6 +51,11 @@ CompressedMarker RaggedSparseMarker::compress() const
     return compressed;
 }
 
+void RaggedSparseMarker::decompress(unsigned char *data, const IndexEntry &index)
+{
+    // TODO
+}
+
 size_t RaggedSparseMarker::size() const
 {
     const auto valueTypeSize = sizeof(RaggedSparseMarker::IndexVector::value_type);

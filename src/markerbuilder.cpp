@@ -1,5 +1,7 @@
 #include "markerbuilder.h"
 
+#include <iostream>
+
 MarkerBuilder::~MarkerBuilder()
 {
 
@@ -14,6 +16,11 @@ void MarkerBuilder::initialise(const unsigned int snp,
 
 Marker *MarkerBuilder::build()
 {
+    if (!m_marker) {
+        std::cerr << "Not building Marker, was MarkerBuilder::initialise called?" << std::endl;
+        return nullptr;
+    }
+
     reset();
     return m_marker.release();
 }

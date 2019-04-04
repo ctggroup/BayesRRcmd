@@ -11,4 +11,10 @@ enum DataType : unsigned int {
 class MarkerBuilder;
 MarkerBuilder* builderForType(const DataType type);
 
+// An entry for the index to the compressed preprocessed bed file
+struct IndexEntry {
+    long pos;
+    long size;
+};
+
 #endif // COMMON_H

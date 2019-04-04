@@ -1,5 +1,6 @@
 #include "densemarker.h"
 
+#include "common.h"
 #include "compression.h"
 
 #include <fstream>
@@ -27,6 +28,20 @@ CompressedMarker DenseMarker::compress() const
                                    compressed.buffer.get(),
                                    maxCompressedOutputSize);
     return compressed;
+}
+
+void DenseMarker::decompress(unsigned char *data, const IndexEntry &index)
+{
+    const unsigned int colSize = numInds * sizeof(double);
+    buffer.reset(new unsigned char[colSize]);
+
+    extractData(data + index.pos,
+                static_cast<unsigned int>(index.size),
+                buffer.get(),
+                colSize);
+
+    Cx = std::make_shared<Map<VectorXd>>(reinterpret_cast<double *>(buffer.get()),
+                                         numInds);
 }
 
 void DenseMarker::write(std::ostream *outStream) const

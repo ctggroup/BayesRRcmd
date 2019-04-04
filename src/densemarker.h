@@ -17,6 +17,8 @@ struct DenseMarker : public Marker
                        const double beta) override;
 
     CompressedMarker compress() const override;
+    void decompress(unsigned char *data, const IndexEntry &index) override;
+
     void write(std::ostream *outStream) const override;
 };
 

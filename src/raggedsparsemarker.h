@@ -20,6 +20,7 @@ struct RaggedSparseMarker : public SparseMarker
                        const double beta) override;
 
     CompressedMarker compress() const override;
+    void decompress(unsigned char *data, const IndexEntry &index) override;
 
     size_t size() const override;
     void write(std::ostream *outStream) const override;

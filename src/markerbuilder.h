@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 
+struct IndexEntry;
+
 class MarkerBuilder
 {
 public:
@@ -19,6 +21,9 @@ public:
                                unsigned int allele2) = 0;
 
     virtual void endColumn() = 0;
+
+    virtual void decompress(unsigned char *data,
+                            const IndexEntry &index) const = 0;
 
     virtual Marker* build();
 

@@ -60,3 +60,12 @@ void RaggedSparseMarkerBuilder::endColumn()
     raggedMarker->sd = std::sqrt((raggedMarker->sqrdZ - 2.0 * mean * raggedMarker->Zsum + m_numInds * mean * mean) /
                                  (m_numInds - 1.0));
 }
+
+void RaggedSparseMarkerBuilder::decompress(unsigned char *data,
+                                           const IndexEntry &index) const
+{
+    auto* raggedMarker = dynamic_cast<RaggedSparseMarker*>(m_marker.get());
+    assert(raggedMarker);
+
+    raggedMarker->decompress(data, index);
+}

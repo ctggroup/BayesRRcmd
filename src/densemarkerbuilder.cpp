@@ -1,5 +1,6 @@
 #include "densemarkerbuilder.h"
 
+#include "common.h"
 #include "densemarker.h"
 
 DenseMarkerBuilder::DenseMarkerBuilder()
@@ -63,4 +64,12 @@ void DenseMarkerBuilder::endColumn()
     const auto sqn = snpData.squaredNorm();
     const auto sigma = 1.0 / (sqrt(sqn / (m_numInds - 1.0)));
     snpData.array() *= sigma;
+}
+
+void DenseMarkerBuilder::decompress(unsigned char *data, const IndexEntry &index) const
+{
+    auto* denseMarker = dynamic_cast<DenseMarker*>(m_marker.get());
+    assert(denseMarker);
+
+    denseMarker->decompress(data, index);
 }
