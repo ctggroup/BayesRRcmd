@@ -102,7 +102,13 @@ void RaggedSparseMarker::write(std::ostream *outStream) const
 
 bool RaggedSparseMarker::isValid() const
 {
-    return !Zones.empty() && !Ztwos.empty();
+    const bool invalid = Zones.empty() && Ztwos.empty();
+    if (invalid)
+        std::cerr << "SNPs that do not vary are should be removed prior to analysis. "
+                  << "Otherwise, this message indicates a decompression error"
+                  << std::endl;
+
+    return !invalid;
 }
 
 double RaggedSparseMarker::dot(const VectorXd &epsilon) const
