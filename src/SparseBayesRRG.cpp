@@ -1,6 +1,8 @@
 #include "SparseBayesRRG.hpp"
 
+#include "common.h"
 #include "eigensparsemarker.h"
+#include "markerbuilder.h"
 #include "sparsedata.h"
 #include "sparsemarker.h"
 #include "sparseparallelgraph.hpp"
@@ -36,6 +38,12 @@ SparseBayesRRG::SparseBayesRRG(const SparseData *data, Options &opt)
 SparseBayesRRG::~SparseBayesRRG()
 {
 
+}
+
+MarkerBuilder *SparseBayesRRG::markerBuilder() const
+{
+    // TODO
+    return nullptr;
 }
 
 void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individualCount)

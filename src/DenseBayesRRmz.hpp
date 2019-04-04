@@ -19,6 +19,8 @@ public:
     explicit DenseBayesRRmz(const Data *m_data, Options &m_opt);
     ~DenseBayesRRmz() override;
 
+    MarkerBuilder *markerBuilder() const override;
+
     void processColumn(unsigned int marker, const Map<VectorXd> &Cx);
     std::tuple<double, double> processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx);
 

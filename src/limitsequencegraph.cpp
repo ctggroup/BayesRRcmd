@@ -2,6 +2,9 @@
 
 #include "compression.h"
 #include "DenseBayesRRmz.hpp"
+#include "markerbuilder.h"
+
+#include "densemarker.h"
 
 #include <iostream>
 
@@ -12,16 +15,11 @@ LimitSequenceGraph::LimitSequenceGraph(DenseBayesRRmz *bayes, size_t maxParallel
 {
     // Decompress the column for this marker
     auto f = [this] (Message msg) -> Message {
-        //std::cout << "Decompress column " << msg.id << " " << msg.marker << std::endl;
-
-        const unsigned int colSize = msg.numInds * sizeof(double);
-        msg.decompressBuffer = new unsigned char[colSize];
-
-        extractData(reinterpret_cast<unsigned char *>(m_bayes->m_data->ppBedMap) + m_bayes->m_data->ppbedIndex[msg.marker].pos,
-                    static_cast<unsigned int>(m_bayes->m_data->ppbedIndex[msg.marker].size),
-                    msg.decompressBuffer,
-                    colSize);
-
+        std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
+        builder->initialise(msg.snp, msg.numInds);
+        builder->decompress(m_bayes->compressedData(),
+                            m_bayes->indexEntry(msg.snp));
+        msg.marker.reset(builder->build());
         return msg;
     };
     // Do the decompression work on up to maxParallel threads at once
@@ -44,12 +42,9 @@ LimitSequenceGraph::LimitSequenceGraph(DenseBayesRRmz *bayes, size_t maxParallel
         //std::cout << "Sampling for id: " << msg.id << std::endl;
 
         // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.decompressBuffer), msg.numInds);
-        m_bayes->processColumn(msg.marker, Cx);
-
-        // Cleanup
-        delete[] msg.decompressBuffer;
-        msg.decompressBuffer = nullptr;
+        auto* denseMarker = dynamic_cast<DenseMarker*>(msg.marker.get());
+        assert(denseMarker);
+        m_bayes->processColumn(msg.snp, *denseMarker->Cx.get());
 
         // Signal for next decompression task to continue
         return continue_msg();

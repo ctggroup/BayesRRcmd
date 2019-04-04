@@ -13,6 +13,8 @@ public:
     explicit SparseBayesRRG(const SparseData *m_data, Options &m_opt);
     ~SparseBayesRRG() override;
 
+    MarkerBuilder *markerBuilder() const override;
+
     void processColumn(unsigned int marker);
     std::tuple<double, double> processColumnAsync(unsigned int marker);
 

@@ -98,8 +98,8 @@ DenseParallelGraph::DenseParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel
 }
 
 void DenseParallelGraph::exec(unsigned int numInds,
-                         unsigned int numSnps,
-                         const std::vector<unsigned int> &markerIndices)
+                              unsigned int numSnps,
+                              const std::vector<unsigned int> &markerIndices)
 {
     // Do not allow Eigen to parallalize during ParallelGraph execution.
     const auto eigenThreadCount = Eigen::nbThreads( );

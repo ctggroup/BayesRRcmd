@@ -19,6 +19,7 @@
 class AnalysisGraph;
 
 struct Marker;
+class MarkerBuilder;
 
 class BayesRBase
 {
@@ -27,6 +28,9 @@ public:
     virtual ~BayesRBase();
 
     int runGibbs(); // where we run Gibbs sampling over the parametrised model
+    virtual MarkerBuilder* markerBuilder() const = 0;
+    IndexEntry indexEntry(unsigned int i) const;
+    unsigned char* compressedData() const;
 
     virtual void processColumn(Marker *marker);
 

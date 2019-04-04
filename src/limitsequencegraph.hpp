@@ -11,6 +11,8 @@ class DenseBayesRRmz;
 
 using namespace tbb::flow;
 
+struct Marker;
+
 class LimitSequenceGraph : public AnalysisGraph
 {
 public:
@@ -22,10 +24,10 @@ public:
 
 private:
     struct Message {
-        unsigned int id;
-        unsigned int marker;
-        unsigned int numInds;
-        unsigned char *decompressBuffer = nullptr;
+        unsigned int id = 0;
+        unsigned int snp = 0;
+        unsigned int numInds = 0;
+        std::shared_ptr<Marker> marker = nullptr;
     };
 
     DenseBayesRRmz *m_bayes = nullptr;

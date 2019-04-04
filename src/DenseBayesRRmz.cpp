@@ -9,6 +9,7 @@
 #include "limitsequencegraph.hpp"
 #include "denseparallelgraph.hpp"
 #include "densemarker.h"
+#include "common.h"
 
 DenseBayesRRmz::DenseBayesRRmz(const Data *data, Options &opt)
     : BayesRBase (data, opt)
@@ -23,6 +24,11 @@ DenseBayesRRmz::DenseBayesRRmz(const Data *data, Options &opt)
 
 DenseBayesRRmz::~DenseBayesRRmz()
 {
+}
+
+MarkerBuilder *DenseBayesRRmz::markerBuilder() const
+{
+    return builderForType(DataType::Dense);
 }
 
 void DenseBayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
