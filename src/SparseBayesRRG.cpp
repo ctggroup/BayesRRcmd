@@ -77,6 +77,9 @@ void SparseBayesRRG::readWithSharedLock(Marker *marker)
 
 void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
 {
+    if (!m_isAsync)
+        return;
+
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
 

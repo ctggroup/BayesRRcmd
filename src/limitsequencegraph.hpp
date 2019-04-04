@@ -16,6 +16,8 @@ class LimitSequenceGraph : public AnalysisGraph
 public:
     explicit LimitSequenceGraph(size_t maxParallel = 12);
 
+    bool isAsynchronous() const override { return false; }
+
     void exec(BayesRBase* bayes,
               unsigned int numKeptInds,
               unsigned int numIncdSnps,

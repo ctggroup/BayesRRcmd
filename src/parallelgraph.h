@@ -7,42 +7,35 @@
 #include <functional>
 #include <memory>
 
-class DenseBayesRRmz;
+class BayesRBase;
+
+struct Marker;
 
 using namespace tbb::flow;
 
-class DenseParallelGraph : public AnalysisGraph
+class ParallelGraph : public AnalysisGraph
 {
 public:
-    DenseParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel = 6);
+    explicit ParallelGraph(size_t maxParallel = 6);
 
+    bool isAsynchronous() const override { return true; }
 
-    void exec(unsigned int numInds,
-              unsigned int numSnps,
-              const std::vector<unsigned int> &markerIndices);
+    void exec(BayesRBase* bayes,
+              unsigned int numKeptInds,
+              unsigned int numIncdSnps,
+              const std::vector<unsigned int> &markerIndices) override;
 
 private:
     struct Message {
-        Message(unsigned int id = 0, unsigned int marker = 0, unsigned int numInds = 0)
-            : id(id)
-            , marker(marker)
-            , numInds(numInds)
-        {
-
-        }
-
         unsigned int id = 0;
-        unsigned int marker = 0;
+        unsigned int snp = 0;
         unsigned int numInds = 0;
-
-        using DataPtr = std::shared_ptr<unsigned char[]>;
-        DataPtr data = nullptr;
+        std::shared_ptr<Marker> marker = nullptr;
 
         double old_beta = 0.0;
         double beta = 0.0;
     };
 
-    DenseBayesRRmz *m_bayes = nullptr;
     std::unique_ptr<graph> m_graph;
     std::unique_ptr<function_node<Message, Message>> m_asyncComputeNode;
     std::unique_ptr<limiter_node<Message>> m_limit;

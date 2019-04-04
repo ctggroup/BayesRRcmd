@@ -12,6 +12,9 @@ public:
     AnalysisGraph(size_t maxParallel = 12);
     virtual ~AnalysisGraph();
 
+    // Return true if the analysis calls BayesRBase::processColumnAsync
+    virtual bool isAsynchronous() const = 0;
+
     virtual void exec(BayesRBase* bayes,
                       unsigned int numInds,
                       unsigned int numSnps,

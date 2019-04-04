@@ -13,6 +13,7 @@
 #include "raggedsparsemarker.h"
 #include "common.h"
 #include "limitsequencegraph.hpp"
+#include "parallelgraph.h"
 
 using namespace std;
 
@@ -98,8 +99,7 @@ void processDenseData(Options opt) {
 
             std::unique_ptr<AnalysisGraph> graph {nullptr};
             if (opt.analysisType == "PPAsyncBayes") {
-                // TODO
-                return;
+                graph = std::make_unique<ParallelGraph>(opt.numThread);
             } else {
                 graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
             }

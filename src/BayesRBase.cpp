@@ -130,6 +130,8 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         return 1;
     }
 
+    setAsynchronous(analysis->isAsynchronous());
+
     const unsigned int M(m_data->numSnps);
     const unsigned int N(m_data->numInds);
     const int K(int(m_cva.size()) + 1);
@@ -313,8 +315,6 @@ std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
         readWithSharedLock(marker);
     }
     const double beta_old = beta;
-    const double N = static_cast<double>(m_data->numInds);
-    const double NM1 = N - 1.0;
 
     const double num = marker->computeNum(epsilon, beta_old);
 
@@ -323,6 +323,7 @@ std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
 
+    const double NM1 = static_cast<double>(m_data->numInds) - 1.0;
     const int K(int(m_cva.size()) + 1);
     const int km1 = K - 1;
     VectorXd denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();

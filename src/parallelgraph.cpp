@@ -1,30 +1,27 @@
-#include "denseparallelgraph.hpp"
+#include "parallelgraph.h"
 
 #include "compression.h"
-#include "DenseBayesRRmz.hpp"
+#include "BayesRBase.hpp"
+#include "marker.h"
+#include "markerbuilder.h"
 
 #include <iostream>
 
-DenseParallelGraph::DenseParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel)
+ParallelGraph::ParallelGraph(size_t maxParallel)
     : AnalysisGraph(maxParallel)
-    , m_bayes(bayes)
     , m_graph(new graph)
 {
     // Decompress the column for this marker then process the column using the algorithm class
     auto f = [this] (Message msg) -> Message {
         // Decompress the column
-        const unsigned int colSize = msg.numInds * sizeof(double);
-
-        msg.data.reset(new unsigned char[colSize]);
-
-        extractData(reinterpret_cast<unsigned char *>(m_bayes->m_data->ppBedMap) + m_bayes->m_data->ppbedIndex[msg.marker].pos,
-                    static_cast<unsigned int>(m_bayes->m_data->ppbedIndex[msg.marker].size),
-                    msg.data.get(),
-                    colSize);
+        std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
+        builder->initialise(msg.snp, msg.numInds);
+        builder->decompress(m_bayes->compressedData(),
+                            m_bayes->indexEntry(msg.snp));
+        msg.marker.reset(builder->build());
 
         // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.data.get()), msg.numInds);
-        const auto betas = m_bayes->processColumnAsync(msg.marker, Cx);
+        const auto betas = m_bayes->processColumnAsync(msg.marker.get());
 
         msg.old_beta = std::get<0>(betas);
         msg.beta = std::get<1>(betas);
@@ -54,11 +51,7 @@ DenseParallelGraph::DenseParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel
 
     // Do global computation
     auto h = [this] (Message msg) -> continue_msg {
-
-        // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.data.get()), msg.numInds);
-        m_bayes->updateGlobal(msg.old_beta, msg.beta, Cx);
-
+        m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta);
         return continue_msg();
     };
     // Use the serial policy
@@ -97,12 +90,21 @@ DenseParallelGraph::DenseParallelGraph(DenseBayesRRmz *bayes, size_t maxParallel
     make_edge(*m_globalComputeNode, m_limit->decrement);
 }
 
-void DenseParallelGraph::exec(unsigned int numInds,
+void ParallelGraph::exec(BayesRBase *bayes,
+                              unsigned int numInds,
                               unsigned int numSnps,
                               const std::vector<unsigned int> &markerIndices)
 {
+    if (!bayes) {
+        std::cerr << "Cannot run ParallelGraph without bayes" << std::endl;
+        return;
+    }
+
+    // Set our Bayes for this run
+    m_bayes = bayes;
+
     // Do not allow Eigen to parallalize during ParallelGraph execution.
-    const auto eigenThreadCount = Eigen::nbThreads( );
+    const auto eigenThreadCount = Eigen::nbThreads();
     Eigen::setNbThreads(0);
 
     // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
@@ -119,4 +121,7 @@ void DenseParallelGraph::exec(unsigned int numInds,
 
     // Turn Eigen threading back on.
     Eigen::setNbThreads(eigenThreadCount);
+
+    // Clean up
+    m_bayes = nullptr;
 }

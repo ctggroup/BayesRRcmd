@@ -6,8 +6,6 @@
  */
 
 #include "DenseBayesRRmz.hpp"
-#include "limitsequencegraph.hpp"
-#include "denseparallelgraph.hpp"
 #include "densemarker.h"
 #include "common.h"
 
@@ -268,7 +266,8 @@ void DenseBayesRRmz::init(int K, unsigned int markerCount, unsigned int individu
 {
     BayesRBase::init(K, markerCount, individualCount);
 
-    m_asyncEpsilon = VectorXd(individualCount);
+    if (m_isAsync)
+        m_asyncEpsilon = VectorXd(individualCount);
 }
 
 void DenseBayesRRmz::prepareForAnylsis()
