@@ -20,7 +20,7 @@ struct SparseMarker : public Marker
 
     virtual void updateStatistics(unsigned int allele1, unsigned int allele2);
 
-    size_t size() const override;
+    std::streamsize size() const override;
     void write(std::ostream *outStream) const override;
 
 protected:

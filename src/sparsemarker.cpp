@@ -29,7 +29,7 @@ void SparseMarker::updateStatistics(unsigned int allele1, unsigned int allele2)
     }
 }
 
-size_t SparseMarker::size() const
+std::streamsize SparseMarker::size() const
 {
     return sizeof(double) * 4;
 }

@@ -103,7 +103,8 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
                     return;
 
                 writeCompressedDataWithIndex(compressed.buffer.get(),
-                                             compressed.size,
+                                             compressed.index.compressedSize,
+                                             compressed.index.originalSize,
                                              *m_output,
                                              *m_indexOutput,
                                              m_position);

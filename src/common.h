@@ -18,8 +18,9 @@ std::string ppIndexFileForType(DataType type, const std::string &bedFile);
 
 // An entry for the index to the compressed preprocessed bed file
 struct IndexEntry {
-    long pos;
-    long size;
+    unsigned long pos = 0;
+    unsigned long compressedSize = 0;
+    unsigned long originalSize = 0;
 };
 
 #endif // COMMON_H

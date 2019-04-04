@@ -19,6 +19,7 @@ struct DenseMarker : public Marker
     CompressedMarker compress() const override;
     void decompress(unsigned char *data, const IndexEntry &index) override;
 
+    std::streamsize size() const override;
     void write(std::ostream *outStream) const override;
 
     bool isValid() const override;

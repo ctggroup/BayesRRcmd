@@ -1,17 +1,17 @@
 #ifndef MARKER_H
 #define MARKER_H
 
+#include "common.h"
+
 #include <Eigen/Eigen>
 #include <memory>
 
 using namespace Eigen;
 
-struct IndexEntry;
-
 struct CompressedMarker
 {
     std::shared_ptr<unsigned char[]> buffer = nullptr;
-    unsigned long size = 0;
+    IndexEntry index;
 };
 
 struct Marker
@@ -32,7 +32,7 @@ struct Marker
     virtual void decompress(unsigned char* data,
                             const IndexEntry& index) = 0;
 
-    virtual size_t size() const { return 0; }
+    virtual std::streamsize size() const = 0;
     virtual void write(std::ostream *outStream) const = 0;
 
     virtual bool isValid() const = 0;

@@ -29,12 +29,12 @@ void RaggedSparseMarker::updateEpsilon(VectorXd &epsilon, const double beta_old,
 CompressedMarker RaggedSparseMarker::compress() const
 {
     // Prepare a stream to write into
-    const auto bufferSize = size();
+    const auto bufferSize = static_cast<unsigned int>(size());
     std::unique_ptr<char[]> buffer;
     buffer.reset(new char[bufferSize]);
 
     std::ostringstream stream;
-    stream.rdbuf()->pubsetbuf(buffer.get(), bufferSize);
+    stream.rdbuf()->pubsetbuf(buffer.get(), size());
 
     // Write the marker to the stream
     write(&stream);
@@ -44,10 +44,11 @@ CompressedMarker RaggedSparseMarker::compress() const
 
     CompressedMarker compressed;
     compressed.buffer.reset(new unsigned char[maxCompressedOutputSize]);
-    compressed.size = compressData(buffer.get(),
-                                   bufferSize,
-                                   compressed.buffer.get(),
-                                   maxCompressedOutputSize);
+    compressed.index.originalSize = static_cast<unsigned long>(size());
+    compressed.index.compressedSize = compressData(buffer.get(),
+                                                   bufferSize,
+                                                   compressed.buffer.get(),
+                                                   maxCompressedOutputSize);
     return compressed;
 }
 
@@ -56,15 +57,16 @@ void RaggedSparseMarker::decompress(unsigned char *data, const IndexEntry &index
     // TODO
 }
 
-size_t RaggedSparseMarker::size() const
+std::streamsize RaggedSparseMarker::size() const
 {
     const auto valueTypeSize = sizeof(RaggedSparseMarker::IndexVector::value_type);
     const auto sizeTypeSize = sizeof(RaggedSparseMarker::IndexVector::size_type);
 
     return SparseMarker::size() +
-            sizeTypeSize + (valueTypeSize * Zones.size()) +
-            sizeTypeSize + (valueTypeSize * Ztwos.size()) +
-            sizeTypeSize + (valueTypeSize * Zmissing.size());
+            static_cast<std::streamsize>(
+                sizeTypeSize + (valueTypeSize * Zones.size()) +
+                sizeTypeSize + (valueTypeSize * Ztwos.size()) +
+                sizeTypeSize + (valueTypeSize * Zmissing.size()));
 }
 
 void RaggedSparseMarker::write(std::ostream *outStream) const

@@ -24,9 +24,10 @@ CompressedMarker DenseMarker::compress() const
     CompressedMarker compressed;
     const auto maxCompressedOutputSize = maxCompressedDataSize<double>(numInds);
     compressed.buffer.reset(new unsigned char[maxCompressedOutputSize]);
-    compressed.size = compressData(*Cx,
-                                   compressed.buffer.get(),
-                                   maxCompressedOutputSize);
+    compressed.index.originalSize = static_cast<unsigned long>(size());
+    compressed.index.compressedSize = compressData(*Cx,
+                                                   compressed.buffer.get(),
+                                                   maxCompressedOutputSize);
     return compressed;
 }
 
@@ -36,7 +37,7 @@ void DenseMarker::decompress(unsigned char *data, const IndexEntry &index)
     buffer.reset(new unsigned char[colSize]);
 
     extractData(data + index.pos,
-                static_cast<unsigned int>(index.size),
+                static_cast<unsigned int>(index.compressedSize),
                 buffer.get(),
                 colSize);
 
@@ -44,10 +45,15 @@ void DenseMarker::decompress(unsigned char *data, const IndexEntry &index)
                                          numInds);
 }
 
+std::streamsize DenseMarker::size() const
+{
+    return numInds * sizeof(double);
+}
+
 void DenseMarker::write(std::ostream *outStream) const
 {
     outStream->write(reinterpret_cast<char *>(buffer.get()),
-                     Cx->size() * sizeof(double));
+                     size());
 }
 
 bool DenseMarker::isValid() const
