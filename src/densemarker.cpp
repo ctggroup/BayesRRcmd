@@ -49,3 +49,8 @@ void DenseMarker::write(std::ostream *outStream) const
     outStream->write(reinterpret_cast<char *>(buffer.get()),
                      Cx->size() * sizeof(double));
 }
+
+bool DenseMarker::isValid() const
+{
+    return buffer && Cx;
+}

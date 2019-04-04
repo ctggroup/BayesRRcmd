@@ -20,6 +20,8 @@ struct DenseMarker : public Marker
     void decompress(unsigned char *data, const IndexEntry &index) override;
 
     void write(std::ostream *outStream) const override;
+
+    bool isValid() const override;
 };
 
 #endif // DENSEMARKER_H

@@ -34,6 +34,8 @@ struct Marker
 
     virtual size_t size() const { return 0; }
     virtual void write(std::ostream *outStream) const = 0;
+
+    virtual bool isValid() const = 0;
 };
 
 #endif // MARKER_H

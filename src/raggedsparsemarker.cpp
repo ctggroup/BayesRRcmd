@@ -93,6 +93,11 @@ void RaggedSparseMarker::write(std::ostream *outStream) const
     writeIndexVector(Zmissing);
 }
 
+bool RaggedSparseMarker::isValid() const
+{
+    return !Zones.empty() && !Ztwos.empty();
+}
+
 double RaggedSparseMarker::dot(const VectorXd &epsilon) const
 {
     return (epsilon(Zones).sum() + 2 * epsilon(Ztwos).sum()) / sd;

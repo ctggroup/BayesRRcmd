@@ -21,6 +21,11 @@ Marker *MarkerBuilder::build()
         return nullptr;
     }
 
+    if (!m_marker->isValid()) {
+        std::cerr << "Marker is not valid!" << std::endl;
+        return nullptr;
+    }
+
     reset();
     return m_marker.release();
 }
