@@ -24,6 +24,10 @@ void processDenseData(Options opt) {
     data.readFamFile(opt.bedFile + ".fam");
     data.readBimFile(opt.bedFile + ".bim");
 
+    const auto bedFile = opt.bedFile + ".bed";
+    const auto ppFile = ppFileForType(opt.dataType, opt.bedFile);
+    const auto ppIndexFile = ppIndexFileForType(opt.dataType, opt.bedFile);
+
     // RAM solution (analysisType = RAMBayes)
     if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe")) {
 
@@ -71,10 +75,7 @@ void processDenseData(Options opt) {
                                     &data,
                                     opt.preprocessChunks);
         } else {
-            data.preprocessBedFile(opt.bedFile + ".bed",
-                    opt.bedFile + ".ppbed",
-                    opt.bedFile + ".ppbedindex",
-                    opt.compress);
+            data.preprocessBedFile(bedFile, ppFile, ppIndexFile, opt.compress);
         }
 
         clock_t end = clock();
@@ -85,10 +86,9 @@ void processDenseData(Options opt) {
         data.readPhenotypeFile(opt.phenotypeFile);
         // Run analysis using mapped data files
         if (opt.compress) {
-            cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+            cout << "Start reading preprocessed bed file: " << ppFile << endl;
             clock_t start_bed = clock();
-            data.mapCompressedPreprocessBedFile(opt.bedFile + ".ppbed",
-                    opt.bedFile + ".ppbedindex");
+            data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
             clock_t end = clock();
             printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
             cout << endl;
@@ -107,9 +107,9 @@ void processDenseData(Options opt) {
             analysis.runGibbs(graph.get());
             data.unmapCompressedPreprocessedBedFile();
         } else {
-            cout << "Start reading preprocessed bed file: " << opt.bedFile + ".ppbed" << endl;
+            cout << "Start reading preprocessed bed file: " << ppFile << endl;
             clock_t start_bed = clock();
-            data.mapPreprocessBedFile(opt.bedFile + ".ppbed");
+            data.mapPreprocessBedFile(ppFile);
             clock_t end = clock();
             printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
             cout << endl;
@@ -156,8 +156,12 @@ void processSparseData(Options options) {
     data->readBimFile(options.bedFile + ".bim");
     data->readPhenotypeFile(options.phenotypeFile);
 
+    const auto bedFile = options.bedFile + ".bed";
+    const auto ppFile = ppFileForType(options.dataType, options.bedFile);
+    const auto ppIndexFile = ppIndexFileForType(options.dataType, options.bedFile);
+
     if (options.analysisType == "Preprocess") {
-        cout << "Start preprocessing " << options.bedFile + ".bed" << endl;
+        cout << "Start preprocessing " << bedFile << endl;
 
         clock_t start_bed = clock();
 
@@ -186,7 +190,7 @@ void processSparseData(Options options) {
     }
 
     // Read the data in sparse format
-    data->readBedFileSparse(options.bedFile + ".bed");
+    data->readBedFileSparse(bedFile);
 
     std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
     if (options.numThreadSpawned > 0)

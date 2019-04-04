@@ -160,27 +160,12 @@ void PreprocessGraph::preprocessBedFile(const std::string &bedFile,
         return;
     }
 
-    auto inFile = bedFile + ".bed";
-    auto ppFile = bedFile;
-    auto ppIndexFile = bedFile;
+    const auto inFile = bedFile + ".bed";
+    const auto ppFile = ppFileForType(type, bedFile);
+    const auto ppIndexFile = ppIndexFileForType(type, bedFile);
 
-    switch (type) {
-    case DataType::Dense:
-        ppFile+= ".ppbed";
-        ppIndexFile+= ".ppbedindex";
-        break;
-
-    case DataType::SparseRagged:
-        ppFile+= ".ragged.sparsebed";
-        ppIndexFile+= ".ragged.sparsebedindex";
-        break;
-
-    default:
-        cerr << "PreprocessGraph::preprocessBedFile - unsupported DataType: "
-             << type
-             << endl;
+    if (ppFile.empty() || ppIndexFile.empty())
         return;
-    }
 
     ifstream inStream(inFile.c_str(), ios::binary);
     if (!inStream) {

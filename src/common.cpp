@@ -23,3 +23,37 @@ MarkerBuilder *builderForType(const DataType type)
         return nullptr;
     }
 }
+
+std::string ppFileForType(DataType type, const std::string &bedFile)
+{
+    switch (type) {
+    case DataType::Dense:
+        return bedFile + ".ppbed";
+
+    case DataType::SparseRagged:
+        return bedFile +  ".ragged.sparsebed";
+
+    default:
+        std::cerr << "ppFileForType - unsupported DataType: "
+             << type
+             << std::endl;
+        return {};
+    }
+}
+
+std::string ppIndexFileForType(DataType type, const std::string &bedFile)
+{
+    switch (type) {
+    case DataType::Dense:
+        return bedFile +  ".ppbedindex";
+
+    case DataType::SparseRagged:
+        return bedFile + ".ragged.sparsebedindex";
+
+    default:
+        std::cerr << "ppIndexFileForType - unsupported DataType: "
+             << type
+             << std::endl;
+        return {};
+    }
+}
