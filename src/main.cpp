@@ -189,15 +189,28 @@ void processSparseData(Options options) {
         return;
     }
 
-    // Read the data in sparse format
-    data->readBedFileSparse(bedFile);
+    cout << "Start reading preprocessed bed file: " << ppFile << endl;
+    clock_t start_bed = clock();
+    data->mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+    clock_t end = clock();
+    printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+    cout << endl;
 
     std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
     if (options.numThreadSpawned > 0)
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
-//    SparseBayesRRG analysis(data.get(), options);
-//    analysis.runGibbs();
+    std::unique_ptr<AnalysisGraph> graph {nullptr};
+    if (options.analysisType == "PPAsyncBayes") {
+        graph = std::make_unique<ParallelGraph>(options.numThread);
+    } else {
+        graph = std::make_unique<LimitSequenceGraph>(options.numThread);
+    }
+
+    SparseBayesRRG analysis(data.get(), options);
+    analysis.runGibbs(graph.get());
+
+    data->unmapCompressedPreprocessedBedFile();
 }
 
 int main(int argc, const char * argv[]) {

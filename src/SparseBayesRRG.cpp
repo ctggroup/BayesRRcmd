@@ -7,6 +7,7 @@
 #include "sparsemarker.h"
 #include "sparseparallelgraph.hpp"
 #include "sparsesequentialanalysis.h"
+#include "raggedsparsemarkerbuilder.h"
 
 // this code skeleton only highlights which would be the proposal of code changes
 //Additional variables
@@ -36,7 +37,16 @@ SparseBayesRRG::~SparseBayesRRG()
 
 MarkerBuilder *SparseBayesRRG::markerBuilder() const
 {
-    // TODO
+    switch (m_opt.dataType) {
+        case DataType::SparseRagged:
+        return new RaggedSparseMarkerBuilder;
+
+    default:
+        std::cerr << "SparseBayesRRG::markerBuilder - unsupported type: "
+                  << m_opt.dataType
+                  << std::endl;
+    }
+
     return nullptr;
 }
 
