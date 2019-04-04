@@ -34,6 +34,11 @@ std::streamsize SparseMarker::size() const
     return sizeof(double) * 4;
 }
 
+void SparseMarker::read(std::istream *inStream)
+{
+    // TODO
+}
+
 void SparseMarker::write(std::ostream *outStream) const
 {
     if (outStream->fail()) {

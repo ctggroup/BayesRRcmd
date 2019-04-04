@@ -33,6 +33,7 @@ struct Marker
                             const IndexEntry& index) = 0;
 
     virtual std::streamsize size() const = 0;
+    virtual void read(std::istream *inStream) = 0;
     virtual void write(std::ostream *outStream) const = 0;
 
     virtual bool isValid() const = 0;

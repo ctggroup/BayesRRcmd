@@ -69,6 +69,11 @@ std::streamsize RaggedSparseMarker::size() const
                 sizeTypeSize + (valueTypeSize * Zmissing.size()));
 }
 
+void RaggedSparseMarker::read(std::istream *inStream)
+{
+    // TODO
+}
+
 void RaggedSparseMarker::write(std::ostream *outStream) const
 {
     if (outStream->fail()) {

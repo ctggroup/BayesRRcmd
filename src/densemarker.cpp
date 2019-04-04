@@ -50,6 +50,13 @@ std::streamsize DenseMarker::size() const
     return numInds * sizeof(double);
 }
 
+void DenseMarker::read(std::istream *inStream)
+{
+    // Untested - this isn't called yet
+    inStream->read(reinterpret_cast<char *>(buffer.get()),
+                   size());
+}
+
 void DenseMarker::write(std::ostream *outStream) const
 {
     outStream->write(reinterpret_cast<char *>(buffer.get()),
