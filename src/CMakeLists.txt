@@ -70,6 +70,7 @@ add_library(libbrr-dev
     densemarkerbuilder.cpp
     raggedsparsemarkerbuilder.cpp
     preprocessgraph.cpp
+    eigensparsemarkerbuilder.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -102,6 +103,7 @@ add_executable(${PROJECT_NAME}
     densemarkerbuilder.cpp
     raggedsparsemarkerbuilder.cpp
     preprocessgraph.cpp
+    eigensparsemarkerbuilder.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)
