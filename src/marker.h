@@ -28,9 +28,9 @@ struct Marker
                                const double beta_old,
                                const double beta) = 0;
 
-    virtual CompressedMarker compress() const = 0;
+    virtual CompressedMarker compress() const;
     virtual void decompress(unsigned char* data,
-                            const IndexEntry& index) = 0;
+                            const IndexEntry& index);
 
     virtual std::streamsize size() const = 0;
     virtual void read(std::istream *inStream) = 0;

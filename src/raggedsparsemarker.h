@@ -19,9 +19,6 @@ struct RaggedSparseMarker : public SparseMarker
                        const double beta_old,
                        const double beta) override;
 
-    CompressedMarker compress() const override;
-    void decompress(unsigned char *data, const IndexEntry &index) override;
-
     std::streamsize size() const override;
     void read(std::istream *inStream) override;
     void write(std::ostream *outStream) const override;
