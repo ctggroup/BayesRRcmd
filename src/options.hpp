@@ -11,6 +11,7 @@
 #include <boost/format.hpp>
 #include "gadgets.hpp"
 #include <Eigen/Eigen>
+#include "common.h"
 
 using namespace std;
 using namespace boost;
@@ -23,6 +24,8 @@ public:
     unsigned burnin;
     unsigned seed;
     unsigned numThread;
+    int numThreadSpawned = 0; // Default to 0, let TBB do its thing
+    unsigned preprocessChunks = 1;
     unsigned thin;  // save every this th sampled value in MCMC
     vector<float> S;    //variance components
 
@@ -38,12 +41,15 @@ public:
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
+    DataType dataType = DataType::Dense;
 
     Options(){
         chainLength             = 10000;
         burnin                  = 5000;
         seed                    = static_cast<unsigned int>(std::time(0));
         numThread               = 1;
+        numThreadSpawned        = 0;
+        preprocessChunks        = 1;
         thin                    = 5;
 
         S.resize(3);
@@ -59,6 +65,7 @@ public:
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;
+        dataType                = DataType::Dense;
     }
 
     void inputOptions(const int argc, const char* argv[]);

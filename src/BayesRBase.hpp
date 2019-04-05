@@ -5,8 +5,8 @@
  *      Author: admin
  */
 
-#ifndef SRC_BAYESRRMZ_H_
-#define SRC_BAYESRRMZ_H_
+#ifndef SRC_BAYESRBASE_H_
+#define SRC_BAYESRBASE_H_
 
 #include "data.hpp"
 #include "options.hpp"
@@ -18,12 +18,32 @@
 
 class AnalysisGraph;
 
-class BayesRRmz
+struct Marker;
+class MarkerBuilder;
+
+class BayesRBase
 {
-    friend class LimitSequenceGraph;
-    friend class ParallelGraph;
-    std::unique_ptr<AnalysisGraph> m_flowGraph;
-    Data                &m_data; // data matrices
+public:
+    BayesRBase(const Data *m_data, Options &m_opt);
+    virtual ~BayesRBase();
+
+    virtual MarkerBuilder* markerBuilder() const = 0;
+    IndexEntry indexEntry(unsigned int i) const;
+    unsigned char* compressedData() const;
+
+    int runGibbs(AnalysisGraph* analysis); // where we run Gibbs sampling over the parametrised model
+
+    virtual void processColumn(Marker *marker);
+
+    virtual std::tuple<double, double> processColumnAsync(Marker *marker);
+
+    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta) = 0;
+
+    void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
+    bool isDebugEnabled() const { return m_showDebug; }
+
+protected:
+    const Data          *m_data; // data matrices
     Options             &m_opt;
     const string        m_bedFile; // bed file
     const string        m_outputFile;
@@ -60,29 +80,29 @@ class BayesRRmz
     VectorXd m_beta;       // effect sizes
     VectorXd m_y_tilde;    // variable containing the adjusted residuals to exclude the effects of a given marker
     VectorXd m_epsilon;    // variable containing the residuals
-    VectorXd m_async_epsilon;
     double m_betasqn = 0.0;
-
+    double m_epsilonSum=0.0;
     VectorXd m_y;
     VectorXd m_components;
+
+    bool m_isAsync = false;
+
+    VectorXd m_asyncEpsilon;
 
     mutable std::shared_mutex m_mutex;
     mutable std::mutex m_rngMutex;
 
-public:
-    BayesRRmz(Data &m_data, Options &m_opt);
-    virtual ~BayesRRmz();
-    int runGibbs(); // where we run Gibbs sampling over the parametrised model
-    void processColumn(unsigned int marker, const Map<VectorXd> &Cx);
-    std::tuple<double, double> processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx);
-    void updateGlobal(double beta_old, double beta, const Map<VectorXd> &Cx);
+    void setAsynchronous(bool async) { m_isAsync = async; }
 
-    void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
-    bool isDebugEnabled() const { return m_showDebug; }
+    virtual void init(int K, unsigned int markerCount, unsigned int individualCount);
 
-private:
-    void init(int K, unsigned int markerCount, unsigned int individualCount);
+    virtual void prepareForAnylsis();
+
+    virtual void prepare(Marker *marker);
+    virtual void readWithSharedLock(Marker *marker);
+    virtual void writeWithUniqueLock(Marker *marker);
+
     void printDebugInfo() const;
 };
 
-#endif /* SRC_BAYESRRM_H_ */
+#endif /* SRC_BAYESRBASE_H_ */

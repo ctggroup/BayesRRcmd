@@ -4,8 +4,11 @@ project(brr)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Eigen3)
-include_directories(${EIGEN3_INCLUDE_DIR})
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../eigen/Eigen/)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../eigen/)
+else()
+    message(FATAL_ERROR "Cound not find Eigen submodule!")
+endif()
 
 find_package(Boost REQUIRED)
 if(Boost_FOUND)
@@ -40,7 +43,6 @@ endif()
 
 add_library(libbrr-dev
     BayesRRm.cpp
-    BayesRRmz.cpp
     data.cpp
     distributions_boost.cpp
     gadgets.cpp
@@ -50,12 +52,25 @@ add_library(libbrr-dev
     limitsequencegraph.cpp
     parallelgraph.cpp
     analysisgraph.cpp
+    BayesRBase.cpp
+    DenseBayesRRmz.cpp
+    SparseBayesRRG.cpp
+    marker.cpp
+    densemarker.cpp
+    sparsemarker.cpp
+    raggedsparsemarker.cpp
+    eigensparsemarker.cpp
+    common.cpp
+    markerbuilder.cpp
+    densemarkerbuilder.cpp
+    raggedsparsemarkerbuilder.cpp
+    preprocessgraph.cpp
+    eigensparsemarkerbuilder.cpp
 )
 
 add_executable(${PROJECT_NAME}
     main.cpp
     BayesRRm.cpp
-    BayesRRmz.cpp
     data.cpp
     distributions_boost.cpp
     gadgets.cpp
@@ -65,6 +80,20 @@ add_executable(${PROJECT_NAME}
     limitsequencegraph.cpp
     parallelgraph.cpp
     analysisgraph.cpp
+    BayesRBase.cpp
+    DenseBayesRRmz.cpp
+    SparseBayesRRG.cpp
+    marker.cpp
+    densemarker.cpp
+    sparsemarker.cpp
+    raggedsparsemarker.cpp
+    eigensparsemarker.cpp
+    common.cpp
+    markerbuilder.cpp
+    densemarkerbuilder.cpp
+    raggedsparsemarkerbuilder.cpp
+    preprocessgraph.cpp
+    eigensparsemarkerbuilder.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)

@@ -5,23 +5,16 @@
  *      Author: admin
  */
 
-#include "BayesRRmz.hpp"
-#include "compression.h"
-#include "data.hpp"
-#include "distributions_boost.hpp"
-#include "options.hpp"
-#include "limitsequencegraph.hpp"
-#include "parallelgraph.hpp"
+#include "BayesRBase.hpp"
 #include "samplewriter.h"
+#include "analysisgraph.hpp"
+#include "marker.h"
 
 #include <chrono>
-#include <numeric>
-#include <random>
 #include <mutex>
 
-BayesRRmz::BayesRRmz(Data &data, Options &opt)
-    : m_flowGraph(nullptr)
-    , m_data(data)
+BayesRBase::BayesRBase(const Data *data, Options &opt)
+    : m_data(data)
     , m_opt(opt)
     , m_bedFile(opt.bedFile + ".bed")
     , m_outputFile(opt.mcmcSampleFile)
@@ -33,21 +26,33 @@ BayesRRmz::BayesRRmz(Data &data, Options &opt)
     , m_usePreprocessedData(opt.analysisType == "PPBayes")
     , m_showDebug(false)
 {
+    assert(m_data);
+
     float* ptr =static_cast<float*>(&opt.S[0]);
     m_cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
-
-    if (opt.analysisType == "PPAsyncBayes") {
-        m_flowGraph.reset(new ParallelGraph(this, opt.numThread));
-    } else {
-        m_flowGraph.reset(new LimitSequenceGraph(this, opt.numThread));
-    }
 }
 
-BayesRRmz::~BayesRRmz()
+BayesRBase::~BayesRBase()
 {
 }
 
-void BayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCount)
+IndexEntry BayesRBase::indexEntry(unsigned int i) const
+{
+    if (!m_data)
+        return {};
+
+    return m_data->ppbedIndex[i];
+}
+
+unsigned char* BayesRBase::compressedData() const
+{
+    if (!m_data)
+        return nullptr;
+
+    return reinterpret_cast<unsigned char*>(m_data->ppBedMap);
+}
+
+void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCount)
 {
     // Component variables
     m_priorPi = VectorXd(K);      // prior probabilities for each component
@@ -68,7 +73,6 @@ void BayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCou
     m_beta = VectorXd(markerCount);           // effect sizes
     m_y_tilde = VectorXd(individualCount);    // variable containing the adjusted residuals to exclude the effects of a given marker
     m_epsilon = VectorXd(individualCount);    // variable containing the residuals
-    m_async_epsilon = VectorXd(individualCount);
 
     m_y = VectorXd();
     //Cx = VectorXd();
@@ -88,17 +92,48 @@ void BayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCou
 
     m_pi = m_priorPi;
 
-    m_y = (m_data.y.cast<double>().array() - m_data.y.cast<double>().mean());
+    m_y = (m_data->y.cast<double>().array() - m_data->y.cast<double>().mean());
     m_y /= sqrt(m_y.squaredNorm() / (double(individualCount - 1)));
 
     m_epsilon = (m_y).array() - m_mu;
     m_sigmaE = m_epsilon.squaredNorm() / individualCount * 0.5;
+    m_epsilonSum=m_epsilon.sum();
 }
 
-int BayesRRmz::runGibbs()
+void BayesRBase::prepareForAnylsis()
 {
-    const unsigned int M(m_data.numSnps);
-    const unsigned int N(m_data.numInds);
+    // Empty in BayesRBase
+}
+
+void BayesRBase::prepare(Marker *marker)
+{
+    // Empty in BayesRBase
+    (void) marker; // Unused
+}
+
+void BayesRBase::readWithSharedLock(Marker *marker)
+{
+    // Empty in BayesRBase
+    (void) marker; // Unused
+}
+
+void BayesRBase::writeWithUniqueLock(Marker *marker)
+{
+    // Empty in BayesRBase
+    (void) marker; // Unused
+}
+
+int BayesRBase::runGibbs(AnalysisGraph *analysis)
+{
+    if (!analysis) {
+        std::cout << "Cannot run Gibbs analysis without a flow graph!" << std::endl;
+        return 1;
+    }
+
+    setAsynchronous(analysis->isAsynchronous());
+
+    const unsigned int M(m_data->numSnps);
+    const unsigned int N(m_data->numInds);
     const int K(int(m_cva.size()) + 1);
 
     init(K, M, N);
@@ -128,13 +163,15 @@ int BayesRRmz::runGibbs()
         // Output progress
         const auto startTime = std::chrono::high_resolution_clock::now();
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
-            std::cout << "iteration " << iteration << ": ";
+        std::cout << "iteration " << iteration << ": ";
+        double old_mu=m_mu;
+        m_epsilon = m_epsilon.array() + m_mu;//  we substract previous value
+        m_epsilonSum+=old_mu*double(N); //we perform the equivalent update in epsilonSum
+        m_mu = m_dist.norm_rng(m_epsilonSum / (double)N, m_sigmaE / (double)N); //update mu
+        m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
+        m_epsilonSum-=m_mu*double(N);//we perform the equivalent update in epsilonSum
 
-         m_epsilon = m_epsilon.array() + m_mu;//  we substract previous value
-         m_mu = m_dist.norm_rng(m_epsilon.sum() / (double)N, m_sigmaE / (double)N); //update mu
-         m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
-
-         std::memcpy(m_async_epsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
+        prepareForAnylsis();
 
         std::random_shuffle(markerI.begin(), markerI.end());
 
@@ -146,7 +183,7 @@ int BayesRRmz::runGibbs()
         // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
         // of data.
         const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
-        m_flowGraph->exec(N, M, markerI);
+        analysis->exec(this, N, M, markerI);
         const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
         m_m0 = int(M) - int(m_v[0]);
@@ -182,23 +219,20 @@ int BayesRRmz::runGibbs()
     return 0;
 }
 
-void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
+void BayesRBase::processColumn(Marker *marker)
 {
-    const unsigned int N(m_data.numInds);
+    const unsigned int N(m_data->numInds);
     const double NM1 = double(N - 1);
     const int K(int(m_cva.size()) + 1);
     const int km1 = K - 1;
     double acum = 0.0;
     double beta_old;
 
-    beta_old = m_beta(marker);
+    beta_old = m_beta(marker->i);
 
-    // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-    if (m_components(marker) != 0.0) {
-        m_y_tilde = m_epsilon + beta_old * Cx;
-    } else {
-        m_y_tilde = m_epsilon;
-    }
+    prepare(marker);
+    readWithSharedLock(marker);
+
     // muk for the zeroth component=0
     m_muk[0] = 0.0;
 
@@ -206,9 +240,10 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
-    // We compute the dot product to save computations
-    // We compute the dot product to save computations
-      const double num = Cx.dot(m_y_tilde);
+    const double num = marker->computeNum(m_epsilon, beta_old);
+
+    //The rest of the algorithm remains the same
+
     // muk for the other components is computed according to equaitons
     m_muk.segment(1, km1) = num / m_denom.array();
 
@@ -232,12 +267,12 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
         if (p <= acum) {
             //if zeroth component
             if (k == 0) {
-                m_beta(marker) = 0;
+                m_beta(marker->i) = 0;
             } else {
-                m_beta(marker) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+                m_beta(marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
             }
             m_v[k] += 1.0;
-            m_components[marker] = k;
+            m_components[marker->i] = k;
             break;
         } else {
             //if too big or too small
@@ -248,44 +283,25 @@ void BayesRRmz::processColumn(unsigned int marker, const Map<VectorXd> &Cx)
             }
         }
     }
-    m_betasqn += m_beta(marker) * m_beta(marker) - beta_old * beta_old;
+    const double beta_new = m_beta(marker->i);
+    m_betasqn += beta_new * beta_new - beta_old * beta_old;
 
-    if (m_components(marker) != 0.0) {
-        m_epsilon = m_y_tilde - m_beta(marker) * Cx;
-    } else {
-        m_epsilon = m_y_tilde;
+    //until here
+    //we skip update if old and new beta equals zero
+    const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
+    if (!skipUpdate) {
+        marker->updateEpsilon(m_epsilon, beta_old, beta_new);
+        writeWithUniqueLock(marker);
     }
-    // Now epsilon contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 }
 
-std::tuple<double, double> BayesRRmz::processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx)
+std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
 {
-    // Lock and take local copies of needed variabls
-    // [*] m_beta(marker) rwr - used, updated, then used - per column, could take a copy and update at end
-    // [*] m_betasqn w - updated here, used in BayezRRmz::runGibbs
-    // [*] m_components(marker) rwr - used, updated, then used - per column, could take a copy and update at end
-    // [*] m_epsilon rw - used throughout, then updated, used in BayezRRmz::runGibbs
-    // [*] m_v w - updated here, used in BayezRRmz::runGibbs
-
-    // [*] m_dist r - the engine is not thread safe
-
-    // Temporaries
-    // - cost of locking vs allocating per iteration?
-    // [*] m_denom wr - computed from m_cVaI
-    // [*] m_muk wr - computed from m_cVaI
-
-    // m_data.numInds r - could be a member?
-    // m_cva.size() r - could be a member?
-    // m_sigmaE r - calculated in BayesRRmz::init
-    // m_sigmaG r - calculated in BayesRRmz::init, updated in BayezRRmz::runGibbs
-    // m_pi r - calculated in BayesRRmz::init, updated in BayezRRmz::runGibbs
-    // m_cVa r - calculated in BayesRRmz::init
-    // m_cVaI r - calculated in BayesRRmz::init
-
     double beta = 0;
     double component = 0;
-    VectorXd y_tilde(m_data.numInds);
-    VectorXd epsilon(m_data.numInds);
+    VectorXd epsilon(m_data->numInds);
+
+    prepare(marker);
 
     {
         // Use a shared lock to allow multiple threads to read updates
@@ -294,26 +310,21 @@ std::tuple<double, double> BayesRRmz::processColumnAsync(unsigned int marker, co
         // std::memcpy is faster than epsilon = m_epsilon which compiles down to a loop over pairs of
         // doubles and uses _mm_load_pd(source) SIMD intrinsics. Just be careful if we change the type
         // contained in the vector back to floats.
-        std::memcpy(y_tilde.data(), m_async_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
-        beta = m_beta(marker);
-        component = m_components(marker);
+        std::memcpy(epsilon.data(), m_asyncEpsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+        beta = m_beta(marker->i);
+        component = m_components(marker->i);
+        readWithSharedLock(marker);
     }
     const double beta_old = beta;
 
-    // Note that we assign y_tilde = m_epsilon above with the memcpy.
-    // Now y_tilde = Y-mu - X * beta + X.col(marker) * beta(marker)_old
-    if (component != 0.0)
-        y_tilde += beta_old * Cx;
-
-    // We compute the dot product to save computations
-    const double num = Cx.dot(y_tilde);
+    const double num = marker->computeNum(epsilon, beta_old);
 
     // Do work
 
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
 
-    const double NM1 = double(m_data.numInds - 1);
+    const double NM1 = static_cast<double>(m_data->numInds) - 1.0;
     const int K(int(m_cva.size()) + 1);
     const int km1 = K - 1;
     VectorXd denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
@@ -384,43 +395,37 @@ std::tuple<double, double> BayesRRmz::processColumnAsync(unsigned int marker, co
 
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {
-        y_tilde -= beta * Cx;
+        marker->updateEpsilon(epsilon, beta_old, beta);
     }
-    // Now y_tilde contains Y-mu - X*beta + X.col(marker) * beta(marker)_old - X.col(marker) * beta(marker)_new
 
     // Lock to write updates (at end, or perhaps as updates are computed)
     {
         // Use a unique lock to ensure only one thread can write updates
         std::unique_lock lock(m_mutex);
         if (!skipUpdate) {
-            std::memcpy(m_async_epsilon.data(), y_tilde.data(), static_cast<size_t>(y_tilde.size()) * sizeof(double));
+            std::memcpy(m_asyncEpsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
             m_betasqn += beta * beta - beta_old * beta_old;
+            writeWithUniqueLock(marker);
         }
         m_v += v;
     }
 
     // These updates do not need to be atomic
-    m_beta(marker) = beta;
-    m_components(marker) = component;
+    m_beta(marker->i) = beta;
+    m_components(marker->i) = component;
 
     return {beta_old, beta};
 }
 
-void BayesRRmz::updateGlobal(double beta_old, double beta, const Map<VectorXd> &Cx)
+void BayesRBase::printDebugInfo() const
 {
-    // No mutex required here whilst m_globalComputeNode uses the serial policy
-    m_epsilon -= Cx * (beta - beta_old);
-}
-
-void BayesRRmz::printDebugInfo() const
-{
-    const unsigned int N(m_data.numInds);
+    const unsigned int N(m_data->numInds);
     cout << "inv scaled parameters " << m_v0G + m_m0 << "__" << (m_beta.squaredNorm() * m_m0 + m_v0G * m_s02G) / (m_v0G + m_m0);
     cout << "num components: " << m_opt.S.size();
     cout << "\nMixture components: " << m_cva[0] << " " << m_cva[1] << " " << m_cva[2] << "\n";
     cout << "sigmaG: " << m_sigmaG << "\n";
     cout << "y mean: " << m_y.mean() << "\n";
     cout << "y sd: " << sqrt(m_y.squaredNorm() / (double(N - 1))) << "\n";
-//    cout << "x mean " << Cx.mean() << "\n";
-//    cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
+    //    cout << "x mean " << Cx.mean() << "\n";
+    //    cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
 }

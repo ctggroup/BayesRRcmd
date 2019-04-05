@@ -42,7 +42,7 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         throw ("Error: Incorrect first three bytes of bed file: " + bedFile);
 
     // How much space do we need to compress the data (if requested)
-    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize(numInds) : 0;
+    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(numInds) : 0;
     unsigned char *compressedBuffer = nullptr;
     unsigned long pos = 0;
     if (compress)
@@ -121,13 +121,7 @@ void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBe
         if (!compress) {
             ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(double));
         } else {
-            const unsigned long compressedSize = compressData(snpData, compressedBuffer, maxCompressedOutputSize);
-            ppBedOutput.write(reinterpret_cast<char *>(compressedBuffer), long(compressedSize));
-
-            // Calculate the index data for this column
-            ppBedIndexOutput.write(reinterpret_cast<char *>(&pos), sizeof(unsigned long));
-            ppBedIndexOutput.write(reinterpret_cast<const char *>(&compressedSize), sizeof(unsigned long));
-            pos += compressedSize;
+            compressAndWriteWithIndex(snpData, ppBedOutput, ppBedIndexOutput, pos, compressedBuffer, maxCompressedOutputSize);
         }
 
         // Compute allele frequency and any other required data and write out to file
@@ -187,11 +181,11 @@ void Data::mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
     if (!indexStream)
         throw("Error: Failed to open compressed preprocessed bed file index");
     indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
-                     numSnps * 2 * sizeof(long));
+                     numSnps * 3 * sizeof(unsigned long));
 
     // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
     // that we would otherwise get as intermediate variables!
-    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().size);
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
 
     // Open and mmap the preprocessed bed file
     ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
@@ -205,7 +199,7 @@ void Data::mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
 
 void Data::unmapCompressedPreprocessedBedFile()
 {
-    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().size);
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
     munmap(ppBedMap, ppBedSize);
     close(ppBedFd);
     ppbedIndex.clear();

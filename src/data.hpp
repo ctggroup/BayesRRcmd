@@ -12,6 +12,7 @@
 #include <Eigen/Sparse>
 #include <boost/format.hpp>
 #include "gadgets.hpp"
+#include "common.h"
 
 
 using namespace std;
@@ -70,12 +71,6 @@ public:
         phenotype = -9;
         kept = true;
     }
-};
-
-// An entry for the index to the compressed preprocessed bed file
-struct IndexEntry {
-    long pos;
-    long size;
 };
 
 using PpBedIndex = std::vector<IndexEntry>;

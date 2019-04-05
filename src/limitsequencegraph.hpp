@@ -7,25 +7,28 @@
 #include <functional>
 #include <memory>
 
-class BayesRRmz;
-
 using namespace tbb::flow;
+
+struct Marker;
 
 class LimitSequenceGraph : public AnalysisGraph
 {
 public:
-    LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel = 12);
+    explicit LimitSequenceGraph(size_t maxParallel = 12);
 
-    void exec(unsigned int numKeptInds,
+    bool isAsynchronous() const override { return false; }
+
+    void exec(BayesRBase* bayes,
+              unsigned int numKeptInds,
               unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;
 
 private:
     struct Message {
-        unsigned int id;
-        unsigned int marker;
-        unsigned int numInds;
-        unsigned char *decompressBuffer = nullptr;
+        unsigned int id = 0;
+        unsigned int snp = 0;
+        unsigned int numInds = 0;
+        std::shared_ptr<Marker> marker = nullptr;
     };
 
     std::unique_ptr<graph> m_graph;

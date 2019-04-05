@@ -1,5 +1,5 @@
-#ifndef PARALLELGRAPH_H
-#define PARALLELGRAPH_H
+#ifndef DENSEPARALLELGRAPH_H
+#define DENSEPARALLELGRAPH_H
 
 #include "analysisgraph.hpp"
 
@@ -7,36 +7,30 @@
 #include <functional>
 #include <memory>
 
-class BayesRRmz;
+class BayesRBase;
+
+struct Marker;
 
 using namespace tbb::flow;
 
 class ParallelGraph : public AnalysisGraph
 {
 public:
-    ParallelGraph(BayesRRmz *bayes, size_t maxParallel = 6);
+    explicit ParallelGraph(size_t maxParallel = 6);
 
+    bool isAsynchronous() const override { return true; }
 
-    void exec(unsigned int numInds,
-              unsigned int numSnps,
+    void exec(BayesRBase* bayes,
+              unsigned int numKeptInds,
+              unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;
 
 private:
     struct Message {
-        Message(unsigned int id = 0, unsigned int marker = 0, unsigned int numInds = 0)
-            : id(id)
-            , marker(marker)
-            , numInds(numInds)
-        {
-
-        }
-
         unsigned int id = 0;
-        unsigned int marker = 0;
+        unsigned int snp = 0;
         unsigned int numInds = 0;
-
-        using DataPtr = std::shared_ptr<unsigned char[]>;
-        DataPtr data = nullptr;
+        std::shared_ptr<Marker> marker = nullptr;
 
         double old_beta = 0.0;
         double beta = 0.0;
@@ -52,4 +46,4 @@ private:
     std::unique_ptr<function_node<Message>> m_globalComputeNode;
 };
 
-#endif // PARALLELGRAPH_H
+#endif // DENSEPARALLELGRAPH_H
