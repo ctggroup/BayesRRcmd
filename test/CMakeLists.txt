@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.1.3)
 
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../eigen/Eigen/)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../eigen/)
+else()
+    message(FATAL_ERROR "Cound not find Eigen submodule!")
+endif()
+
 include_directories("${brr_INCLUDE_DIRS}")
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
