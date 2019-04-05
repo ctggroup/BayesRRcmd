@@ -166,9 +166,10 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         std::cout << "iteration " << iteration << ": ";
         double old_mu=m_mu;
         m_epsilon = m_epsilon.array() + m_mu;//  we substract previous value
+        m_epsilonSum+=old_mu*double(N); //we perform the equivalent update in epsilonSum
         m_mu = m_dist.norm_rng(m_epsilonSum / (double)N, m_sigmaE / (double)N); //update mu
         m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
-        m_epsilonSum+=(old_mu-m_mu)*double(N);
+        m_epsilonSum-=m_mu*double(N);//we perform the equivalent update in epsilonSum
 
         prepareForAnylsis();
 
