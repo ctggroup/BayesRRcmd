@@ -21,10 +21,6 @@ public:
 
     MarkerBuilder *markerBuilder() const override;
 
-    void processColumn(unsigned int marker, const Map<VectorXd> &Cx);
-    std::tuple<double, double> processColumnAsync(unsigned int marker, const Map<VectorXd> &Cx);
-
-    void updateGlobal(double beta_old, double beta, const Map<VectorXd> &Cx);
     void updateGlobal(Marker *marker, const double beta_old, const double beta) override;
 
 protected:
