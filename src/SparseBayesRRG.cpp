@@ -6,7 +6,6 @@
 #include "sparsedata.h"
 #include "sparsemarker.h"
 #include "sparseparallelgraph.hpp"
-#include "sparsesequentialanalysis.h"
 #include "raggedsparsemarkerbuilder.h"
 
 // this code skeleton only highlights which would be the proposal of code changes

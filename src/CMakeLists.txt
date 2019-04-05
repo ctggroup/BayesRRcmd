@@ -56,7 +56,6 @@ add_library(libbrr-dev
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     SparseBayesRRG.cpp
-    sparsesequentialanalysis.cpp
     sparseparallelgraph.cpp
     eigensparsedata.cpp
     raggedsparsedata.cpp
@@ -89,7 +88,6 @@ add_executable(${PROJECT_NAME}
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     SparseBayesRRG.cpp
-    sparsesequentialanalysis.cpp
     sparseparallelgraph.cpp
     eigensparsedata.cpp
     raggedsparsedata.cpp
