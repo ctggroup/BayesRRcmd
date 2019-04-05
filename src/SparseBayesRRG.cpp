@@ -38,8 +38,10 @@ SparseBayesRRG::~SparseBayesRRG()
 MarkerBuilder *SparseBayesRRG::markerBuilder() const
 {
     switch (m_opt.dataType) {
-        case DataType::SparseRagged:
-        return new RaggedSparseMarkerBuilder;
+    case DataType::SparseEigen:
+        // Fall through
+    case DataType::SparseRagged:
+        return builderForType(m_opt.dataType);
 
     default:
         std::cerr << "SparseBayesRRG::markerBuilder - unsupported type: "
