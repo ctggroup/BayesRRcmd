@@ -82,18 +82,18 @@ void SparseBayesRRG::readWithSharedLock(Marker *marker)
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
 
-    sparseMarker->epsilonSum = m_asyncEpsilonSum;
+    sparseMarker->epsilonSum = m_isAsync ? m_asyncEpsilonSum : m_epsilonSum;
 }
 
 void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
 {
-    if (!m_isAsync)
-        return;
-
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
 
-    m_asyncEpsilonSum = sparseMarker->epsilonSum;
+    if (m_isAsync)
+        m_asyncEpsilonSum = sparseMarker->epsilonSum;
+    else
+        m_epsilonSum = sparseMarker->epsilonSum;
 }
 
 void SparseBayesRRG::processColumn(unsigned int marker)
