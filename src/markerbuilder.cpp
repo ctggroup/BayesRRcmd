@@ -10,8 +10,14 @@ MarkerBuilder::~MarkerBuilder()
 void MarkerBuilder::initialise(const unsigned int snp,
                                const unsigned int numInds)
 {
-    (void) snp; // Unused
     reset(numInds);
+    m_snp = snp;
+}
+
+void MarkerBuilder::decompress(unsigned char *data, const IndexEntry &index) const
+{
+    assert(m_marker);
+    m_marker->decompress(data, index);
 }
 
 Marker *MarkerBuilder::build()
@@ -32,7 +38,16 @@ Marker *MarkerBuilder::build()
 
 void MarkerBuilder::reset(const double numInds)
 {
+    m_snp = 0;
     m_numInds = numInds;
     m_missingIndices.clear();
     m_sum = 0;
+}
+
+void MarkerBuilder::initialiseMarker()
+{
+    assert(m_marker);
+
+    m_marker->i = m_snp;
+    m_marker->numInds = static_cast<unsigned int>(m_numInds);
 }

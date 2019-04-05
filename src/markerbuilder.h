@@ -23,18 +23,21 @@ public:
     virtual void endColumn() = 0;
 
     virtual void decompress(unsigned char *data,
-                            const IndexEntry &index) const = 0;
+                            const IndexEntry &index) const;
 
     virtual Marker* build();
 
 protected:
-    std::unique_ptr<Marker> m_marker = nullptr;
+    using MarkerPtr = std::unique_ptr<Marker>;
+    MarkerPtr m_marker = nullptr;
 
+    unsigned int m_snp = 0;
     double m_numInds = 0;
     std::vector<unsigned int> m_missingIndices;
     double m_sum = 0;
 
     virtual void reset(const double numInds = 0);
+    virtual void initialiseMarker();
 };
 
 #endif // MARKERBUILDER_H

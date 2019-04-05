@@ -2,20 +2,13 @@
 
 #include "raggedsparsemarker.h"
 
-RaggedSparseMarkerBuilder::RaggedSparseMarkerBuilder()
-    : MarkerBuilder ()
-{
-
-}
-
 void RaggedSparseMarkerBuilder::initialise(const unsigned int snp,
                                            const unsigned int numInds)
 {
     MarkerBuilder::initialise(snp, numInds);
 
     m_marker.reset(new RaggedSparseMarker);
-    m_marker->i = snp;
-    m_marker->numInds = numInds;
+    initialiseMarker();
 
     auto* raggedMarker = dynamic_cast<RaggedSparseMarker*>(m_marker.get());
     assert(raggedMarker);
@@ -59,13 +52,4 @@ void RaggedSparseMarkerBuilder::endColumn()
     const double mean = raggedMarker->mean;
     raggedMarker->sd = std::sqrt((raggedMarker->sqrdZ - 2.0 * mean * raggedMarker->Zsum + m_numInds * mean * mean) /
                                  (m_numInds - 1.0));
-}
-
-void RaggedSparseMarkerBuilder::decompress(unsigned char *data,
-                                           const IndexEntry &index) const
-{
-    auto* raggedMarker = dynamic_cast<RaggedSparseMarker*>(m_marker.get());
-    assert(raggedMarker);
-
-    raggedMarker->decompress(data, index);
 }

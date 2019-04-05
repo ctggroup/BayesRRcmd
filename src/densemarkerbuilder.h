@@ -6,7 +6,7 @@
 class DenseMarkerBuilder : public MarkerBuilder
 {
 public:
-    explicit DenseMarkerBuilder();
+    explicit DenseMarkerBuilder() = default;
 
     void initialise(const unsigned int snp,
                     const unsigned int numInds) override;
@@ -16,9 +16,6 @@ public:
                        unsigned int allele2) override;
 
     void endColumn() override;
-
-    void decompress(unsigned char *data,
-                    const IndexEntry &index) const override;
 };
 
 #endif // DENSEMARKERBUILDER_H
