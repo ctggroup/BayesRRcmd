@@ -52,12 +52,9 @@ add_library(libbrr-dev
     limitsequencegraph.cpp
     parallelgraph.cpp
     analysisgraph.cpp
-    sparsedata.cpp
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     SparseBayesRRG.cpp
-    eigensparsedata.cpp
-    raggedsparsedata.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
@@ -83,12 +80,9 @@ add_executable(${PROJECT_NAME}
     limitsequencegraph.cpp
     parallelgraph.cpp
     analysisgraph.cpp
-    sparsedata.cpp
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     SparseBayesRRG.cpp
-    eigensparsedata.cpp
-    raggedsparsedata.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp

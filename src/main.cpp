@@ -4,9 +4,7 @@
 #include "DenseBayesRRmz.hpp"
 #include "data.hpp"
 #include "options.hpp"
-#include "eigensparsedata.h"
 #include "SparseBayesRRG.hpp"
-#include "raggedsparsedata.h"
 #include "tbb/task_scheduler_init.h"
 #include "preprocessgraph.h"
 #include "densemarker.h"
@@ -134,27 +132,12 @@ void processSparseData(Options options) {
         return;
     }
 
-    using DataPtr = std::unique_ptr<SparseData>;
-    DataPtr data;
-
-    switch (options.dataType) {
-    case DataType::SparseEigen:
-        data = DataPtr(new EigenSparseData);
-        break;
-
-    case DataType::SparseRagged:
-        data = DataPtr(new RaggedSparseData);
-        break;
-
-    default:
-        std::cout << "Error: Unsupported --sparse-data argument: " << options.dataType << std::endl;
-        return;
-    }
+    Data data;
 
     // Read in the data for every possible option
-    data->readFamFile(options.bedFile + ".fam");
-    data->readBimFile(options.bedFile + ".bim");
-    data->readPhenotypeFile(options.phenotypeFile);
+    data.readFamFile(options.bedFile + ".fam");
+    data.readBimFile(options.bedFile + ".bim");
+    data.readPhenotypeFile(options.phenotypeFile);
 
     const auto bedFile = options.bedFile + ".bed";
     const auto ppFile = ppFileForType(options.dataType, options.bedFile);
@@ -179,7 +162,7 @@ void processSparseData(Options options) {
         graph.preprocessBedFile(options.bedFile,
                                 options.dataType,
                                 options.compress,
-                                data.get(),
+                                &data,
                                 options.preprocessChunks);
 
         clock_t end = clock();
@@ -191,7 +174,7 @@ void processSparseData(Options options) {
 
     cout << "Start reading preprocessed bed file: " << ppFile << endl;
     clock_t start_bed = clock();
-    data->mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+    data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
     clock_t end = clock();
     printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
     cout << endl;
@@ -207,10 +190,10 @@ void processSparseData(Options options) {
         graph = std::make_unique<LimitSequenceGraph>(options.numThread);
     }
 
-    SparseBayesRRG analysis(data.get(), options);
+    SparseBayesRRG analysis(&data, options);
     analysis.runGibbs(graph.get());
 
-    data->unmapCompressedPreprocessedBedFile();
+    data.unmapCompressedPreprocessedBedFile();
 }
 
 int main(int argc, const char * argv[]) {
