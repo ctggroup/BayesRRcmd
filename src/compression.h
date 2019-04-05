@@ -77,19 +77,6 @@ void compressAndWriteWithIndex(const VectorXd &data,
         unsigned char *compressedBuffer,
         const unsigned long maxCompressedOutputSize);
 
-template<typename T>
-void compressAndWriteWithIndex(const std::vector<T> &data,
-        std::ostream &outStream,
-        std::ostream &indexStream,
-        unsigned long &pos,
-        unsigned char *compressedBuffer,
-        const unsigned long maxCompressedOutputSize)
-{
-    const unsigned long compressedSize = compressData<T>(data, compressedBuffer, maxCompressedOutputSize);
-    const unsigned long originalSize = data.size() * sizeof(T);
-    writeCompressedDataWithIndex(compressedBuffer, compressedSize, originalSize, outStream, indexStream, pos);
-}
-
 void extractData(unsigned char *compressedData,
                  unsigned int compressedDataSize,
                  unsigned char *outputBuffer,
