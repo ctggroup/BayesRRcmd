@@ -3,27 +3,21 @@
 
 #include "BayesRBase.hpp"
 
-class SparseData;
+class Data;
 
 class SparseBayesRRG : public BayesRBase
 {
     friend class SparseParallelGraph;
 
 public:
-    explicit SparseBayesRRG(const SparseData *m_data, Options &m_opt);
+    explicit SparseBayesRRG(const Data *m_data, Options &m_opt);
     ~SparseBayesRRG() override;
 
     MarkerBuilder *markerBuilder() const override;
 
-    void processColumn(unsigned int marker);
-    std::tuple<double, double> processColumnAsync(unsigned int marker);
-
-    void updateGlobal(const unsigned int marker, double beta_old, double beta);
     void updateGlobal(Marker *marker, const double beta_old, const double beta) override;
 
 protected:
-    const SparseData *m_sparseData;
-
     double m_asyncEpsilonSum = 0.0;
 
     VectorXd m_ones;
