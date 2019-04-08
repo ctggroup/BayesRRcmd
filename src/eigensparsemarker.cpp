@@ -52,9 +52,9 @@ void EigenSparseMarker::write(std::ostream *outStream) const
 
     SparseMarker::write(outStream);
 
-    const auto count = Zg.nonZeros();
+    const Eigen::Index count = Zg.nonZeros();
     outStream->write(reinterpret_cast<const char *>(&count),
-                     sizeof(count));
+                     sizeof(Eigen::Index));
 
     if (count > 0) {
         outStream->write(reinterpret_cast<const char *>(Zg.valuePtr()),
