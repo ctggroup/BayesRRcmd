@@ -22,6 +22,8 @@ public:
 
     virtual void endColumn() = 0;
 
+    virtual void read(const std::string &file, const IndexEntry &index) const;
+
     virtual void decompress(unsigned char *data,
                             const IndexEntry &index) const;
 
