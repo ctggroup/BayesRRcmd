@@ -31,6 +31,7 @@ void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const d
     assert(denseMarker);
 
     m_epsilon -= *denseMarker->Cx * (beta - beta_old);
+    m_betasqn+=beta*beta-beta_old*beta_old;
 }
 
 void DenseBayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCount)

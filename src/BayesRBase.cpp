@@ -320,10 +320,11 @@ std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
         // std::memcpy is faster than epsilon = m_epsilon which compiles down to a loop over pairs of
         // doubles and uses _mm_load_pd(source) SIMD intrinsics. Just be careful if we change the type
         // contained in the vector back to floats.
-        std::memcpy(epsilon.data(), m_asyncEpsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+        // we copy global into local
+        std::memcpy(epsilon.data(), m_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
         beta = m_beta(marker->i);
         component = m_components(marker->i);
-        readWithSharedLock(marker);
+        readWithSharedLock(marker);//here we are reading the column and also epsilonsum
     }
     const double beta_old = beta;
 
@@ -404,21 +405,21 @@ std::tuple<double, double> BayesRBase::processColumnAsync(Marker *marker)
     const bool skipUpdate = beta_old == 0.0 && beta == 0.0;
 
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
-    if (!skipUpdate) {
-        marker->updateEpsilon(epsilon, beta_old, beta);
-    }
-
+        if (!skipUpdate) {
+       marker->updateEpsilon(epsilon, beta_old, beta);
+     }
+    // In the new version of Async we do not synchronise epsilon Async, we will handle this through the global node
     // Lock to write updates (at end, or perhaps as updates are computed)
     {
         // Use a unique lock to ensure only one thread can write updates
-        std::unique_lock lock(m_mutex);
+       std::unique_lock lock(m_mutex);
         if (!skipUpdate) {
-            std::memcpy(m_asyncEpsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
-            m_betasqn += beta * beta - beta_old * beta_old;
-            writeWithUniqueLock(marker);
+    //       std::memcpy(m_asyncEpsilon.data(), epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
+    //       m_betasqn += beta * beta - beta_old * beta_old;
+	  // writeWithUniqueLock(marker);//here we are writing epsilon sum
         }
         m_v += v;
-    }
+     }
 
     // These updates do not need to be atomic
     m_beta(marker->i) = beta;
