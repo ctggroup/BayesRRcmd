@@ -15,8 +15,12 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
     auto f = [this] (Message msg) -> Message {
         std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
         builder->initialise(msg.snp, msg.numInds);
-        builder->decompress(m_bayes->compressedData(),
-                            m_bayes->indexEntry(msg.snp));
+        const auto index = m_bayes->indexEntry(msg.snp);
+        if (m_bayes->compressed()) {
+            builder->decompress(m_bayes->compressedData(), index);
+        } else {
+            builder->read(m_bayes->preprocessedFile(), index);
+        }
         msg.marker.reset(builder->build());
         return msg;
     };
