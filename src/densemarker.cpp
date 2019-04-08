@@ -52,7 +52,6 @@ std::streamsize DenseMarker::size() const
 
 void DenseMarker::read(std::istream *inStream)
 {
-    // Untested - this isn't called yet
     inStream->read(reinterpret_cast<char *>(buffer.get()),
                    size());
 }

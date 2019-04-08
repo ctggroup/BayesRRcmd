@@ -94,6 +94,15 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
                     continue;
 
                 dataPtr->write(m_output.get());
+
+                m_indexOutput->write(reinterpret_cast<char *>(&m_position),
+                                     sizeof(unsigned long));
+                const auto size = static_cast<unsigned long>(dataPtr->size());
+                m_indexOutput->write(reinterpret_cast<const char *>(&size),
+                                  sizeof(unsigned long));
+                m_indexOutput->write(reinterpret_cast<const char *>(&size),
+                                  sizeof(unsigned long));
+                m_position += size;
             }
         } else {
             std::for_each(msg.compressedSnpData.cbegin(),
@@ -189,12 +198,10 @@ void PreprocessGraph::preprocessBedFile(const std::string &bedFile,
         return;
     }
 
-    if (compress) {
-        m_indexOutput = std::make_unique<std::ofstream>(ppIndexFile.c_str(), ios::binary);
-        if (m_indexOutput->fail()) {
-            cerr << "Error: Unable to open the preprocessed bed index file [" + ppIndexFile + "] for writing." << endl;
-            return;
-        }
+    m_indexOutput = std::make_unique<std::ofstream>(ppIndexFile.c_str(), ios::binary);
+    if (m_indexOutput->fail()) {
+        cerr << "Error: Unable to open the preprocessed bed index file [" + ppIndexFile + "] for writing." << endl;
+        return;
     }
 
     size_t msgId = 0;

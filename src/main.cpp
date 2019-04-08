@@ -83,42 +83,26 @@ void processDenseData(Options opt) {
         clock_t start = clock();
         data.readPhenotypeFile(opt.phenotypeFile);
         // Run analysis using mapped data files
-        if (opt.compress) {
-            cout << "Start reading preprocessed bed file: " << ppFile << endl;
-            clock_t start_bed = clock();
-            data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
-            clock_t end = clock();
-            printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-            cout << endl;
+        cout << "Start reading preprocessed bed file: " << ppFile << endl;
+        clock_t start_bed = clock();
+        data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+        clock_t end = clock();
+        printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+        cout << endl;
 
-            std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
-            if (opt.numThreadSpawned > 0)
-                taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
+        std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+        if (opt.numThreadSpawned > 0)
+            taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
-            std::unique_ptr<AnalysisGraph> graph {nullptr};
-            if (opt.analysisType == "PPAsyncBayes") {
-                graph = std::make_unique<ParallelGraph>(opt.numThread);
-            } else {
-                graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
-            }
-            DenseBayesRRmz analysis(&data, opt);
-            analysis.runGibbs(graph.get());
-            data.unmapCompressedPreprocessedBedFile();
+        std::unique_ptr<AnalysisGraph> graph {nullptr};
+        if (opt.analysisType == "PPAsyncBayes") {
+            graph = std::make_unique<ParallelGraph>(opt.numThread);
         } else {
-            cout << "Start reading preprocessed bed file: " << ppFile << endl;
-            clock_t start_bed = clock();
-            data.mapPreprocessBedFile(ppFile);
-            clock_t end = clock();
-            printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-            cout << endl;
-
-            BayesRRm analysis(data, opt, sysconf(_SC_PAGE_SIZE));
-            analysis.runGibbs();
-
-            data.unmapPreprocessedBedFile();
-            end = clock();
-            printf("OVERALL read+compute time = %.3f sec.\n", double(end - start) / double(CLOCKS_PER_SEC));
+            graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
         }
+        DenseBayesRRmz analysis(&data, opt);
+        analysis.runGibbs(graph.get());
+        data.unmapCompressedPreprocessedBedFile();
     }else {
         throw(" Error: Wrong analysis type: " + opt.analysisType);
     }

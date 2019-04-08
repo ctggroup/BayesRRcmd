@@ -28,8 +28,10 @@ public:
     virtual ~BayesRBase();
 
     virtual MarkerBuilder* markerBuilder() const = 0;
-    IndexEntry indexEntry(unsigned int i) const;
-    unsigned char* compressedData() const;
+    virtual IndexEntry indexEntry(unsigned int i) const;
+    virtual bool compressed() const;
+    virtual unsigned char* compressedData() const;
+    virtual std::string preprocessedFile() const;
 
     int runGibbs(AnalysisGraph* analysis); // where we run Gibbs sampling over the parametrised model
 

@@ -44,12 +44,22 @@ IndexEntry BayesRBase::indexEntry(unsigned int i) const
     return m_data->ppbedIndex[i];
 }
 
+bool BayesRBase::compressed() const
+{
+    return m_opt.compress;
+}
+
 unsigned char* BayesRBase::compressedData() const
 {
     if (!m_data)
         return nullptr;
 
     return reinterpret_cast<unsigned char*>(m_data->ppBedMap);
+}
+
+std::string BayesRBase::preprocessedFile() const
+{
+    return ppFileForType(m_opt.dataType, m_opt.bedFile);
 }
 
 void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCount)

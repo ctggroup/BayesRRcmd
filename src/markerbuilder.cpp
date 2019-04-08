@@ -1,5 +1,6 @@
 #include "markerbuilder.h"
 
+#include <fstream>
 #include <iostream>
 
 MarkerBuilder::~MarkerBuilder()
@@ -12,6 +13,21 @@ void MarkerBuilder::initialise(const unsigned int snp,
 {
     reset(numInds);
     m_snp = snp;
+}
+
+void MarkerBuilder::read(const std::string &file, const IndexEntry &index) const
+{
+    assert(m_marker);
+
+    std::ifstream inStream(file.c_str(), std::ios::binary);
+    if (!inStream) {
+        std::cerr << "MarkerBuilder::read cannot read from: " << file << std::endl;
+        return;
+    }
+
+    inStream.seekg(static_cast<std::streamsize>(index.pos));
+
+    m_marker->read(&inStream);
 }
 
 void MarkerBuilder::decompress(unsigned char *data, const IndexEntry &index) const
