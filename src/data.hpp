@@ -200,6 +200,8 @@ public:
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);
+
+    void readCSV(const string &bedFile);
     void readBedFile_noMPI(const string &bedFile);
     void readBedFile(const string &bedFile);
     void getSnpDataFromBedFileUsingMmap_openmp(const string &bedFile, const size_t snpLenByt, const long memPageSize, const uint spnInd, VectorXf &snpData);

@@ -55,8 +55,8 @@ void SampleWriter::open_bayesW()
         m_outFile << "comp[" << (i+1) << "],";
     }
 
-    m_outFile << "sigma_b," << "sigmaG";
-
+//    m_outFile << "sigma_b," << "sigmaG";
+    m_outFile << "sigma_b";
 
     m_outFile << std::endl;
     m_outFile.flush();
