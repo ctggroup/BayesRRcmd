@@ -6,6 +6,7 @@
 #include "tbb/flow_graph.h"
 #include <functional>
 #include <memory>
+#include <Eigen/Eigen>
 
 class BayesRBase;
 
@@ -31,7 +32,7 @@ private:
         unsigned int snp = 0;
         unsigned int numInds = 0;
         std::shared_ptr<Marker> marker = nullptr;
-
+        Eigen::VectorXd deltaEps; //vector that stores the epsilon update only
         double old_beta = 0.0;
         double beta = 0.0;
     };

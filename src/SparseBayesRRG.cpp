@@ -62,8 +62,7 @@ void SparseBayesRRG::readWithSharedLock(Marker *marker)
 {
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
-    // We change previous async
-    //sparseMarker->epsilonSum = m_isAsync ? m_asyncEpsilonSum : m_epsilonSum;
+    //now we update to the global epsilonSum 
     sparseMarker->epsilonSum=m_epsilonSum;
 }
 
@@ -71,20 +70,18 @@ void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
 {
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
-    //we let the global take care of the m_async update
     if (m_isAsync)
-       m_asyncEpsilonSum = sparseMarker->epsilonSum;
+      {} //now the global node is in charge of updating m_epsilon  
     else
         m_epsilonSum = sparseMarker->epsilonSum;
 }
 
-void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta)
+void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps)
 {
     // No mutex required here whilst m_globalComputeNode uses the serial policy
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
-
-    sparseMarker->updateEpsilon(m_epsilon, beta_old, beta);
-    m_epsilonSum=m_epsilon.sum(); //later I will find better ways to do this
-    m_betasqn+=beta*beta-beta_old*beta_old;
+    m_epsilon+= deltaEps ;     //now epsilon=epsilon + 0 + update of epsilon. If vectorised this operation should not be expensive
+    m_epsilonSum+=sparseMarker->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
+    m_betasqn+=beta*beta-beta_old*beta_old; // we move the squared norm computation to the global node, to avoid locking
 }

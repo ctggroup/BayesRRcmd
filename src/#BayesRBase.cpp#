@@ -307,7 +307,7 @@ void BayesRBase::processColumn(Marker *marker)
     const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
     cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
 }
-
+//we added the deltaEps message
 std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marker)
 {
     double beta = 0;

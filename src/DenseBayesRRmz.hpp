@@ -21,7 +21,7 @@ public:
 
     MarkerBuilder *markerBuilder() const override;
 
-    void updateGlobal(Marker *marker, const double beta_old, const double beta) override;
+  void updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps) override;
 
 protected:
     void init(int K, unsigned int markerCount, unsigned int individualCount) override;

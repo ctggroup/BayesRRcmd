@@ -29,7 +29,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
 
         msg.old_beta = std::get<0>(betas);
         msg.beta = std::get<1>(betas);
-
+        msg.deltaEps= std::get<2>(betas);//we update the deltaEps of the message
         return msg;
     };
 
@@ -55,7 +55,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
 
     // Do global computation
     auto h = [this] (Message msg) -> continue_msg {
-        m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta);
+      m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta,msg.deltaEps);//now we pass deltaEps to the global
         return continue_msg();
     };
     // Use the serial policy

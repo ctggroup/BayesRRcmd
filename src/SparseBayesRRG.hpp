@@ -2,7 +2,7 @@
 #define SRC_SPARSEBAYESRRG_H_
 
 #include "BayesRBase.hpp"
-
+#include <Eigen/Eigen>
 class Data;
 
 class SparseBayesRRG : public BayesRBase
@@ -15,7 +15,7 @@ public:
 
     MarkerBuilder *markerBuilder() const override;
 
-    void updateGlobal(Marker *marker, const double beta_old, const double beta) override;
+  void updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps ) override;
 
 protected:
     double m_asyncEpsilonSum = 0.0;

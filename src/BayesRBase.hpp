@@ -37,9 +37,9 @@ public:
 
     virtual void processColumn(Marker *marker);
 
-    virtual std::tuple<double, double> processColumnAsync(Marker *marker);
+  virtual std::tuple<double, double,VectorXd> processColumnAsync(Marker *marker);
 
-    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta) = 0;
+  virtual void updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps) = 0;
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
     bool isDebugEnabled() const { return m_showDebug; }

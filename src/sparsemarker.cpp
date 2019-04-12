@@ -13,7 +13,8 @@ double SparseMarker::computeNum(VectorXd &epsilon, const double beta_old)
 void SparseMarker::updateEpsilon(VectorXd &epsilon, const double beta_old, const double beta)
 {
     (void) epsilon; // Used by derived types
-    epsilonSum += computeEpsilonSumUpdate(beta_old, beta);
+    // now every update only saves delta epsilon sum
+    epsilonSum = computeEpsilonSumUpdate(beta_old, beta);
 }
 
 void SparseMarker::updateStatistics(unsigned int allele1, unsigned int allele2)
