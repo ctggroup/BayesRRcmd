@@ -30,7 +30,7 @@ void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const d
     auto* denseMarker = dynamic_cast<DenseMarker*>(marker);
     assert(denseMarker);
 
-    m_epsilon -= *denseMarker->Cx * (beta - beta_old);
+    m_epsilon += deltaEps;
     m_betasqn+=beta*beta-beta_old*beta_old;
 }
 

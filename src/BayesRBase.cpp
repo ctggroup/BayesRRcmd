@@ -175,11 +175,12 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
         std::cout << "iteration " << iteration << ": ";
         double old_mu=m_mu;
-        m_epsilon = m_epsilon.array() + m_mu;//  we substract previous value
-        m_epsilonSum+=old_mu*double(N); //we perform the equivalent update in epsilonSum
-        m_mu = m_dist.norm_rng(m_epsilonSum / (double)N, m_sigmaE / (double)N); //update mu
-        m_epsilon = m_epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
-        m_epsilonSum-=m_mu*double(N);//we perform the equivalent update in epsilonSum
+        // we perform the costly reduction epsilon.sum() in exchange of not messing up much the rest of the classes.
+        m_epsilon = m_epsilon.array() + m_mu;// for dense and sparse we substract previous value
+        m_epsilonSum+=old_mu*double(N); //for sparse this is important for dense its ineffectual
+        m_mu = m_dist.norm_rng(m_epsilon.sum() / (double)N, m_sigmaE / (double)N); //update mu with the sum reduction 
+        m_epsilon = m_epsilon.array() - m_mu;// for dense and sparse we substract again now epsilon =Y-mu-X*beta
+        m_epsilonSum-=m_mu*double(N);//we perform the equivalent update in epsilonSum for sparse this is important, for dense its ineffec.
 
         prepareForAnylsis();
 
@@ -303,9 +304,9 @@ void BayesRBase::processColumn(Marker *marker)
         marker->updateEpsilon(m_epsilon, beta_old, beta_new);
         writeWithUniqueLock(marker);
     }
-   const auto t2c = std::chrono::high_resolution_clock::now();
-    const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
-    cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
+   //const auto t2c = std::chrono::high_resolution_clock::now();
+   // const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
+   // cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
 }
 
 std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marker)
@@ -316,7 +317,7 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
     VectorXd deltaEps(m_data->numInds); //vector that will contain the delta epsilon message
     deltaEps.setZero(); // deltaEps=0
     // to keep track of the column processing time     
- // const auto t1c = std::chrono::high_resolution_clock::now();
+    const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(marker);
 
     {
@@ -430,9 +431,9 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
     
     //info on the running time of the column processing, would be very useful to have it as an option, and output it to a file
     //const auto t2c = std::chrono::high_resolution_clock::now();
-    //const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
+   // const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
    
-    //cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
+   // cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
 
     return {beta_old, beta, deltaEps};
 }
