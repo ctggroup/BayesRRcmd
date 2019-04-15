@@ -27,7 +27,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
       };
 
     // Do the decompression work on up to maxParallel threads at once
-    m_decompressNode.reset(new function_node<Message Message>(*m_graph, 4, f));
+    m_decompressNode.reset(new function_node<Message Message>(*m_graph, max_decompress, f));
 
     // The sequencer node enforces the correct ordering based upon the message id
     m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
@@ -35,7 +35,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
       }));
 
     // Sampling of the column to the async algorithm class
-    auto g = [this] (Message msg) -> continue_msg {
+    auto g = [this] (Message msg) -> Message {
       const auto betas = m_bayes->processColumnAsync(msg.marker.get());
       msg.old_beta = std::get<0>(betas);
       msg.beta = std::get<1>(betas);
