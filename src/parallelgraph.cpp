@@ -13,30 +13,30 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
 {
     // Decompress the column for this marker then process the column using the algorithm class
     auto f = [this] (Message msg) -> Message {
-        // Decompress the column
-        std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
-        builder->initialise(msg.snp, msg.numInds);
-        const auto index = m_bayes->indexEntry(msg.snp);
-        if (m_bayes->compressed()) {
+      // Decompress the column
+      std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
+      builder->initialise(msg.snp, msg.numInds);
+      const auto index = m_bayes->indexEntry(msg.snp);
+      if (m_bayes->compressed()) {
             builder->decompress(m_bayes->compressedData(), index);
         } else {
             builder->read(m_bayes->preprocessedFile(), index);
-        }
-        msg.marker.reset(builder->build());
-        return msg;
+          }
+      msg.marker.reset(builder->build());
+      return msg;
       };
 
-      // Do the decompression work on up to maxParallel threads at once
-      m_decompressNode.reset(new function_node<Message Message>(*m_graph, m_maxParallel, f));
+    // Do the decompression work on up to maxParallel threads at once
+    m_decompressNode.reset(new function_node<Message Message>(*m_graph, m_maxParallel, f));
 
-      // The sequencer node enforces the correct ordering based upon the message id
-      m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
-        return msg.id;
+    // The sequencer node enforces the correct ordering based upon the message id
+    m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
+      return msg.id;
       }));
 
-    auto g = [this] (Message msg) -> continue_msg {
     // Sampling of the column to the async algorithm class
-    const auto betas = m_bayes->processColumnAsync(msg.marker.get());
+    auto g = [this] (Message msg) -> continue_msg {
+      const auto betas = m_bayes->processColumnAsync(msg.marker.get());
       msg.old_beta = std::get<0>(betas);
       msg.beta = std::get<1>(betas);
       msg.deltaEps= std::get<2>(betas);//we update the deltaEps of the message
@@ -50,97 +50,58 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
     auto h = [] (decision_node::input_type input,
                 decision_node::output_ports_type &outputPorts) {
 
-           std::get<0>(outputPorts).try_put(continue_msg());
+      std::get<0>(outputPorts).try_put(continue_msg());
 
-           if (input.old_beta != 0.0 || input.beta != 0.0) {
-               // Do global computation
-               std::get<1>(outputPorts).try_put(std::move(input));
-           } else {
-               // Discard
-               std::get<0>(outputPorts).try_put(continue_msg());
-           }
-       };
+      if (input.old_beta != 0.0 || input.beta != 0.0) {
+         // Do global computation
+         std::get<1>(outputPorts).try_put(std::move(input));
+         } else {
+         // Discard
+         std::get<0>(outputPorts).try_put(continue_msg());
+         }
+      };
 
-       m_decisionNode.reset(new decision_node(*m_graph, maxParallel2, h));
+    m_decisionNode.reset(new decision_node(*m_graph, maxParallel2, h));
 
 
     // Do global computation
     auto i = [this] (Message msg) -> continue_msg {
-            m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta, msg.deltaEps);
-            return continue_msg();
+      m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta, msg.deltaEps);
+      return continue_msg();
       };
     // Use the serial policy
     m_globalComputeNode.reset(new function_node<Message>(*m_graph, serial, i));
 
     // Limit the number of sampler
-    m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
+    m_limit.reset(new limiter_node<Message>(*m_graph, serial));
 
-
-
-
-
-
-
-
-
-    // Do the decompress and compute work on up to maxParallel threads at once
-    m_asyncComputeNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, f));
-
-    // Decide whether to continue calculations or discard
-    auto g = [] (decision_node::input_type input,
-                 decision_node::output_ports_type &outputPorts) {
-
-        std::get<0>(outputPorts).try_put(continue_msg());
-
-        if (input.old_beta != 0.0 || input.beta != 0.0) {
-            // Do global computation
-            std::get<1>(outputPorts).try_put(std::move(input));
-        } else {
-            // Discard
-            std::get<0>(outputPorts).try_put(continue_msg());
-        }
-    };
-
-    m_decisionNode.reset(new decision_node(*m_graph, m_maxParallel, g));
-
-    // Do global computation
-    auto h = [this] (Message msg) -> continue_msg {
-      m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta,msg.deltaEps);//now we pass deltaEps to the global
-        return continue_msg();
-    };
-    // Use the serial policy
-    m_globalComputeNode.reset(new function_node<Message>(*m_graph, serial, h));
-
-    // Limit the number of parallel computations
-    m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
-
-    // Enforce the correct order, based on the message id
-    m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
-        return msg.id;
-    }));
 
     // Set up the graph topology:
     //
-    // orderingNode -> limitNode -> decompressionAndSamplingNode (parallel)
-    //                      ^                   |
-    //                      |___discard____decisionNode (parallel)
-    //                      ^                   |
-    //                      |                   | keep
-    //                      |                   |
-    //                      |______________globalCompute (serial)
+    // orderingNode -> decompressionNode (parallel)
+    //                            |
+    //                            |
+    //  limitNode (serial) -> samplingNode (parallel)
+    //        ^                   |
+    //        |                   |
+    //        |               decisionNode (parallel)
+    //        |                   |
+    //        |                   | keep
+    //        |                   |
+    //        |______________globalCompute (serial)
     //
     // Run the decompressionAndSampling node in the correct order, but do not
     // wait for the most up-to-date data.
-    make_edge(*m_ordering, *m_limit);
-    make_edge(*m_limit, *m_asyncComputeNode);
 
-    // Feedback that we can now decompress another column, OR
-    make_edge(*m_asyncComputeNode, *m_decisionNode);
+    make_edge(*m_ordering, *m_decompressNode);
+    make_edge(*m_decompressNode, *m_asyncSamplingNode);
+    make_edge(*m_asyncSamplingNode, *m_decisionNode);
+    // Feedback that we can now sample more columns, OR
     make_edge(output_port<0>(*m_decisionNode), m_limit->decrement);
-    // Do the global computation
+    // pass to the global computation
     make_edge(output_port<1>(*m_decisionNode), *m_globalComputeNode);
 
-    // Feedback that we can now decompress another column
+    // Feedback that we can now sample more columns
     make_edge(*m_globalComputeNode, m_limit->decrement);
 }
 
