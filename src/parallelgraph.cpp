@@ -27,7 +27,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
       };
 
     // Do the decompression work on up to maxParallel threads at once
-    m_decompressNode.reset(new function_node<Message Message>(*m_graph, m_maxParallel, f));
+    m_decompressNode.reset(new function_node<Message Message>(*m_graph, 4, f));
 
     // The sequencer node enforces the correct ordering based upon the message id
     m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
@@ -44,7 +44,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
       };
 
     // Sample in parallel but with a variable maxParallel2
-    m_asyncSamplingNode.reset(new function_node<Message, Message>(*m_graph, maxParallel2, g));
+    m_asyncSamplingNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, g));
 
     // Decide whether to continue calculations or discard
     auto h = [] (decision_node::input_type input,
@@ -61,7 +61,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
          }
       };
 
-    m_decisionNode.reset(new decision_node(*m_graph, maxParallel2, h));
+    m_decisionNode.reset(new decision_node(*m_graph, m_maxParallel, h));
 
 
     // Do global computation
