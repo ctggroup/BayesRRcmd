@@ -27,7 +27,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
       };
 
     // Do the decompression work on up to maxParallel threads at once
-    m_decompressNode.reset(new function_node<Message, Message>(*m_graph, max_decompress, f));
+    m_decompressNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, f));
 
     // The sequencer node enforces the correct ordering based upon the message id
     m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {

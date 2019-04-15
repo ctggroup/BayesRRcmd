@@ -35,7 +35,6 @@ private:
         Eigen::VectorXd deltaEps; //vector that stores the epsilon update only
         double old_beta = 0.0;
         double beta = 0.0;
-        unsigned int max_decompress = 4;
     };
 
     std::unique_ptr<graph> m_graph;
