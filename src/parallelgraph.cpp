@@ -84,7 +84,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
     //  limitNode (serial) -> samplingNode (parallel)
     //        ^                   |
     //        |                   |
-    //        |               decisionNode (parallel)
+    //        |______________ decisionNode (parallel)
     //        |                   |
     //        |                   | keep
     //        |                   |
