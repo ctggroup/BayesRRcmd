@@ -23,15 +23,65 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
             builder->read(m_bayes->preprocessedFile(), index);
         }
         msg.marker.reset(builder->build());
-
-        // Delegate the processing of this column to the algorithm class
-        const auto betas = m_bayes->processColumnAsync(msg.marker.get());
-
-        msg.old_beta = std::get<0>(betas);
-        msg.beta = std::get<1>(betas);
-        msg.deltaEps= std::get<2>(betas);//we update the deltaEps of the message
         return msg;
-    };
+      };
+
+      // Do the decompression work on up to maxParallel threads at once
+      m_decompressNode.reset(new function_node<Message Message>(*m_graph, m_maxParallel, f));
+
+      // The sequencer node enforces the correct ordering based upon the message id
+      m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
+        return msg.id;
+      }));
+
+    auto g = [this] (Message msg) -> continue_msg {
+    // Sampling of the column to the async algorithm class
+    const auto betas = m_bayes->processColumnAsync(msg.marker.get());
+      msg.old_beta = std::get<0>(betas);
+      msg.beta = std::get<1>(betas);
+      msg.deltaEps= std::get<2>(betas);//we update the deltaEps of the message
+      return msg;
+      };
+
+    // Sample in parallel but with a variable maxParallel2
+    m_asyncSamplingNode.reset(new function_node<Message, Message>(*m_graph, maxParallel2, g));
+
+    // Decide whether to continue calculations or discard
+    auto h = [] (decision_node::input_type input,
+                decision_node::output_ports_type &outputPorts) {
+
+           std::get<0>(outputPorts).try_put(continue_msg());
+
+           if (input.old_beta != 0.0 || input.beta != 0.0) {
+               // Do global computation
+               std::get<1>(outputPorts).try_put(std::move(input));
+           } else {
+               // Discard
+               std::get<0>(outputPorts).try_put(continue_msg());
+           }
+       };
+
+       m_decisionNode.reset(new decision_node(*m_graph, maxParallel2, h));
+
+
+    // Do global computation
+    auto i = [this] (Message msg) -> continue_msg {
+            m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta, msg.deltaEps);
+            return continue_msg();
+      };
+    // Use the serial policy
+    m_globalComputeNode.reset(new function_node<Message>(*m_graph, serial, i));
+
+    // Limit the number of sampler
+    m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
+
+
+
+
+
+
+
+
 
     // Do the decompress and compute work on up to maxParallel threads at once
     m_asyncComputeNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, f));
