@@ -73,7 +73,7 @@ void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
     if (m_isAsync)
       {} //now the global node is in charge of updating m_epsilon  
     else
-        m_epsilonSum = sparseMarker->epsilonSum;
+        m_epsilonSum += sparseMarker->epsilonSum;
 }
 
 void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps)
