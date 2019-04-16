@@ -47,7 +47,7 @@ private:
     std::unique_ptr<decision_node> m_decisionNode;
     std::unique_ptr<function_node<Message>> m_globalComputeNode;
     size_t m_decompressSize=4;
-    size_t m_limitSize=4;
+    size_t m_limitSize=1;
 };
 
 #endif // DENSEPARALLELGRAPH_H
