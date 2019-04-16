@@ -16,7 +16,7 @@ public:
     MarkerBuilder *markerBuilder() const override;
 
   void updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps ) override;
-
+   void updateMu(double old_mu,double N);
 protected:
     double m_asyncEpsilonSum = 0.0;
 
@@ -28,6 +28,7 @@ protected:
     void prepare(Marker *marker) override;
     void readWithSharedLock(Marker *marker) override;
     void writeWithUniqueLock(Marker *marker) override;
+   
 };
 
 #endif /* SRC_SPARSEBAYESRRG_H_ */
