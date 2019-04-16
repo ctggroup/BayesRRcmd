@@ -46,7 +46,8 @@ private:
     using decision_node = multifunction_node<Message, tbb::flow::tuple<continue_msg, Message> >;
     std::unique_ptr<decision_node> m_decisionNode;
     std::unique_ptr<function_node<Message>> m_globalComputeNode;
-    size_t m_decompressN=4;
+    size_t m_decompressSize=4;
+    size_t m_limitSize=4;
 };
 
 #endif // DENSEPARALLELGRAPH_H
