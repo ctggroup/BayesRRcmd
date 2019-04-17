@@ -355,7 +355,7 @@ inline double prob_calc0(double BETA_MODE, VectorXd prior_prob, double C_0, void
 
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		prob_0 = prob_0 + prior_prob(i+1) * sqrt(-PI2/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
+		prob_0 = prob_0 + prior_prob(i+1)/sqrt(p.mixture_classes(i)) * sqrt(-PI2/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
 				exp(beta_dens_ck(BETA_MODE,p.mixture_classes(i),norm_data)-beta_0);
 	}
 	return prior_prob(0)*C_0/prob_0;
@@ -370,7 +370,7 @@ inline double prob_calc(int k, double BETA_MODE, VectorXd prior_prob, double C_0
 
 	//Sum the comparisons
 	for(int i=0; i<p.mixture_classes.size(); i++){
-		prob_k = prob_k + prior_prob(i+1) * sqrt(beta_dens_der2_k/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
+		prob_k = prob_k + prior_prob(i+1) /sqrt(p.mixture_classes(i)) * sqrt(beta_dens_der2_k/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
 				exp(pow(BETA_MODE,2)* p.mixture_diff(i,k)/p.sigma_b );  // We have previously calculated the differences to matrix
 	}
 
@@ -861,7 +861,7 @@ int BayesW::runGibbs_Preprocessed()
 
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
 
-		v.setZero();           //Reset the counter
+		v.setOnes();           //Reset the counter
 		double beta_diff_sum=0;
 		for (int j = 0; j < M; j++) {
 			marker = markerI[j];
@@ -950,9 +950,8 @@ int BayesW::runGibbs_Preprocessed()
 			                            (double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 		}
 
-
 		// 5. Mixture probability
-		pi_L = dist.dirichilet_rng(v.array()+1);
+		pi_L = dist.dirichilet_rng(v.array());
 		// Also update the "spike parameter"
         pi_L_cond1 = pi_L.segment(1,km1).array()/(pi_L.segment(1,km1).array().sum());
         C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ;
