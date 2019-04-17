@@ -175,12 +175,8 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
         std::cout << "iteration " << iteration << ": ";
         double old_mu=m_mu;
-        // we perform the costly reduction epsilon.sum() in exchange of not messing up much the rest of the classes.
-        m_epsilon = m_epsilon.array() + m_mu;// for dense and sparse we substract previous value
-        m_epsilonSum+=old_mu*double(N); //for sparse this is important for dense its ineffectual
-        m_mu = m_dist.norm_rng(m_epsilon.sum() / (double)N, m_sigmaE / (double)N); //update mu with the sum reduction 
-        m_epsilon = m_epsilon.array() - m_mu;// for dense and sparse we substract again now epsilon =Y-mu-X*beta
-        m_epsilonSum-=m_mu*double(N);//we perform the equivalent update in epsilonSum for sparse this is important, for dense its ineffec.
+        // we delegate the Mu update to the descendents
+        updateMu(old_mu,(double)N);
 
         prepareForAnylsis();
 
