@@ -875,7 +875,7 @@ int BayesW::runGibbs_Preprocessed()
 			if(beta(marker) != 0){
 				// Subtract the weighted last beta²
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
-				betasqn = betasqn - (1/used_data.mixture_classes(components[marker]-1)) * beta(marker) * beta(marker);
+				betasqn = betasqn - beta(marker) * beta(marker) / used_data.mixture_classes(components[marker]-1);
 			}
 
 			/* Calculate the mixture probability */
@@ -919,7 +919,7 @@ int BayesW::runGibbs_Preprocessed()
 						// Change the weighted sum of squares of betas
 						v[k] += 1.0;
 						components[marker] = k;
-						betasqn = betasqn + (1/used_data.mixture_classes(components[marker]-1)) * beta(marker) * beta(marker);
+						betasqn = betasqn +  beta(marker) * beta(marker) / used_data.mixture_classes(components[marker]-1);
 					}
 
 					break;
