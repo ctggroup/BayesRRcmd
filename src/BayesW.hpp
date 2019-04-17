@@ -28,8 +28,8 @@ class BayesW
     const double	alpha_0  = 0.01;
     const double	kappa_0     = 0.01;
     const double    sigma_mu    = 100;
-    const double    alpha_sigma  = 0.01;
-    const double    beta_sigma   = 0.01;
+    const double    alpha_sigma  = 1;
+    const double    beta_sigma   = 0.0001;
 
     Distributions_boost dist;
 

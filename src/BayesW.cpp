@@ -14,7 +14,6 @@
 #include "BayesW_arms.h"
 #include "samplewriter.h"
 
-
 #include <chrono>
 #include <numeric>
 #include <random>
@@ -355,7 +354,7 @@ inline double prob_calc0(double BETA_MODE, VectorXd prior_prob, double C_0, void
 
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		prob_0 = prob_0 + prior_prob(i+1) * sqrt(-PI2/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
+		prob_0 = prob_0 + prior_prob(i+1) * sqrt(-PI2/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data)/p.mixture_classes(i))*
 				exp(beta_dens_ck(BETA_MODE,p.mixture_classes(i),norm_data)-beta_0);
 	}
 	return prior_prob(0)*C_0/prob_0;
@@ -370,7 +369,7 @@ inline double prob_calc(int k, double BETA_MODE, VectorXd prior_prob, double C_0
 
 	//Sum the comparisons
 	for(int i=0; i<p.mixture_classes.size(); i++){
-		prob_k = prob_k + prior_prob(i+1) * sqrt(beta_dens_der2_k/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data))*
+		prob_k = prob_k + prior_prob(i+1) * sqrt(beta_dens_der2_k/beta_dens_der2(BETA_MODE, p.mixture_classes(i), norm_data)/p.mixture_classes(i))*
 				exp(pow(BETA_MODE,2)* p.mixture_diff(i,k)/p.sigma_b );  // We have previously calculated the differences to matrix
 	}
 
@@ -487,13 +486,17 @@ int BayesW::runGibbs()
 		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
 	}
 
-	used_data.sigma_b = pow(PI,2)/ (6 * pow(used_data.alpha,2) * M ) ;
+	used_data.sigma_b = PI2/ (6 * pow(used_data.alpha,2) * M ) ;
 
 	// Save the sum(X_j*failure) for each j
 	VectorXd sum_failure(M);
+	//for(int marker=0; marker<M; marker++){
+	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+	//}
 	for(int marker=0; marker<M; marker++){
-		sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+			sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	}
+
 	// Save the number of events
 	used_data.d = used_data_alpha.failure_vector.array().sum();
 	used_data_alpha.d = used_data.d;
@@ -514,7 +517,7 @@ int BayesW::runGibbs()
 	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
 	srand(2);
 
-	VectorXd components(M);
+	VectorXi components(M);
 	components.setZero();  //Exclude all the markers from the model
 
 	for (int iteration = 0; iteration < max_iterations; iteration++) {
@@ -538,7 +541,6 @@ int BayesW::runGibbs()
 		std::random_shuffle(markerI.begin(), markerI.end());
 
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
-
 		v.setOnes();           //Reset the counter
 		double beta_diff_sum=0;
 		for (int j = 0; j < M; j++) {
@@ -557,7 +559,9 @@ int BayesW::runGibbs()
 			if(beta(marker) != 0){
 				// Subtract the weighted last beta²
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
-				betasqn = betasqn - pow(used_data.mixture_classes(components[marker]-1),-1) * beta(marker) * beta(marker);
+				//cout << components[marker]-1 << endl;
+				//a = used_data.mixture_classes(components[marker]-1);
+				betasqn = betasqn - beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
 			}
 
 			/* Calculate the mixture probability */
@@ -601,7 +605,7 @@ int BayesW::runGibbs()
 						// Change the weighted sum of squares of betas
 						v[k] += 1.0;
 						components[marker] = k;
-						betasqn = betasqn + pow(used_data.mixture_classes(components[marker]-1),-1) * beta(marker) * beta(marker);
+						betasqn = betasqn + beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
 					}
 
 					break;
@@ -634,7 +638,7 @@ int BayesW::runGibbs()
 
 
 		// 5. Mixture probability
-		pi_L = dist.dirichilet_rng(v.array()+1);
+		pi_L = dist.dirichilet_rng(v.array());
 		// Also update the "spike parameter"
         pi_L_cond1 = pi_L.segment(1,km1).array()/(pi_L.segment(1,km1).array().sum());
         C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ;
@@ -646,8 +650,7 @@ int BayesW::runGibbs()
 				//gi = y.array() - mu - used_data.epsilon.array();
 				//sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
 				//sample << iteration, used_data.alpha, mu, beta,components, used_data.sigma_b , sigma_g;
-
-				sample << iteration, used_data.alpha, mu, beta,components, used_data.sigma_b ;
+				sample << iteration, used_data.alpha, mu, beta,components.cast<double>(), used_data.sigma_b ;
 				writer.write(sample);
 			}
 		}
