@@ -32,6 +32,7 @@ public:
     unsigned int numGroups;
     Eigen::MatrixXd mS;
     string groupFile;
+    string failureFile;
 
     string title;
     string analysisType;

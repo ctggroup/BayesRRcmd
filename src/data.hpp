@@ -91,6 +91,7 @@ public:
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
     VectorXi G; // groups
+    VectorXd fail;			 // Failure indicator
 
     MatrixXf XPX;            // X'X the MME lhs
     MatrixXf ZPX;            // Z'X the covariance matrix of SNPs and fixed effects
@@ -137,6 +138,8 @@ public:
     void readBedFile_noMPI(const string &bedFile);
     void readPhenotypeFile(const string &phenFile);
     void readGroupFile(const string &groupFile);
+    //BayesW variables
+    void readFailureFile(const string &failureFile);
 };
 
 #endif /* data_hpp */

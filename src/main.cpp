@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "BayesRRm.h"
+#include "BayesW.hpp"
 #include "DenseBayesRRmz.hpp"
 #include "data.hpp"
 #include "options.hpp"
@@ -42,7 +43,8 @@ void processDenseData(Options opt) {
         } else if (opt.bayesType == "horseshoe") {
             //TODO Finish horseshoe
         } else if (opt.bayesType == "bayesW") {
-            //TODO Add BayesW
+            BayesW analysis(data, opt, sysconf(_SC_PAGE_SIZE));
+            analysis.runGibbs();
         } else if (opt.bayesType == "bayesG") {
             //TODO add Bayes groups
         }

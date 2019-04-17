@@ -39,6 +39,28 @@ void SampleWriter::open()
     m_outFile.flush();
 }
 
+void SampleWriter::open_bayesW()
+{
+    std::cout << "Opening results file " << m_fileName << std::endl;
+    m_outFile.open(m_fileName);
+
+    m_outFile << "iteration," << "alpha,"  << "mu,";
+
+    for (unsigned int i = 0; i < m_markerCount; ++i) {
+        m_outFile << "beta[" << (i+1) << "],";
+    }
+
+    for (unsigned int i = 0; i < m_markerCount; ++i) {
+        m_outFile << "comp[" << (i+1) << "],";
+    }
+
+//    m_outFile << "sigma_b," << "sigmaG";
+    m_outFile << "sigma_b";
+
+    m_outFile << std::endl;
+    m_outFile.flush();
+}
+
 void SampleWriter::write(const Eigen::VectorXd &sample)
 {
     //std::cout << "Writing sample" << std::endl;

@@ -373,6 +373,26 @@ void Data::readPhenotypeFile(const string &phenFile) {
 
     in.close();
 }
+
+void Data::readFailureFile(const string& failureFile){
+	ifstream input(failureFile);
+	vector<double> tmp;
+	int col;
+	if(!input.is_open()){
+		cout << "Error opening the file" << endl;
+		return;
+	}
+
+	while(true){
+		input >> col ;
+		if(input.eof()) break;
+		tmp.push_back(col);
+	}
+	input.close();
+	fail = Eigen::VectorXd::Map(tmp.data(), tmp.size());
+}
+
+
 //TODO Finish function to read the group file
 void Data::readGroupFile(const string &groupFile) {
     // NA: missing phenotype
