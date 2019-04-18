@@ -4,15 +4,6 @@
 
 using namespace Eigen;
 
-SampleWriter::SampleWriter()
-    : m_commaInitFormat(StreamPrecision, DontAlignCols, ", ", ", ", "", "", "", "")
-{
-}
-
-SampleWriter::~SampleWriter()
-{
-    close();
-}
 
 void SampleWriter::open()
 {
@@ -39,14 +30,3 @@ void SampleWriter::open()
     m_outFile.flush();
 }
 
-void SampleWriter::write(const Eigen::VectorXd &sample)
-{
-    //std::cout << "Writing sample" << std::endl;
-    m_outFile << sample.transpose().format(m_commaInitFormat) << std::endl;
-    m_outFile.flush();
-}
-
-void SampleWriter::close()
-{
-    m_outFile.close();
-}
