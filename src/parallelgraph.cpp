@@ -92,7 +92,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
     //
     // Run the decompressionAndSampling node in the correct order, but do not
     // wait for the most up-to-date data.
-
+    make_edge(*m_limit,*m_asyncSamplingNode);
     make_edge(*m_ordering, *m_decompressNode);
     make_edge(*m_decompressNode, *m_asyncSamplingNode);
     make_edge(*m_asyncSamplingNode, *m_decisionNode);
