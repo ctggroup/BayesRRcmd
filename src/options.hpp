@@ -32,7 +32,7 @@ public:
     unsigned int numGroups;
     Eigen::MatrixXd mS;
     string groupFile;
-
+   
     string title;
     string analysisType;
     string bayesType;
@@ -42,7 +42,8 @@ public:
     string optionFile;
     bool compress = false;
     DataType dataType = DataType::Dense;
-
+    string iterLogFile;
+    bool iterLog = false; 
     Options(){
         chainLength             = 10000;
         burnin                  = 5000;

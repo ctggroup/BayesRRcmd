@@ -9,6 +9,7 @@
 #include "samplewriter.h"
 #include "analysisgraph.hpp"
 #include "marker.h"
+#include "logwriter.h"
 
 #include <chrono>
 #include <mutex>
@@ -24,7 +25,8 @@ BayesRBase::BayesRBase(const Data *data, Options &opt)
     , m_thinning(opt.thin)
     , m_dist(opt.seed)
     , m_usePreprocessedData(opt.analysisType == "PPBayes")
-    , m_showDebug(false)
+    , m_showDebug(opt.iterLog)
+    , m_iterLogFile(opt.iterLogFile)
 {
     assert(m_data);
 
@@ -153,6 +155,15 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     writer.setMarkerCount(M);
     writer.setIndividualCount(N);
     writer.open();
+    LogWriter iterLogger;
+    VectorXd  iterLog(10);
+    
+    if(m_showDebug)
+    {
+      
+      iterLogger.setFileName(m_iterLogFile);
+      iterLogger.open();
+    } 
 
     // Sampler variables
     VectorXd sample(2*M+4+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
@@ -175,9 +186,10 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
         std::cout << "iteration " << iteration << ": ";
         double old_mu=m_mu;
-        // we delegate the Mu update to the descendents
-        updateMu(old_mu,(double)N);
 
+	// we delegate the Mu update to the descendents
+        updateMu(old_mu,(double)N);
+        const auto muTime = std::chrono::high_resolution_clock::now();
         prepareForAnylsis();
 
         std::random_shuffle(markerI.begin(), markerI.end());
@@ -194,15 +206,20 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
         m_m0 = int(M) - int(m_v[0]);
+	const auto sGstartTime = std::chrono::high_resolution_clock::now();
         m_sigmaG = m_dist.inv_scaled_chisq_rng(m_v0G + m_m0, (m_betasqn * m_m0 + m_v0G * m_s02G) / (m_v0G + m_m0));
+        const auto sGendTime = std::chrono::high_resolution_clock::now();
 
-        if (m_showDebug)
-            printDebugInfo();
+	const auto sEstartTime = std::chrono::high_resolution_clock::now();
         const double epsilonSqNorm = m_epsilon.squaredNorm();
         m_sigmaE = m_dist.inv_scaled_chisq_rng(m_v0E + N, (epsilonSqNorm + m_v0E * m_s02E) / (m_v0E + N));
-        m_pi = m_dist.dirichilet_rng(m_v.array() + 1.0);
+	const auto sEendTime = std::chrono::high_resolution_clock::now();
 
-        if (iteration >= m_burnIn && iteration % m_thinning == 0) {
+	m_pi = m_dist.dirichilet_rng(m_v.array() + 1.0);
+        
+            
+
+	if (iteration >= m_burnIn && iteration % m_thinning == 0) {
             sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_components, m_epsilon;
             writer.write(sample);
         }
@@ -213,6 +230,19 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)" << std::endl;
         meanIterationTime += iterationDuration;
         meanFlowGraphIterationTime += flowGraphDuration;
+	if (m_showDebug)
+	{
+	  const auto muDuration = std::chrono::duration_cast<std::chrono::microseconds>(muTime - startTime).count();
+	  const auto sigmaGDuration = std::chrono::duration_cast<std::chrono::microseconds>(sGendTime - sGstartTime).count();
+	  const auto sigmaEDuration = std::chrono::duration_cast<std::chrono::microseconds>(sEendTime - sEstartTime).count();
+	  iterLog<<iteration,m_m0,m_sigmaG,m_sigmaE,m_mu
+	    ,static_cast<double>(muDuration)
+	    ,static_cast<double>(sigmaGDuration)
+	    ,static_cast<double>(sigmaEDuration)
+	    ,static_cast<double>(flowGraphDuration)
+	    ,static_cast<double>(iterationDuration);
+	  iterLogger.write(iterLog);
+	}  
     }
 
     const auto t2 = std::chrono::high_resolution_clock::now();
@@ -436,13 +466,23 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
 
 void BayesRBase::printDebugInfo() const
 {
-    const unsigned int N(m_data->numInds);
-    cout << "inv scaled parameters " << m_v0G + m_m0 << "__" << (m_beta.squaredNorm() * m_m0 + m_v0G * m_s02G) / (m_v0G + m_m0);
-    cout << "num components: " << m_opt.S.size();
-    cout << "\nMixture components: " << m_cva[0] << " " << m_cva[1] << " " << m_cva[2] << "\n";
-    cout << "sigmaG: " << m_sigmaG << "\n";
-    cout << "y mean: " << m_y.mean() << "\n";
-    cout << "y sd: " << sqrt(m_y.squaredNorm() / (double(N - 1))) << "\n";
-    //    cout << "x mean " << Cx.mean() << "\n";
-    //    cout << "x sd " << sqrt(Cx.squaredNorm() / (double(N - 1))) << "\n";
+    
 }
+
+/* I deferred this to its own class
+void BayesRBase::printColumnDebugInfo() const
+{
+  cout<<"Marker, ": << endl;//TODO
+  cout<<"marker_update"<<endl//TODO
+  cout<<"num_update" <<endl;//TODO
+  cout<<"deltaEps_update"<<<endl;//TODO
+}
+
+void BayesRBase::printGlobalDebugInfo()const
+{
+  cout << "Marker"<<endl;
+  cout << "Epsilon_update"
+  cout << "EpsilonSum_update"
+  cout << "betasqn_update"
+}
+*/

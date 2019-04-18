@@ -66,6 +66,8 @@ add_library(libbrr-dev
     raggedsparsemarkerbuilder.cpp
     preprocessgraph.cpp
     eigensparsemarkerbuilder.cpp
+    writer.cpp
+    logwriter.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -94,6 +96,8 @@ add_executable(${PROJECT_NAME}
     raggedsparsemarkerbuilder.cpp
     preprocessgraph.cpp
     eigensparsemarkerbuilder.cpp
+    writer.cpp
+    logwriter.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)

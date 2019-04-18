@@ -50,6 +50,7 @@ protected:
     Options             &m_opt;
     const string        m_bedFile; // bed file
     const string        m_outputFile;
+    const string        m_iterLogFile; //debug file for iteration quantities
     const unsigned int  m_seed;
     const unsigned int  m_maxIterations;
     const unsigned int  m_burnIn;
