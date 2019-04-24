@@ -68,6 +68,7 @@ add_library(libbrr-dev
     eigensparsemarkerbuilder.cpp
     writer.cpp
     logwriter.cpp
+    colwriter.cpp
 )
 
 add_executable(${PROJECT_NAME}
@@ -98,6 +99,7 @@ add_executable(${PROJECT_NAME}
     eigensparsemarkerbuilder.cpp
     writer.cpp
     logwriter.cpp
+    colwriter.cpp
 )
 
 set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)
