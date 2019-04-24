@@ -27,6 +27,8 @@ BayesRBase::BayesRBase(const Data *data, Options &opt)
     , m_usePreprocessedData(opt.analysisType == "PPBayes")
     , m_showDebug(opt.iterLog)
     , m_iterLogFile(opt.iterLogFile)
+    , m_colLog(opt.colLog)
+    , m_colLogFile(opt.colLogFile)
 {
     assert(m_data);
 
@@ -110,6 +112,14 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_epsilon = (m_y).array() - m_mu;
     m_sigmaE = m_epsilon.squaredNorm() / individualCount * 0.5;
     m_epsilonSum=m_epsilon.sum();
+
+    if(m_colLog)
+    {
+        m_colWriter.setFileName(m_colLogFile);
+        m_colWriter.open();
+    }
+   
+    
 }
 
 void BayesRBase::prepareForAnylsis()
@@ -265,6 +275,7 @@ void BayesRBase::processColumn(Marker *marker)
     double acum = 0.0;
     double beta_old;
     const auto t1c = std::chrono::high_resolution_clock::now();
+
     beta_old = m_beta(marker->i);
 
     prepare(marker);
@@ -277,10 +288,11 @@ void BayesRBase::processColumn(Marker *marker)
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
+    const auto num_begin = std::chrono::high_resolution_clock::now();
     const double num = marker->computeNum(m_epsilon, beta_old);
-
+    const auto num_end = std::chrono::high_resolution_clock::now();
     //The rest of the algorithm remains the same
-
+     const auto beta_begin = std::chrono::high_resolution_clock::now();
     // muk for the other components is computed according to equaitons
     m_muk.segment(1, km1) = num / m_denom.array();
 
@@ -320,19 +332,34 @@ void BayesRBase::processColumn(Marker *marker)
             }
         }
     }
+    const auto beta_end = std::chrono::high_resolution_clock::now();
     const double beta_new = m_beta(marker->i);
     m_betasqn += beta_new * beta_new - beta_old * beta_old;
 
     //until here
     //we skip update if old and new beta equals zero
     const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
+
+    const auto eps_begin = std::chrono::high_resolution_clock::now();
     if (!skipUpdate) {
+      
         marker->updateEpsilon(m_epsilon, beta_old, beta_new);
         writeWithUniqueLock(marker);
+
     }
-   //const auto t2c = std::chrono::high_resolution_clock::now();
+    const auto eps_end = std::chrono::high_resolution_clock::now();
+
+    if(m_colLog)
+    {
+      Vector4d colLog;
+      const auto numDuration = std::chrono::duration_cast<std::chrono::microseconds>(num_end - num_begin).count();
+      const auto betaDuration = std::chrono::duration_cast<std::chrono::microseconds>(beta_end - beta_begin).count();
+      const auto epsDuration = std::chrono::duration_cast<std::chrono::microseconds>(eps_end - eps_begin).count();
+      colLog<< marker->i, static_cast<double>(numDuration), static_cast<double>(betaDuration),static_cast<double>(epsDuration);
+      m_colWriter.write(colLog);
+    }
    // const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
-   // cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
+   
 }
 
 std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marker)

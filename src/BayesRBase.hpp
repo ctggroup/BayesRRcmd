@@ -11,6 +11,7 @@
 #include "data.hpp"
 #include "options.hpp"
 #include "distributions_boost.hpp"
+#include "colwriter.h"
 
 #include <Eigen/Eigen>
 #include <memory>
@@ -65,7 +66,11 @@ protected:
     bool m_usePreprocessedData;
     bool m_showDebug;
 
-    // Component variables
+    bool m_colLog=false;       //log for columns
+    ColWriter m_colWriter;//writer for log for columns
+    string m_colLogFile;
+
+  // Component variables
     VectorXd m_priorPi;   // prior probabilities for each component
     VectorXd m_pi;        // mixture probabilities
     VectorXd m_cVa;       // component-specific variance

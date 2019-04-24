@@ -43,7 +43,10 @@ public:
     bool compress = false;
     DataType dataType = DataType::Dense;
     string iterLogFile;
-    bool iterLog = false; 
+    bool iterLog = false;
+    string colLogFile;
+    bool colLog =false;
+
     Options(){
         chainLength             = 10000;
         burnin                  = 5000;
