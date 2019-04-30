@@ -29,6 +29,7 @@ BayesRBase::BayesRBase(const Data *data, Options &opt)
     , m_iterLogFile(opt.iterLogFile)
     , m_colLog(opt.colLog)
     , m_colLogFile(opt.colLogFile)
+    , m_alpha(opt.alpha)
 {
     assert(m_data);
 
@@ -222,7 +223,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
 
 	const auto sEstartTime = std::chrono::high_resolution_clock::now();
         const double epsilonSqNorm = m_epsilon.squaredNorm();
-        m_sigmaE = m_dist.inv_scaled_chisq_rng(m_v0E + N, (epsilonSqNorm + m_v0E * m_s02E) / (m_v0E + N));
+        m_sigmaE = m_dist.inv_scaled_chisq_rng(m_v0E + N*m_alpha, (epsilonSqNorm*m_alpha + m_v0E * m_s02E) / (m_v0E + m_alpha*N));
 	const auto sEendTime = std::chrono::high_resolution_clock::now();
 
 	m_pi = m_dist.dirichilet_rng(m_v.array() + 1.0);
@@ -285,7 +286,7 @@ void BayesRBase::processColumn(Marker *marker)
     m_muk[0] = 0.0;
 
     // We compute the denominator in the variance expression to save computations
-    const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
+    const double sigmaEOverSigmaG =( m_sigmaE / m_alpha) / m_sigmaG;
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
     const auto num_begin = std::chrono::high_resolution_clock::now();
@@ -298,11 +299,11 @@ void BayesRBase::processColumn(Marker *marker)
 
     // Update the log likelihood for each component
     VectorXd logL(K);
-    const double logLScale = m_sigmaG / m_sigmaE * NM1;
+    const double logLScale = m_sigmaG /( m_sigmaE / m_alpha )* NM1;
     logL = m_pi.array().log(); // First component probabilities remain unchanged
     logL.segment(1, km1) = logL.segment(1, km1).array()
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
-            + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
+      + 0.5 * (m_muk.segment(1, km1).array() * num) / (m_sigmaE / m_alpha);
 
     double p(m_dist.unif_rng());
 
@@ -318,7 +319,7 @@ void BayesRBase::processColumn(Marker *marker)
             if (k == 0) {
                 m_beta(marker->i) = 0;
             } else {
-                m_beta(marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+	      m_beta(marker->i) = m_dist.norm_rng(m_muk[k], (m_sigmaE / m_alpha) /m_denom[k-1]);
             }
             m_v[k] += 1.0;
             m_components[marker->i] = k;
@@ -392,7 +393,7 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
     const double num = marker->computeNum(epsilon, beta_old);
 
     // We compute the denominator in the variance expression to save computations
-    const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
+    const double sigmaEOverSigmaG = (m_sigmaE / m_alpha) / m_sigmaG;
 
     const double NM1 = static_cast<double>(m_data->numInds) - 1.0;
     const int K(int(m_cva.size()) + 1);
@@ -407,11 +408,11 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
 
     // Update the log likelihood for each component
     VectorXd logL(K);
-    const double logLScale = m_sigmaG / m_sigmaE * NM1;
+    const double logLScale = m_sigmaG / (m_sigmaE / m_alpha) * NM1;
     logL = m_pi.array().log(); // First component probabilities remain unchanged
     logL.segment(1, km1) = logL.segment(1, km1).array()
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
-            + 0.5 * (muk.segment(1, km1).array() * num) / m_sigmaE;
+      + 0.5 * (muk.segment(1, km1).array() * num) / (m_sigmaE / m_alpha);
 
 
     double acum = 0.0;
@@ -434,7 +435,7 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
         std::advance(beginItr, 1);
         std::generate(beginItr, randomNumbers.end(), [&, k = 0] () mutable {
             ++k;
-            return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
+            return m_dist.norm_rng(muk[k], (m_sigmaE / m_alpha)/denom[k-1]);
         });
     }
     VectorXd v = VectorXd(K);
