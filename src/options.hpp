@@ -46,7 +46,7 @@ public:
     bool iterLog = false;
     string colLogFile;
     bool colLog =false;
-
+    double alpha;
     Options(){
         chainLength             = 10000;
         burnin                  = 5000;
@@ -70,6 +70,7 @@ public:
         optionFile				= "";
         numGroups				=2;
         dataType                = DataType::Dense;
+        alpha                   = 1.0;
     }
 
     void inputOptions(const int argc, const char* argv[]);

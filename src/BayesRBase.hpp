@@ -70,6 +70,8 @@ protected:
     ColWriter m_colWriter;//writer for log for columns
     string m_colLogFile;
 
+    const double m_alpha=1; //inverse temperature
+
   // Component variables
     VectorXd m_priorPi;   // prior probabilities for each component
     VectorXd m_pi;        // mixture probabilities

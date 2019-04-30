@@ -127,6 +127,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
 	     colLogFile = argv[++i];
 	     ss << "--colLog " << argv[i] << "\n";
 	}
+        else if (!strcmp(argv[i], "--alpha")) {
+	     alpha = (double)atof(argv[++i]);
+	     ss << "--alpha " << argv[i] << "\n";
+	}
+
         else {
             stringstream errmsg;
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";

@@ -60,7 +60,7 @@ void DenseBayesRRmz::readWithSharedLock(Marker *marker)
 void DenseBayesRRmz::updateMu(double old_mu,double N)
 {
     m_epsilon = m_epsilon.array() + m_mu;// for dense and sparse we substract previous value
-    m_mu = m_dist.norm_rng(m_epsilon.sum() / N, m_sigmaE / N); //update mu with the sum reduction 
+    m_mu = m_dist.norm_rng(m_epsilon.sum() / N, m_sigmaE / (N + m_alpha)); //update mu with the sum reduction 
     m_epsilon = m_epsilon.array() - m_mu;// for dense and sparse we substract again now epsilon =Y-mu-X*beta
    //we perform the equivalent update in epsilonSum for sparse this is important, for dense its ineffec.
 }
