@@ -28,6 +28,7 @@ void processDenseData(Options opt) {
     const auto ppIndexFile = ppIndexFileForType(opt.dataType, opt.bedFile);
 
     // RAM solution (analysisType = RAMBayes)
+
     if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe" || opt.bayesType == "bayesW")) {
 
         clock_t start = clock();

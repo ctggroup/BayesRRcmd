@@ -376,6 +376,43 @@ inline double prob_calc(int k, double BETA_MODE, VectorXd prior_prob, double C_0
 	return prior_prob(k+1)/sqrt(p.mixture_classes(k))/prob_k;
 }
 
+inline double prob_calc0_marginal(VectorXd prior_prob, void *norm_data){
+	pars p = *(static_cast<pars *>(norm_data));
+	double prob_0 = prior_prob(0)*sqrt(2*p.sigma_b);
+	VectorXd Xj_exp_vi = p.X_j.array() * (p.alpha*p.epsilon.array()-EuMasc).exp();
+
+	double U2 = pow(p.alpha*(-p.sum_failure + Xj_exp_vi.sum()),2);
+	double V = 0.5*p.alpha*p.alpha*(p.X_j.array() * Xj_exp_vi.array()).sum();
+
+	for(int i=0; i < p.mixture_classes.size(); i++){
+			double V_i = V + 1/(2*p.sigma_b*p.mixture_classes(i));
+			prob_0 = prob_0 + prior_prob(i+1)/sqrt(p.mixture_classes(i)*V_i)*
+					exp(U2/(4*V_i)) ;
+	}
+	return prior_prob(0)*sqrt(2*p.sigma_b)/prob_0;
+}
+
+inline double prob_calc_marginal(int k, VectorXd prior_prob, void *norm_data){
+	pars p = *(static_cast<pars *>(norm_data));
+	double prob_k = prior_prob(0)*sqrt(2*p.sigma_b);
+	VectorXd Xj_exp_vi = p.X_j.array() * (p.alpha*p.epsilon.array()-EuMasc).exp();
+
+	double U2 = pow(p.alpha*(-p.sum_failure + Xj_exp_vi.sum()),2);
+	double V = 0.5*p.alpha*p.alpha*(p.X_j.array() * Xj_exp_vi.array()).sum();
+
+	double k_likelihood;
+
+	for(int i=0; i < p.mixture_classes.size(); i++){
+		double V_i = V + 1/(2*p.sigma_b*p.mixture_classes(i));
+		double added_amount = prior_prob(i+1)/sqrt(p.mixture_classes(i)*V_i)*
+				exp(U2/(4*V_i));
+		prob_k = prob_k + added_amount;
+		if(i == k){  //Save the k-th element from the sum so we wouldn't have to calculate it again
+			k_likelihood = added_amount;
+		}
+	}
+	return k_likelihood/prob_k;
+}
 
 /* Functions to run each of the versions. Currently maintained one is runGibbs_Preprocessed */
 
@@ -559,8 +596,6 @@ int BayesW::runGibbs()
 			if(beta(marker) != 0){
 				// Subtract the weighted last beta²
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
-				//cout << components[marker]-1 << endl;
-				//a = used_data.mixture_classes(components[marker]-1);
 				betasqn = betasqn - beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
 			}
 
@@ -574,7 +609,8 @@ int BayesW::runGibbs()
 
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
-			acum = prob_calc0(BETA_MODE,pi_L,C_0,&used_data);  // Calculate the probability that marker is 0
+			//acum = prob_calc0(BETA_MODE,pi_L,C_0,&used_data);  // Calculate the probability that marker is 0
+			acum = prob_calc0_marginal(pi_L,&used_data);
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
 				if (p <= acum) {
@@ -610,7 +646,8 @@ int BayesW::runGibbs()
 
 					break;
 				} else {
-					acum += prob_calc(k,BETA_MODE,pi_L,C_0,&used_data);
+					//acum += prob_calc(k,BETA_MODE,pi_L,C_0,&used_data);
+					acum += prob_calc_marginal(k,pi_L,&used_data);
 				}
 			}
 		}
