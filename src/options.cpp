@@ -100,6 +100,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
         	failureFile = argv[++i];
         	ss << "--failure " << argv[i] << "\n";
 		}
+        else if (!strcmp(argv[i], "--bayesW_version")) {
+        		bayesW_version = argv[++i];
+               	ss << "--bayesW_version " << argv[i] << "\n";
+       	}
+
 
         else if (!strcmp(argv[i], "--thread")) {
             numThread = atoi(argv[++i]);

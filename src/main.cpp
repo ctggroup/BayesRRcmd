@@ -45,7 +45,14 @@ void processDenseData(Options opt) {
             //TODO Finish horseshoe
         } else if (opt.bayesType == "bayesW") {
             BayesW analysis(data, opt, sysconf(_SC_PAGE_SIZE));
-            analysis.runGibbs();
+            if(opt.bayesW_version == "old"){
+            	analysis.runGibbs_old();
+            }else if(opt.bayesW_version == "marginal"){
+            	analysis.runGibbs_marginal();
+            }else{
+            	cout << "Choose either bayesW_version = old / marginal" << endl;
+            }
+
         } else if (opt.bayesType == "bayesG") {
             //TODO add Bayes groups
         }

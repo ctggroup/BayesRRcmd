@@ -416,10 +416,275 @@ inline double prob_calc_marginal(int k, VectorXd prior_prob, void *norm_data){
 
 /* Functions to run each of the versions. Currently maintained one is runGibbs_Preprocessed */
 
+/* Marginal version. Currently RAM solution */
+int BayesW::runGibbs_marginal()
+{
+	const unsigned int M(data.numSnps);
+	const unsigned int N(data.numInds);
+	const int K = opt.S.size()+1;  //number of mixtures + 0 class
+	const int km1 = K -1;
+
+	SampleWriter writer;
+	writer.setFileName(outputFile);
+	writer.setMarkerCount(M);
+	writer.setIndividualCount(N);
+	writer.open_bayesW();
+
+	// Sampler variables
+	VectorXd sample(2*M+5+K); // variable containing a sample of all variables in the model, M marker effects, shape (alpha), incl. prob (pi), mu, iteration number and beta variance,sigma_g
+	std::vector<unsigned int> markerI(M);
+	std::iota(markerI.begin(), markerI.end(), 0);
+
+	data.readFailureFile(opt.failureFile);
+
+	std::cout<< "Running Gibbs sampling" << endl;
+
+	/* ARS parameters */
+	int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
+	int neval;
+	double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
+
+	double convex = 1.0;
+	int dometrop = 0;
+	double xprev = 0.0;
+
+	double xl, xr ;			  // Initial left and right (pseudo) extremes
+	double xinit[4] = {2.5,3,5,10};     // Initial abscissae
+	double *p_xinit = xinit;
+	VectorXd new_xinit(4);  // Temporary vector to renew the initial parameters
+
+	/* For ARS, we are keeping the data in this structure */
+	struct pars used_data;
+	struct pars_alpha used_data_alpha; // For alpha we keep it in a separate structure
+
+	//mean and residual variables
+	double mu;         // mean or intercept
+	double BETA_MODE;  //Beta mode at hand
+
+	//Precompute matrix of (1/2Ck - 1/2Cq)
+	used_data.mixture_diff.resize(km1,km1);
+	//Save variance classes
+	used_data.mixture_classes.resize(km1);
+
+	for(int i=0;i<(km1);i++){
+		used_data.mixture_classes(i) = opt.S[i];   //Save the mixture data (C_k)
+		for(int j=0;j<(km1);j++){
+			used_data.mixture_diff(i,j) = 1/(2*opt.S[j]) - 1/(2*opt.S[i]);
+		}
+	}
+	// Component variables
+	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
+
+	//Give all mixtures (and 0 class) equal initial probabilities
+	pi_L.setConstant(1.0/K);
+
+	//Vector to contain probabilities of belonging to a mixture
+	double acum;
+	double betasqn = 0;
+
+	VectorXd prob_vec(km1);   //exclude 0 mixture which is done before
+	VectorXd v(K);            // variable storing the count in each component assignment
+
+	//linear model variables   //y is logarithmed
+	VectorXd beta(M);      // effect sizes
+
+	int marker; //Marker index
+
+	VectorXd gi(N); // The genetic effects vector
+	gi.setZero();
+	double sigma_g;
+
+	VectorXd y;   //y is logarithmed here
+
+	y = data.y.cast<double>();
+
+	used_data_alpha.failure_vector = data.fail.cast<double>();
+
+	beta.setZero(); //Exclude everything in the beginning
+
+	//Initial value for intercept is the mean of the logarithms
+	mu = y.mean();
+	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
+	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
+
+	(used_data.epsilon).resize(y.size());
+	used_data_alpha.epsilon.resize(y.size());
+	for(int i=0; i<(y.size()); ++i){
+		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
+	}
+
+	used_data.sigma_b = PI2/ (6 * pow(used_data.alpha,2) * M ) ;
+
+	// Save the sum(X_j*failure) for each j
+	VectorXd sum_failure(M);
+	//for(int marker=0; marker<M; marker++){
+	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+	//}
+	for(int marker=0; marker<M; marker++){
+			sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+	}
+
+	// Save the number of events
+	used_data.d = used_data_alpha.failure_vector.array().sum();
+	used_data_alpha.d = used_data.d;
+
+	/* Prior value selection for the variables */
+	/* At the moment we set them to be weakly informative (in .hpp file) */
+	/* alpha */
+	used_data_alpha.alpha_0 = alpha_0;
+	used_data_alpha.kappa_0 = kappa_0;
+	/* mu */
+	used_data.sigma_mu = sigma_mu;
+	/* sigma_b */
+	used_data.alpha_sigma = alpha_sigma;
+	used_data.beta_sigma = beta_sigma;
+
+	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+
+	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
+	srand(2);
+
+	VectorXi components(M);
+	components.setZero();  //Exclude all the markers from the model
+
+	for (int iteration = 0; iteration < max_iterations; iteration++) {
+		if (iteration > 0) {
+			if (iteration % (int)std::ceil(max_iterations / 10) == 0)
+				std::cout << "iteration: "<<iteration <<"\n";
+		}
+		/* 1. Mu */
+		xl = 3; xr = 5;
+		new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
+		assignArray(p_xinit,new_xinit);
+		used_data.epsilon = used_data.epsilon.array() + mu;//  we add the previous value
+
+		err = arms(xinit,ninit,&xl,&xr,mu_dens,&used_data,&convex,
+				npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+
+		errorCheck(err);
+		mu = xsamp[0];
+		used_data.epsilon = used_data.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+
+		std::random_shuffle(markerI.begin(), markerI.end());
+
+		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
+		v.setOnes();           //Reset the counter
+		double beta_diff_sum=0;
+		for (int j = 0; j < M; j++) {
+			marker = markerI[j];
+			// Preprocessed solution
+			//used_data.X_j = data.mappedZ.col(marker).cast<double>();
+
+			// At the moment use RAM solution
+			used_data.X_j = data.Z.col(marker).cast<double>();
+
+			//Save sum(X_j*failure)
+			used_data.sum_failure = sum_failure(marker);
+
+			//Change the residual vector only if the previous beta was non-zero
+
+			if(beta(marker) != 0){
+				// Subtract the weighted last beta²
+				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
+				betasqn = betasqn - beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
+			}
+
+			/* Calculate the mixture probability */
+			double p = dist.unif_rng();  //Generate number from uniform distribution
+
+			// Calculate the probability that marker is 0
+			acum = prob_calc0_marginal(pi_L,&used_data);
+			//Loop through the possible mixture classes
+			for (int k = 0; k < K; k++) {
+				if (p <= acum) {
+					//if zeroth component
+					if (k == 0) {
+						beta(marker) = 0;
+						v[k] += 1.0;
+						components[marker] = k;
+					}
+					// If is not 0th component then sample using ARS
+					else {
+						used_data.used_mixture = k-1; // Save the mixture class before sampling (-1 because we count from 0)
+						double safe_limit = 2 * sqrt(used_data.sigma_b * used_data.mixture_classes(k-1));
+						xl = beta(marker) - safe_limit  ; //Construct the hull around previous beta value
+						xr = beta(marker) + safe_limit;
+						// Set initial values for constructing ARS hull
+						new_xinit << beta(marker) - safe_limit/10 , beta(marker),  beta(marker) + safe_limit/20, beta(marker) + safe_limit/10;
+						assignArray(p_xinit,new_xinit);
+						// Sample using ARS
+						err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data,&convex,
+								npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+						errorCheck(err);
+
+						beta(marker) = xsamp[0];  // Save the new result
+						used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+
+						// Change the weighted sum of squares of betas
+						v[k] += 1.0;
+						components[marker] = k;
+						betasqn = betasqn + beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
+					}
+
+					break;
+				} else {
+					acum += prob_calc_marginal(k,pi_L,&used_data);
+				}
+			}
+		}
+		// 3. Alpha
+		xl = 0.0; xr = 400.0;
+		new_xinit << (used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3;  // New values for abscissae evaluation
+		assignArray(p_xinit,new_xinit);
+
+		//Give the residual to alpha structure
+		used_data_alpha.epsilon = used_data.epsilon;
+
+		err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data_alpha,&convex,
+				npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+		errorCheck(err);
+		used_data.alpha = xsamp[0];
+
+		// 4. sigma_b
+		if(true){
+			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
+						(double)(used_data.beta_sigma + 0.5 * betasqn));
+		}else{		//sigma_g version
+			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
+			                            (double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+		}
+
+
+		// 5. Mixture probability
+		pi_L = dist.dirichilet_rng(v.array());
+		// Also update the "spike parameter"
+
+		if (iteration >= burn_in) {
+			if (iteration % thinning == 0) {
+				//6. Sigma_g
+				//gi = y.array() - mu - used_data.epsilon.array();
+				//sigma_g = (gi.array() * gi.array()).sum()/N - pow(gi.sum()/N,2);
+				//sample << iteration, used_data.alpha, mu, beta,components, used_data.sigma_b , sigma_g;
+				sample << iteration, used_data.alpha, mu, beta,components.cast<double>(), used_data.sigma_b ;
+				writer.write(sample);
+			}
+		}
+
+//Print results
+        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
+	}
+
+	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+	std::cout << "duration: "<<duration << "s\n";
+
+	return 0;
+}
+
 
 
 /* Currently RAM solution */
-int BayesW::runGibbs()
+int BayesW::runGibbs_old()
 {
 	const unsigned int M(data.numSnps);
 	const unsigned int N(data.numInds);
@@ -609,8 +874,7 @@ int BayesW::runGibbs()
 
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
-			//acum = prob_calc0(BETA_MODE,pi_L,C_0,&used_data);  // Calculate the probability that marker is 0
-			acum = prob_calc0_marginal(pi_L,&used_data);
+			acum = prob_calc0(BETA_MODE,pi_L,C_0,&used_data);  // Calculate the probability that marker is 0
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
 				if (p <= acum) {
@@ -646,8 +910,7 @@ int BayesW::runGibbs()
 
 					break;
 				} else {
-					//acum += prob_calc(k,BETA_MODE,pi_L,C_0,&used_data);
-					acum += prob_calc_marginal(k,pi_L,&used_data);
+					acum += prob_calc(k,BETA_MODE,pi_L,C_0,&used_data);
 				}
 			}
 		}

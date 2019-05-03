@@ -33,6 +33,7 @@ public:
     Eigen::MatrixXd mS;
     string groupFile;
     string failureFile;
+    string bayesW_version;
 
     string title;
     string analysisType;
@@ -67,6 +68,8 @@ public:
         optionFile				= "";
         numGroups				=2;
         dataType                = DataType::Dense;
+
+        bayesW_version			= "marginal";
     }
 
     void inputOptions(const int argc, const char* argv[]);
