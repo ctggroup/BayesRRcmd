@@ -461,22 +461,20 @@ int BayesW::runGibbs_marginal()
 	double mu;         // mean or intercept
 	double BETA_MODE;  //Beta mode at hand
 
-	//Precompute matrix of (1/2Ck - 1/2Cq)
-	used_data.mixture_diff.resize(km1,km1);
+
 	//Save variance classes
 	used_data.mixture_classes.resize(km1);
 
 	for(int i=0;i<(km1);i++){
 		used_data.mixture_classes(i) = opt.S[i];   //Save the mixture data (C_k)
-		for(int j=0;j<(km1);j++){
-			used_data.mixture_diff(i,j) = 1/(2*opt.S[j]) - 1/(2*opt.S[i]);
-		}
 	}
 	// Component variables
 	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
 
 	//Give all mixtures (and 0 class) equal initial probabilities
-	pi_L.setConstant(1.0/K);
+//	pi_L.setConstant(1.0/K);
+	pi_L(0) = 0.95;
+	pi_L.segment(1,K-1).setConstant(pi_L(0)/km1);
 
 	//Vector to contain probabilities of belonging to a mixture
 	double acum;
