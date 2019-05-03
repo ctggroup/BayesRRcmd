@@ -7,7 +7,7 @@
 #include "compression.h"
 
 
-#define handle_error(msg)                               
+#define handle_error(msg)                               \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 Data::Data()
@@ -395,13 +395,14 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
   cout << "Preprocessing csv file:" << csvFile << ", Compress data =" << (compress ? "yes" : "no") << endl;
 
   VectorXd snpData(numInds);
-
+  snpData.setZero();
+  
   std::ifstream indata;
   indata.open(csvFile);
   std::string line;
   std::vector<double> values;
   uint rows = 0;
-  
+  uint cols =0;
   ofstream ppCSVOutput(preprocessedCSVFile.c_str(), ios::binary);
     if (!ppCSVOutput)
         throw("Error: Unable to open the preprocessed bed file [" + preprocessedCSVFile + "] for writing.");
@@ -419,11 +420,16 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
     {
       std::stringstream lineStream(line);
       std::string cell;
+      cols=0;
+      
       while (std::getline(lineStream, cell, ','))
 	{
-	  values.push_back(std::stod(cell));
+	  if (!cell.empty())
+	    snpData[++cols]=std::stod(cell);
+	  else
+	    throw("Error, there are missing values in the file");
 	}
-      snpData = Map<const VectorXd>(values.data(), rows, values.size()/rows);
+      
       if (!compress)
 	{
 	  ppCSVOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(double));
@@ -442,4 +448,67 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
   cout << "csv file for" << numInds << " individuals and " << numSnps << " Variables are included from [" +  csvFile + "]." << endl;
 }
 
+//We asume the csv is well formed and individuals are columns and  markers are rows
+void Data::readCSVFile( const string &csvFile)
+{
+   std::ifstream indata;
+   indata.open(csvFile);
+   std::string line;
+   std::vector<double> values;
+   uint rows = 0;
+   uint cols = 0; 
+   while (std::getline(indata, line))
+    {
+      if(rows == 0){
+        std::stringstream lineStream(line);
+        std::string cell;
+      
+        while (std::getline(lineStream, cell, ','))
+	{
+	  ++cols;
+	}
+      }
+      ++rows;
+    }
+   numInds = cols;
+   numSnps = rows;
+    indata.clear();
+    indata.close();
+   cout << numInds << " \n individuals to be included from [" + csvFile + "]." << endl;
+   cout << numSnps << " markers to be included from [" + csvFile + "]." << endl;
+  
+}
 
+void Data::readCSVPhenFile( const string &csvFile)
+{
+   std::ifstream indata;
+   indata.open(csvFile);
+   std::string line;
+   std::vector<double> values;
+   uint rows = 0;
+   uint cols = 0;
+   y.setZero(numInds);
+   std::getline(indata, line);
+    
+   std::stringstream lineStream(line);
+   std::string cell;
+   VectorXf tmp(numInds);
+  
+   while (std::getline(lineStream, cell, ',') && cols<numInds)
+     {
+        if (!cell.empty())
+	  tmp[++cols]= std::stof(cell);
+	  else
+	    throw("Error, there are missing values in the file");
+	
+    }
+      
+    indata.clear();
+    indata.close();
+    
+    y=tmp;
+  
+
+   cout << cols << " \n phenotype measures to be included from [" + csvFile + "]." << endl;
+   
+}

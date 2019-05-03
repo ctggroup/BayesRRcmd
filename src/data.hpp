@@ -138,6 +138,8 @@ public:
     void readBedFile_noMPI(const string &bedFile);
     void readPhenotypeFile(const string &phenFile);
     void readGroupFile(const string &groupFile);
+    void readCSVFile(const string &csvFile);
+  void readCSVPhenFile( const string &csvFile);
 };
 
 #endif /* data_hpp */
