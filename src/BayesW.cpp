@@ -376,13 +376,9 @@ inline double prob_calc(int k, double BETA_MODE, VectorXd prior_prob, double C_0
 	return prior_prob(k+1)/sqrt(p.mixture_classes(k))/prob_k;
 }
 
-inline double prob_calc0_marginal(VectorXd prior_prob, void *norm_data){
+inline double prob_calc0_marginal(VectorXd prior_prob, double U2, double V, void *norm_data){
 	pars p = *(static_cast<pars *>(norm_data));
 	double prob_0 = prior_prob(0)*sqrt(2*p.sigma_b);
-	VectorXd Xj_exp_vi = p.X_j.array() * (p.alpha*p.epsilon.array()-EuMasc).exp();
-
-	double U2 = pow(p.alpha*(-p.sum_failure + Xj_exp_vi.sum()),2);
-	double V = 0.5*p.alpha*p.alpha*(p.X_j.array() * Xj_exp_vi.array()).sum();
 
 	for(int i=0; i < p.mixture_classes.size(); i++){
 			double V_i = V + 1/(2*p.sigma_b*p.mixture_classes(i));
@@ -392,20 +388,15 @@ inline double prob_calc0_marginal(VectorXd prior_prob, void *norm_data){
 	return prior_prob(0)*sqrt(2*p.sigma_b)/prob_0;
 }
 
-inline double prob_calc_marginal(int k, VectorXd prior_prob, void *norm_data){
+inline double prob_calc_marginal(int k, VectorXd prior_prob, double U2, double V, void *norm_data){
 	pars p = *(static_cast<pars *>(norm_data));
 	double prob_k = prior_prob(0)*sqrt(2*p.sigma_b);
-	VectorXd Xj_exp_vi = p.X_j.array() * (p.alpha*p.epsilon.array()-EuMasc).exp();
-
-	double U2 = pow(p.alpha*(-p.sum_failure + Xj_exp_vi.sum()),2);
-	double V = 0.5*p.alpha*p.alpha*(p.X_j.array() * Xj_exp_vi.array()).sum();
 
 	double k_likelihood;
 
 	for(int i=0; i < p.mixture_classes.size(); i++){
 		double V_i = V + 1/(2*p.sigma_b*p.mixture_classes(i));
-		double added_amount = prior_prob(i+1)/sqrt(p.mixture_classes(i)*V_i)*
-				exp(U2/(4*V_i));
+		double added_amount = prior_prob(i+1)/sqrt(p.mixture_classes(i)*V_i)*exp(U2/(4*V_i));
 		prob_k = prob_k + added_amount;
 		if(i == k){  //Save the k-th element from the sum so we wouldn't have to calculate it again
 			k_likelihood = added_amount;
@@ -471,10 +462,9 @@ int BayesW::runGibbs_marginal()
 	// Component variables
 	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
 
-	//Give all mixtures (and 0 class) equal initial probabilities
-//	pi_L.setConstant(1.0/K);
+	//Give all mixtures (except 0 class) equal initial probabilities
 	pi_L(0) = 0.95;
-	pi_L.segment(1,K-1).setConstant(pi_L(0)/km1);
+	pi_L.segment(1,K-1).setConstant((1-pi_L(0))/km1);
 
 	//Vector to contain probabilities of belonging to a mixture
 	double acum;
@@ -590,8 +580,13 @@ int BayesW::runGibbs_marginal()
 			/* Calculate the mixture probability */
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
+			// Temporary variables for probability calculation
+			VectorXd Xj_exp_vi = used_data.X_j.array() * (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
+			double U2 = pow(used_data.alpha*(-used_data.sum_failure + Xj_exp_vi.sum()),2);
+			double V = 0.5*pow(used_data.alpha,2) * (used_data.X_j.array() * Xj_exp_vi.array()).sum();
+
 			// Calculate the probability that marker is 0
-			acum = prob_calc0_marginal(pi_L,&used_data);
+			acum = prob_calc0_marginal(pi_L, U2, V, &used_data);
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
 				if (p <= acum) {
@@ -623,10 +618,15 @@ int BayesW::runGibbs_marginal()
 						components[marker] = k;
 						betasqn = betasqn + beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
 					}
-
 					break;
 				} else {
-					acum += prob_calc_marginal(k,pi_L,&used_data);
+					if((k+1) == (K-1)){
+						acum = 1; // In the end probability will be 1
+					}else{
+						acum += prob_calc_marginal(k, pi_L, U2, V, &used_data);
+
+					}
+
 				}
 			}
 		}
