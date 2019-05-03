@@ -38,6 +38,7 @@ public:
     string bayesType;
     string phenotypeFile;
     string bedFile;
+    string csvFile;
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
@@ -62,6 +63,7 @@ public:
         bayesType               = "C";
         phenotypeFile           = "";
         bedFile                 = "";
+	csvFile                 = "";
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;

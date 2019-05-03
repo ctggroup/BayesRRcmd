@@ -6,7 +6,8 @@
 #include <iterator>
 #include "compression.h"
 
-#define handle_error(msg)                               \
+
+#define handle_error(msg)                               
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 Data::Data()
@@ -388,3 +389,57 @@ void Data::readGroupFile(const string &groupFile) {
 
     cout << "Groups read from file" << endl;
 }
+
+void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVFile, const string &preprocessedCSVIndexFile, bool compress)
+{
+  cout << "Preprocessing csv file:" << csvFile << ", Compress data =" << (compress ? "yes" : "no") << endl;
+
+  VectorXd snpData(numInds);
+
+  std::ifstream indata;
+  indata.open(csvFile);
+  std::string line;
+  std::vector<double> values;
+  uint rows = 0;
+  
+  ofstream ppCSVOutput(preprocessedCSVFile.c_str(), ios::binary);
+    if (!ppCSVOutput)
+        throw("Error: Unable to open the preprocessed bed file [" + preprocessedCSVFile + "] for writing.");
+  ofstream ppCSVIndexOutput(preprocessedCSVIndexFile.c_str(), ios::binary);
+    if (!ppCSVIndexOutput)
+        throw("Error: Unable to open the preprocessed bed index file [" + preprocessedCSVIndexFile + "] for writing.");
+
+  // How much space do we need to compress the data (if requested)
+  const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(numInds) : 0;
+  unsigned char *compressedBuffer = nullptr;
+  unsigned long pos = 0;
+  if (compress)
+    compressedBuffer = new unsigned char[maxCompressedOutputSize];
+  while (std::getline(indata, line))
+    {
+      std::stringstream lineStream(line);
+      std::string cell;
+      while (std::getline(lineStream, cell, ','))
+	{
+	  values.push_back(std::stod(cell));
+	}
+      snpData = Map<const VectorXd>(values.data(), rows, values.size()/rows);
+      if (!compress)
+	{
+	  ppCSVOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(double));
+	}
+      else
+	{
+	  compressAndWriteWithIndex(snpData, ppCSVOutput, ppCSVIndexOutput, pos, compressedBuffer, maxCompressedOutputSize);
+	}
+      ++rows;
+    }
+  if (compress)
+    delete[] compressedBuffer;
+  indata.clear();
+  indata.close();
+
+  cout << "csv file for" << numInds << " individuals and " << numSnps << " Variables are included from [" +  csvFile + "]." << endl;
+}
+
+

@@ -23,4 +23,9 @@ struct IndexEntry {
     unsigned long originalSize = 0;
 };
 
+//template to read csv files into an eigen vector.
+template<typename M>
+M load_csv (const std::string & path);
+
+
 #endif // COMMON_H

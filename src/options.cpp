@@ -37,6 +37,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
             bedFile = argv[++i];
             ss << "--bfile " << argv[i] << "\n";
         }
+	//read csv file
+	else if (!strcmp(argv[i], "--csvfile")) {
+            csvFile = argv[++i];
+            ss << "--csvfile " << argv[i] << "\n";
+        }
         else if (!strcmp(argv[i], "--pheno")) {
             phenotypeFile = argv[++i];
             ss << "--pheno " << argv[i] << "\n";
