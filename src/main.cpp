@@ -2,6 +2,7 @@
 #include <string>
 #include "BayesRRm.h"
 #include "DenseBayesRRmz.hpp"
+#include "BayesRRg.h"
 #include "data.hpp"
 #include "options.hpp"
 #include "SparseBayesRRG.hpp"
@@ -26,6 +27,12 @@ void processDenseData(Options opt) {
     const auto ppFile = ppFileForType(opt.dataType, opt.bedFile);
     const auto ppIndexFile = ppIndexFileForType(opt.dataType, opt.bedFile);
 
+    // BayesG files to read
+    if (opt.bayesType == "bayesG") {
+    	data.readGroupFile(opt.groupFile);
+    	data.readmSFile(opt.mSfile);
+    }
+
     // RAM solution (analysisType = RAMBayes)
     if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe")) {
 
@@ -44,7 +51,7 @@ void processDenseData(Options opt) {
         } else if (opt.bayesType == "bayesW") {
             //TODO Add BayesW
         } else if (opt.bayesType == "bayesG") {
-            //TODO add Bayes groups
+        	//TODO Add BayesG
         }
 
         clock_t end   = clock();

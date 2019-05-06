@@ -22,6 +22,7 @@ public:
     unsigned int individualCount() const { return m_individualCount; }
 
     void open();
+    void openGroups(int numberGroups);
     void write(const Eigen::VectorXd &sample);
     void close();
 

@@ -90,7 +90,8 @@ public:
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
-    VectorXi G; // groups
+    VectorXi G; 			 // groups
+    MatrixXd mS;			 // mixtures in groups
 
     MatrixXf XPX;            // X'X the MME lhs
     MatrixXf ZPX;            // Z'X the covariance matrix of SNPs and fixed effects
@@ -125,6 +126,8 @@ public:
     unsigned numSnps;
     unsigned numInds;
 
+    unsigned numGroups;	// number of groups
+
     void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile);
     void unmapPreprocessedBedFile();
@@ -136,7 +139,10 @@ public:
     void readBimFile(const string &bimFile);
     void readBedFile_noMPI(const string &bedFile);
     void readPhenotypeFile(const string &phenFile);
+
+    //group variables
     void readGroupFile(const string &groupFile);
+    void readmSFile(const string& mSfile);
 };
 
 #endif /* data_hpp */
