@@ -49,8 +49,10 @@ void processDenseData(Options opt) {
             	analysis.runGibbs_old();
             }else if(opt.bayesW_version == "marginal"){
             	analysis.runGibbs_marginal();
+            }else if(opt.bayesW_version == "simpson"){
+            	analysis.runGibbs_Simpson();
             }else{
-            	cout << "Choose either bayesW_version = old / marginal" << endl;
+            	cout << "Choose either bayesW_version = old / marginal / simpson" << endl;
             }
 
         } else if (opt.bayesType == "bayesG") {

@@ -38,6 +38,7 @@ public:
     virtual ~BayesW();
     int runGibbs_old(); // where we run Gibbs sampling over the parametrised model
     int runGibbs_marginal(); // where we run Gibbs sampling over the parametrised model
+    int runGibbs_Simpson(); // where we run Gibbs sampling over the parametrised model
 
  //   int runGibbs_Preprocessed_LeftTruncated(); // Add also the starting time
  //   int runGibbs_notPreprocessed(); // Separate two functions for either preprocessed or not preprocessed data
