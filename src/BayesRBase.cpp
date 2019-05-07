@@ -44,6 +44,16 @@ IndexEntry BayesRBase::indexEntry(unsigned int i) const
     return m_data->ppbedIndex[i];
 }
 
+bool BayesRBase::preloaded() const
+{
+    return m_opt.preload;
+}
+
+std::shared_ptr<Marker> BayesRBase::marker(unsigned int i) const
+{
+    return m_data->markers.at(i);
+}
+
 bool BayesRBase::compressed() const
 {
     return m_opt.compress;

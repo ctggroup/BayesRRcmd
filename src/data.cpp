@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <iterator>
 #include "compression.h"
+#include "markerbuilder.h"
 
 #define handle_error(msg)                               \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -203,6 +204,42 @@ void Data::unmapCompressedPreprocessedBedFile()
     munmap(ppBedMap, ppBedSize);
     close(ppBedFd);
     ppbedIndex.clear();
+}
+
+bool Data::loadMarkersIntoRam(const string &preprocessedBedFile, const DataType dataType, const bool compressed)
+{
+    markers.clear();
+
+    std::unique_ptr<MarkerBuilder> builder;
+
+    switch (dataType) {
+    case DataType::SparseEigen:
+        // Fall through
+    case DataType::SparseRagged:
+        builder.reset(builderForType(dataType));
+        break;
+
+    default:
+        std::cerr << "Data::loadMarkersIntoRam - unsupported type: "
+                  << dataType
+                  << std::endl;
+        return false;
+    }
+
+    markers.reserve(ppbedIndex.size());
+
+    unsigned int snp = 0;
+    for (const auto& index : ppbedIndex) {
+        builder->initialise(snp++, numInds);
+        if (compressed) {
+            builder->decompress(reinterpret_cast<unsigned char*>(ppBedMap), index);
+        } else {
+            builder->read(preprocessedBedFile, index);
+        }
+        markers.emplace_back(builder->build());
+    }
+
+    return true;
 }
 
 void Data::readFamFile(const string &famFile){

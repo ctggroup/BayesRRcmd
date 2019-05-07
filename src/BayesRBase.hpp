@@ -29,6 +29,8 @@ public:
 
     virtual MarkerBuilder* markerBuilder() const = 0;
     virtual IndexEntry indexEntry(unsigned int i) const;
+    virtual bool preloaded() const;
+    virtual std::shared_ptr<Marker> marker(unsigned int i) const;
     virtual bool compressed() const;
     virtual unsigned char* compressedData() const;
     virtual std::string preprocessedFile() const;

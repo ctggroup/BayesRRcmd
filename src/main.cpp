@@ -86,6 +86,8 @@ void processDenseData(Options opt) {
         cout << "Start reading preprocessed bed file: " << ppFile << endl;
         clock_t start_bed = clock();
         data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+        if (opt.preload)
+            cout << "Preload not supported with dense data types!" << endl;
         clock_t end = clock();
         printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
         cout << endl;
@@ -159,6 +161,14 @@ void processSparseData(Options options) {
     cout << "Start reading preprocessed bed file: " << ppFile << endl;
     clock_t start_bed = clock();
     data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+    if (options.preload) {
+        const bool preloadSuccess = data.loadMarkersIntoRam(ppFile, options.dataType, options.compress);
+
+        if (!preloadSuccess) {
+            data.unmapCompressedPreprocessedBedFile();
+            return;
+        }
+    }
     clock_t end = clock();
     printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
     cout << endl;

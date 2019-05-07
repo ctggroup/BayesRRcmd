@@ -75,6 +75,8 @@ public:
 
 using PpBedIndex = std::vector<IndexEntry>;
 
+struct Marker;
+
 class Data {
 public:
     Data();
@@ -84,6 +86,8 @@ public:
     double *ppBedMap;
     Map<MatrixXd> mappedZ;
     PpBedIndex ppbedIndex;
+
+    std::vector<std::shared_ptr<Marker>> markers;
 
     // Original data
     MatrixXf X;              // coefficient matrix for fixed effects
@@ -131,6 +135,8 @@ public:
 
     void mapCompressedPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
     void unmapCompressedPreprocessedBedFile();
+
+    bool loadMarkersIntoRam(const string &preprocessedBedFile, const DataType dataType, const bool compressed);
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);

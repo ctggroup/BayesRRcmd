@@ -17,12 +17,17 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
         std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
         builder->initialise(msg.snp, msg.numInds);
         const auto index = m_bayes->indexEntry(msg.snp);
-        if (m_bayes->compressed()) {
-            builder->decompress(m_bayes->compressedData(), index);
+        if (m_bayes->preloaded()) {
+            msg.marker = m_bayes->marker(msg.snp);
         } else {
-            builder->read(m_bayes->preprocessedFile(), index);
+            if (m_bayes->compressed()) {
+                builder->decompress(m_bayes->compressedData(), index);
+                msg.marker.reset(builder->build());
+            } else {
+                builder->read(m_bayes->preprocessedFile(), index);
+            }
+            msg.marker.reset(builder->build());
         }
-        msg.marker.reset(builder->build());
 
         // Delegate the processing of this column to the algorithm class
         const auto betas = m_bayes->processColumnAsync(msg.marker.get());
