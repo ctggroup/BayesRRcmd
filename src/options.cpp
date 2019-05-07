@@ -117,6 +117,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             preprocessChunks = atoi(argv[++i]);
             ss << "--preprocess-chunks " << argv[i] << "\n";
         }
+        else if(!strcmp(argv[i], "--preload")) {
+            preload = true;
+            ss << "--preload " << "\n";
+        }
         else {
             stringstream errmsg;
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";

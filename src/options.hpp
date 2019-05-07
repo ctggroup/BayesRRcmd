@@ -42,6 +42,7 @@ public:
     string optionFile;
     bool compress = false;
     DataType dataType = DataType::Dense;
+    bool preload = false;
 
     Options(){
         chainLength             = 10000;
@@ -66,6 +67,7 @@ public:
         optionFile				= "";
         numGroups				=2;
         dataType                = DataType::Dense;
+        preload                 = false;
     }
 
     void inputOptions(const int argc, const char* argv[]);

@@ -16,12 +16,17 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
         std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
         builder->initialise(msg.snp, msg.numInds);
         const auto index = m_bayes->indexEntry(msg.snp);
-        if (m_bayes->compressed()) {
-            builder->decompress(m_bayes->compressedData(), index);
+        if (m_bayes->preloaded()) {
+            msg.marker = m_bayes->marker(msg.snp);
         } else {
-            builder->read(m_bayes->preprocessedFile(), index);
+            if (m_bayes->compressed()) {
+                builder->decompress(m_bayes->compressedData(), index);
+                msg.marker.reset(builder->build());
+            } else {
+                builder->read(m_bayes->preprocessedFile(), index);
+            }
+            msg.marker.reset(builder->build());
         }
-        msg.marker.reset(builder->build());
         return msg;
     };
     // Do the decompression work on up to maxParallel threads at once
