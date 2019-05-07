@@ -1,11 +1,13 @@
 #include <iostream>
 #include <string>
+
+#include "BayesRBase.hpp"
+#include "BayesRGroupsBase.hpp"
+#include "DenseRGroups.hpp"
+#include "SparseRGroups.hpp"
 #include "BayesRRm.h"
-#include "DenseBayesRRmz.hpp"
-#include "BayesRRg.h"
 #include "data.hpp"
 #include "options.hpp"
-#include "SparseBayesRRG.hpp"
 #include "tbb/task_scheduler_init.h"
 #include "preprocessgraph.h"
 #include "densemarker.h"
@@ -23,6 +25,7 @@ void processDenseData(Options opt) {
     data.readFamFile(opt.bedFile + ".fam");
     data.readBimFile(opt.bedFile + ".bim");
 
+
     const auto bedFile = opt.bedFile + ".bed";
     const auto ppFile = ppFileForType(opt.dataType, opt.bedFile);
     const auto ppIndexFile = ppIndexFileForType(opt.dataType, opt.bedFile);
@@ -34,7 +37,7 @@ void processDenseData(Options opt) {
     }
 
     // RAM solution (analysisType = RAMBayes)
-    if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe")) {
+    if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe" || opt.bayesType == "bayesG")) {
 
         clock_t start = clock();
 
@@ -57,6 +60,7 @@ void processDenseData(Options opt) {
         clock_t end   = clock();
         printf("OVERALL read+compute time = %.3f sec.\n", (float)(end - start) / CLOCKS_PER_SEC);
     }
+
 
     // Pre-processing the data (centering and scaling)
     else if (opt.analysisType == "Preprocess") {
@@ -107,7 +111,7 @@ void processDenseData(Options opt) {
         } else {
             graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
         }
-        DenseBayesRRmz analysis(&data, opt);
+        DenseRGroups analysis(&data, opt);
         analysis.runGibbs(graph.get());
         data.unmapCompressedPreprocessedBedFile();
     }else {
@@ -181,7 +185,7 @@ void processSparseData(Options options) {
         graph = std::make_unique<LimitSequenceGraph>(options.numThread);
     }
 
-    SparseBayesRRG analysis(&data, options);
+    SparseRGroups analysis(&data, options);
     analysis.runGibbs(graph.get());
 
     data.unmapCompressedPreprocessedBedFile();
