@@ -406,20 +406,21 @@ inline double simson_integral_1(int quad_points_amount, int k, VectorXd vi, void
 
 //Integrand part f(s) in the Gauss-Hermite quadrature formula
 inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sigmab, VectorXd vi, VectorXd Xj){
-	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum();
+	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
+			vi.array().exp().sum();
 	return exp(temp);
 }
 //Same function evaluated at 0
-inline double gh_integrand0(VectorXd vi){
+/*inline double gh_integrand0(VectorXd vi){
 	double temp = -(vi.array()).exp().sum();
 	return exp(temp);
-}
+}*/
 
 //Calculate numerically the value of marginal likelihood using Gauss-Hermite quadrature
 //with n=5 points. Should be increased in the future
 inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 	//At the moment specify all the quadrature points and weights manually
-	double x1 = 0;
+	//double x1 = 0;
 	double w1 = 0.945309;
 
 	double x2 = 0.958572;
@@ -434,7 +435,7 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 
 	pars p = *(static_cast<pars *>(norm_data));
 
-	double temp = w1 * gh_integrand0(vi)+
+	double temp = w1 * 1 +  //gh_integrand(0) = 1
 			w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
 			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
 			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
@@ -443,8 +444,7 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 }
 
 inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data){
-	double prob_0 = prior_prob(0) * sqrt(PI) * gh_integrand0(vi);
-	double temp = prob_0;
+	double prob_0 = prior_prob(0) * sqrt(PI);
 
 	pars p = *(static_cast<pars *>(norm_data));
 
@@ -452,7 +452,7 @@ inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data
 	for(int i=0; i < p.mixture_classes.size(); i++){
 		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data);
 	}
-	return temp/prob_0;
+	return prior_prob(0) * sqrt(PI)/prob_0;
 }
 
 
@@ -983,6 +983,10 @@ int BayesW::runGibbs_Gauss()
 
 			// Calculate the probability that marker is 0
 			acum = prob_calc0_gauss(pi_L, vi, &used_data);
+
+
+
+
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
 				if (p <= acum) {
