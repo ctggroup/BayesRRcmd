@@ -420,8 +420,11 @@ inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sig
 //with n=5 points. Should be increased in the future
 inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 	//At the moment specify all the quadrature points and weights manually
+	pars p = *(static_cast<pars *>(norm_data));
+
 	//double x1 = 0;
-	double w1 = 0.945309;
+	//n=5
+/*	double w1 = 0.945309;
 
 	double x2 = 0.958572;
 	double w2 = 0.393619;
@@ -433,13 +436,52 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 	double x5 = x4 * (-1);
 	double w5 = w4;
 
-	pars p = *(static_cast<pars *>(norm_data));
 
 	double temp = w1 * 1 +  //gh_integrand(0) = 1
 			w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
 			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
 			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
-			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j);
+			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j);*/
+
+	double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;
+	double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10;
+	x1 = -3.4361591188377;
+	x2 = 3.4361591188377;
+	w1 = 0.000007640432855233;
+	w2 = w1;
+
+	x3 = -2.5327316742328;
+	x4 = 2.5327316742328;
+	w3 = 0.001343645746781;
+	w4 = w3;
+
+	x5 = -1.7566836492999;
+	x6 = 1.7566836492999;
+	w5 = 0.03387439445548;
+	w6 = w5;
+
+	x7 = -1.0366108297895;
+	x8 = 1.0366108297895;
+	w7 = 0.24013861108232;
+	w8 = w7;
+
+	x9 = -0.34290132722371;
+	x10 = 0.34290132722371;
+	w9 = 0.6108626337353;
+	w10 = w9;
+
+	double temp = w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w6 * gh_integrand(x6,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w7 * gh_integrand(x7,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w8 * gh_integrand(x8,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w9 * gh_integrand(x9,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
+				w10 * gh_integrand(x10,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j);
+
+
 	return temp;
 }
 
