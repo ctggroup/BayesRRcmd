@@ -453,7 +453,7 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data, string 
 
 		x3 = 2.2665805845318;
 		w3 = 0.004943624275537;
-		x4 = x3;
+		x4 = -x3;
 
 		x5 = 1.4685532892167;
 		w5 = 0.08847452739438;
@@ -960,7 +960,7 @@ int BayesW::runGibbs_Gauss()
 	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
 
 	//Give all mixtures (except 0 class) equal initial probabilities
-	pi_L(0) = 0.95;
+	pi_L(0) = 0.99;
 	pi_L.segment(1,K-1).setConstant((1-pi_L(0))/km1);
 
 	//Vector to contain probabilities of belonging to a mixture
