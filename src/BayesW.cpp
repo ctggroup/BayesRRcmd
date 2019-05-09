@@ -410,7 +410,7 @@ inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sig
 //	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
 //			vi.array().exp().sum();
 	//vi is a vector of exp(vi)
-	double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum();
+	double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum();
 	return exp(temp);
 }
 
