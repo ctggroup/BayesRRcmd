@@ -25,6 +25,10 @@ public:
     unsigned seed;
     unsigned numThread;
     int numThreadSpawned = 0; // Default to 0, let TBB do its thing
+    size_t decompressionNodeConcurrency = 0;
+    size_t decompressionTokens = 40;
+    size_t analysisNodeConcurrency = 0;
+    size_t analysisTokens = 20;
     unsigned preprocessChunks = 1;
     unsigned thin;  // save every this th sampled value in MCMC
     vector<float> S;    //variance components
@@ -53,6 +57,10 @@ public:
         seed                    = static_cast<unsigned int>(std::time(0));
         numThread               = 1;
         numThreadSpawned        = 0;
+        decompressionNodeConcurrency = 0;
+        decompressionTokens     = 40;
+        analysisNodeConcurrency = 0;
+        analysisTokens          = 20;
         preprocessChunks        = 1;
         thin                    = 5;
 
