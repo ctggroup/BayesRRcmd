@@ -406,8 +406,10 @@ inline double simson_integral_1(int quad_points_amount, int k, VectorXd vi, void
 
 //Integrand part f(s) in the Gauss-Hermite quadrature formula
 inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sigmab, VectorXd vi, VectorXd Xj){
-	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
-			vi.array().exp().sum();
+//	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
+//			vi.array().exp().sum();
+	//vi is a vector of exp(vi)
+	double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum();
 	return exp(temp);
 }
 
@@ -503,8 +505,8 @@ inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data
 
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		//prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data);
-		prob_0 = prob_0 + prior_prob(i+1)* taylor_integral_gh(i,vi,norm_data);
+		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data);
+		//prob_0 = prob_0 + prior_prob(i+1)* taylor_integral_gh(i,vi,norm_data);
 	}
 	return prior_prob(0) * sqrt(PI)/prob_0;
 }
@@ -1004,6 +1006,7 @@ int BayesW::runGibbs_Gauss()
 		errorCheck(err);
 		mu = xsamp[0];
 		used_data.epsilon = used_data.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+		VectorXd vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp(); // First declaration of the adjusted residual
 
 		std::random_shuffle(markerI.begin(), markerI.end());
 
@@ -1027,18 +1030,16 @@ int BayesW::runGibbs_Gauss()
 				// Subtract the weighted last beta²
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
 				betasqn = betasqn - beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
+				// Temporary variables for probability calculation (exponent of the adjusted residual without jth effect)
+				// Change this only when epsilon changes
+				vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 			}
 
 			/* Calculate the mixture probability */
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
-			// Temporary variables for probability calculation
-			VectorXd vi = used_data.alpha*used_data.epsilon.array()-EuMasc;
-
 			// Calculate the probability that marker is 0
 			acum = prob_calc0_gauss(pi_L, vi, &used_data);
-
-
 
 
 			//Loop through the possible mixture classes
