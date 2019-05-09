@@ -410,11 +410,7 @@ inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sig
 			vi.array().exp().sum();
 	return exp(temp);
 }
-//Same function evaluated at 0
-/*inline double gh_integrand0(VectorXd vi){
-	double temp = -(vi.array()).exp().sum();
-	return exp(temp);
-}*/
+
 
 //Calculate numerically the value of marginal likelihood using Gauss-Hermite quadrature
 //with n=5 points. Should be increased in the future
@@ -424,7 +420,7 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 
 	//double x1 = 0;
 	//n=5
-/*	double w1 = 0.945309;
+	double w1 = 0.945309;
 
 	double x2 = 0.958572;
 	double w2 = 0.393619;
@@ -436,14 +432,16 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 	double x5 = x4 * (-1);
 	double w5 = w4;
 
+	double sqrt_2ck_sigma = sqrt(2*p.mixture_classes(k)*p.sigma_b);
 
 	double temp = w1 * 1 +  //gh_integrand(0) = 1
-			w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
-			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
-			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
-			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j);*/
+			w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
 
-	double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;
+	//n=10
+/*	double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;
 	double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10;
 	x1 = -3.4361591188377;
 	x2 = 3.4361591188377;
@@ -479,10 +477,23 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
 				w7 * gh_integrand(x7,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
 				w8 * gh_integrand(x8,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
 				w9 * gh_integrand(x9,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j)+
-				w10 * gh_integrand(x10,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j);
+				w10 * gh_integrand(x10,p.alpha,p.sum_failure,sqrt(2*p.mixture_classes(k)*p.sigma_b),vi,p.X_j);*/
 
 
 	return temp;
+}
+
+
+inline double taylor_integral_gh(int k, VectorXd vi,void *norm_data){
+	pars p = *(static_cast<pars *>(norm_data));
+
+	VectorXd tempXj = p.X_j.array() * vi.array().exp();
+
+	double Uk = -p.alpha * p.sum_failure * sqrt(2*p.mixture_classes(k)*p.sigma_b) * tempXj.array().sum();
+	double Vk = 1 + p.alpha*p.alpha * p.mixture_classes(k)*p.sigma_b* (tempXj.array() * p.X_j.array()).sum();
+
+	return sqrt(PI/Vk) * exp(Uk*Uk/(4*Vk));
+
 }
 
 inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data){
@@ -492,7 +503,8 @@ inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data
 
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data);
+		//prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data);
+		prob_0 = prob_0 + prior_prob(i+1)* taylor_integral_gh(i,vi,norm_data);
 	}
 	return prior_prob(0) * sqrt(PI)/prob_0;
 }
