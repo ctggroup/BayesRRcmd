@@ -21,6 +21,7 @@
 /* Pre-calculate used constants */
 #define PI 3.14159
 #define PI2 6.283185
+#define sqrtPI 1.77245385090552
 #define EuMasc 0.577215664901532
 
 BayesW::BayesW(Data &data, Options &opt, const long memPageSize)
@@ -416,31 +417,72 @@ inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sig
 
 //Calculate numerically the value of marginal likelihood using Gauss-Hermite quadrature
 //with n=5 points. Should be increased in the future
-inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data){
+inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data, string n){
 	//At the moment specify all the quadrature points and weights manually
 	pars p = *(static_cast<pars *>(norm_data));
 
+	double temp = 0;
+	double sqrt_2ck_sigma = sqrt(2*p.mixture_classes(k)*p.sigma_b);
 	//double x1 = 0;
 	//n=5
-	double w1 = 0.945309;
+	if(n == "5"){
+		double w1 = 0.945309;
 
-	double x2 = 0.958572;
-	double w2 = 0.393619;
-	double x3 = x2 * (-1);
-	double w3 = w2;
+		double x2 = 0.958572;
+		double w2 = 0.393619;
+		double x3 = -x2;
+		double w3 = w2;
 
-	double x4 = 2.02018;
-	double w4 = 0.0199532;
-	double x5 = x4 * (-1);
-	double w5 = w4;
+		double x4 = 2.02018;
+		double w4 = 0.0199532;
+		double x5 = -x4;
+		double w5 = w4;
 
-	double sqrt_2ck_sigma = sqrt(2*p.mixture_classes(k)*p.sigma_b);
+		temp = w1 * 1 +  //gh_integrand(0) = 1
+				w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+	}else if(n == "9"){
+		double x1,x2,x3,x4,x5,x6,x7,x8;
+		double w1,w2,w3,w4,w5,w6,w7,w8,w9;
 
-	double temp = w1 * 1 +  //gh_integrand(0) = 1
-			w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+		x1 = 3.1909932017815;
+		w1 = 0.000039606977263264;
+		x2 = -x1;
+
+		x3 = 2.2665805845318;
+		w3 = 0.004943624275537;
+		x4 = x3;
+
+		x5 = 1.4685532892167;
+		w5 = 0.08847452739438;
+		x6 = -x5;
+
+		x7 = 0.72355101875284;
+		w7 = 0.43265155900256;
+		w8 = -x7;
+
+		w9 = 0.72023521560605;
+		//x9 = 0
+
+		temp = w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w1 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
 			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+			w3 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w5 * gh_integrand(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w7 * gh_integrand(x7,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w7 * gh_integrand(x8,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w9 ; // gh_integrand(0) =1
+
+
+	}else{
+		cout << "Enter quadrature point number = 5/9" << endl;
+		exit(2);
+	}
+
+
 
 	//n=10
 /*	double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;
@@ -497,18 +539,18 @@ inline double taylor_integral_gh(int k, VectorXd vi,void *norm_data){
 	return sqrt(PI/Vk) * exp(Uk*Uk/(4*Vk));
 
 }
-
-inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data){
-	double prob_0 = prior_prob(0) * sqrt(PI);
+//n is the number of quadrature points
+inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data,string n){
+	double prob_0 = prior_prob(0) * sqrtPI;
 
 	pars p = *(static_cast<pars *>(norm_data));
 
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data);
+		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data,n);
 		//prob_0 = prob_0 + prior_prob(i+1)* taylor_integral_gh(i,vi,norm_data);
 	}
-	return prior_prob(0) * sqrt(PI)/prob_0;
+	return prior_prob(0) * sqrtPI/prob_0;
 }
 
 
@@ -868,6 +910,7 @@ int BayesW::runGibbs_Gauss()
 	const unsigned int N(data.numInds);
 	const int K = opt.S.size()+1;  //number of mixtures + 0 class
 	const int km1 = K -1;
+	string quad_points = opt.quad_points;
 
 	SampleWriter writer;
 	writer.setFileName(outputFile);
@@ -1039,7 +1082,7 @@ int BayesW::runGibbs_Gauss()
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
 			// Calculate the probability that marker is 0
-			acum = prob_calc0_gauss(pi_L, vi, &used_data);
+			acum = prob_calc0_gauss(pi_L, vi, &used_data, quad_points);
 
 
 			//Loop through the possible mixture classes
@@ -1067,6 +1110,7 @@ int BayesW::runGibbs_Gauss()
 
 						beta(marker) = xsamp[0];  // Save the new result
 						used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+						vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 
 						// Change the weighted sum of squares of betas
 						v[k] += 1.0;

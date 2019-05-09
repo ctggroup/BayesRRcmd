@@ -104,6 +104,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
         		bayesW_version = argv[++i];
                	ss << "--bayesW_version " << argv[i] << "\n";
        	}
+        else if (!strcmp(argv[i], "--quad_points")) {
+        		quad_points = argv[++i];
+                ss << "--quad_points " << argv[i] << "\n";
+          	}
 
 
         else if (!strcmp(argv[i], "--thread")) {

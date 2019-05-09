@@ -34,6 +34,7 @@ public:
     string groupFile;
     string failureFile;
     string bayesW_version;
+    string quad_points;
 
     string title;
     string analysisType;
