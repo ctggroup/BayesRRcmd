@@ -76,7 +76,7 @@ void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
         m_epsilonSum += sparseMarker->epsilonSum;
 }
 
-void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps)
+void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps)
 {
     // No mutex required here whilst m_globalComputeNode uses the serial policy
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);

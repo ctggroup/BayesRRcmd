@@ -11,6 +11,7 @@
 class BayesRBase;
 
 struct Marker;
+struct AsyncResult;
 
 using namespace tbb::flow;
 
@@ -32,9 +33,7 @@ private:
         unsigned int snp = 0;
         unsigned int numInds = 0;
         std::shared_ptr<Marker> marker = nullptr;
-        Eigen::VectorXd deltaEps; //vector that stores the epsilon update only
-        double old_beta = 0.0;
-        double beta = 0.0;
+        std::shared_ptr<const AsyncResult> result = nullptr;
     };
 
     std::unique_ptr<graph> m_graph;

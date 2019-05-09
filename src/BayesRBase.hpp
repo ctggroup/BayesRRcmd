@@ -22,6 +22,12 @@ class AnalysisGraph;
 struct Marker;
 class MarkerBuilder;
 
+struct AsyncResult {
+    double betaOld = 0.0;
+    double beta = 0.0;
+    VectorXd deltaEpsilon;
+};
+
 class BayesRBase
 {
 public:
@@ -38,9 +44,9 @@ public:
 
     virtual void processColumn(Marker *marker);
 
-    virtual std::tuple<double, double,VectorXd> processColumnAsync(Marker *marker);
+    virtual std::unique_ptr<AsyncResult> processColumnAsync(Marker *marker);
 
-    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps) = 0;
+    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps) = 0;
     virtual void updateMu(double old_mu, double N)=0;
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }

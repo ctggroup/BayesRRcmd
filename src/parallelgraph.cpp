@@ -36,12 +36,9 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
 
     // Sampling of the column to the async algorithm class
     auto g = [this] (Message msg) -> Message {
-      const auto betas = m_bayes->processColumnAsync(msg.marker.get());
-      msg.old_beta = std::get<0>(betas);
-      msg.beta = std::get<1>(betas);
-      msg.deltaEps= std::get<2>(betas);//we update the deltaEps of the message
+      msg.result = m_bayes->processColumnAsync(msg.marker.get());
       return msg;
-      };
+    };
 
     // Sample in parallel but with a variable maxParallel2
     m_asyncSamplingNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, g));
@@ -52,7 +49,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
 
       std::get<0>(outputPorts).try_put(continue_msg());
 
-      if (input.old_beta != 0.0 || input.beta != 0.0) {
+      if (input.result->betaOld != 0.0 || input.result->beta != 0.0) {
          // Do global computation
          std::get<1>(outputPorts).try_put(std::move(input));
          } else {
@@ -66,7 +63,7 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
 
     // Do global computation
     auto i = [this] (Message msg) -> continue_msg {
-      m_bayes->updateGlobal(msg.marker.get(), msg.old_beta, msg.beta, msg.deltaEps);
+      m_bayes->updateGlobal(msg.marker.get(), msg.result->betaOld, msg.result->beta, msg.result->deltaEpsilon);
       return continue_msg();
       };
     // Use the serial policy

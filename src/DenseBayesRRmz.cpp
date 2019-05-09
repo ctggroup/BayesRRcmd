@@ -24,7 +24,7 @@ MarkerBuilder *DenseBayesRRmz::markerBuilder() const
     return builderForType(DataType::Dense);
 }
 
-void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps )
+void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps)
 {
     // No mutex required here whilst m_globalComputeNode uses the serial policy
     auto* denseMarker = dynamic_cast<DenseMarker*>(marker);

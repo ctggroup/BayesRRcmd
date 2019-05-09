@@ -362,13 +362,13 @@ void BayesRBase::processColumn(Marker *marker)
    
 }
 
-std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marker)
+std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
 {
-    double beta = 0;
     double component = 0;
     VectorXd epsilon(m_data->numInds);
-    VectorXd deltaEps(m_data->numInds); //vector that will contain the delta epsilon message
-    deltaEps.setZero(); // deltaEps=0
+    auto result = std::make_unique<AsyncResult>();
+    result->deltaEpsilon.resize(m_data->numInds); //vector that will contain the delta epsilon message
+    result->deltaEpsilon.setZero();
     // to keep track of the column processing time     
     const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(marker);
@@ -382,14 +382,14 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
         // contained in the vector back to floats.
         // we copy global into local
         std::memcpy(epsilon.data(), m_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
-        beta = m_beta(marker->i);
+        result->beta = m_beta(marker->i);
         component = m_components(marker->i);
 	 readWithSharedLock(marker);//here we are reading the column and also epsilonsum
     }
   
-    const double beta_old = beta;
+    result->betaOld = result->beta;
 
-    const double num = marker->computeNum(epsilon, beta_old);
+    const double num = marker->computeNum(epsilon, result->betaOld);
 
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;
@@ -443,9 +443,9 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
         if (p <= acum) {
             //if zeroth component
             if (k == 0) {
-                beta = 0;
+                result->beta = 0;
             } else {
-                beta = randomNumbers.at(static_cast<std::vector<double>::size_type>(k));
+                result->beta = randomNumbers.at(static_cast<std::vector<double>::size_type>(k));
             }
             v[k] += 1.0;
             component = k;
@@ -461,12 +461,12 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
     }
 
     // Only update m_epsilon if required
-    const bool skipUpdate = beta_old == 0.0 && beta == 0.0;
+    const bool skipUpdate = result->betaOld == 0.0 && result->beta == 0.0;
 
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {    
           // this  also updates epsilonSum!
-        marker->updateEpsilon(deltaEps, beta_old, beta);    
+        marker->updateEpsilon(result->deltaEpsilon, result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum    
     }
     // In the new version of Async we do not synchronise epsilon Async, we will handle this through the global node
@@ -479,7 +479,7 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
       }
 
     // These updates do not need to be atomic
-    m_beta(marker->i) = beta;
+    m_beta(marker->i) = result->beta;
     m_components(marker->i) = component;
     
     //info on the running time of the column processing, would be very useful to have it as an option, and output it to a file
@@ -488,7 +488,7 @@ std::tuple<double, double,VectorXd> BayesRBase::processColumnAsync(Marker *marke
    
    // cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
 
-    return {beta_old, beta, deltaEps};
+    return result;
 }
 
 void BayesRBase::printDebugInfo() const
