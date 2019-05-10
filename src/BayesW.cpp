@@ -623,13 +623,15 @@ inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data
 }
 
 
-inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double mu, double sigma, void *norm_data){
+inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double mu, void *norm_data){
 	double prob_0 = prior_prob(0) * sqrtPI;
 
 	pars p = *(static_cast<pars *>(norm_data));
 
+	double exp_sum = (vi.array() * p.X_j.array() * p.X_j.array()).sum(); //For calculating sigma assume mu=0 and save time on computation
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
+		double sigma = 1.0/sqrt(1+2*p.alpha*p.alpha*p.sigma_b*p.mixture_classes(i) * exp_sum);
 		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_adaptive_integral(i, vi, norm_data, mu, sigma);
 	}
 	return prior_prob(0) * sqrtPI/prob_0;
@@ -1165,16 +1167,16 @@ int BayesW::runGibbs_Gauss()
 			BETA_MODE = betaMode(BETAmodes(marker) ,&used_data);   //Find the posterior mode using the last mode as the starting value
 			BETAmodes(marker) = BETA_MODE;
 			double s_MODE = BETA_MODE/used_data.sqrt_2sigmab;
-			double sigma = 1.0/sqrt(1 + 2*used_data.alpha * used_data.sigma_b *
-					(vi.array() * used_data.X_j.array() * used_data.X_j.array() *
-					(-used_data.alpha * used_data.X_j.array() *used_data.sqrt_2sigmab *s_MODE).exp()).sum());
+//			double sigma = 1.0/sqrt(1 + 2*used_data.alpha * used_data.sigma_b *
+//					(vi.array() * used_data.X_j.array() * used_data.X_j.array() *
+//					(-used_data.alpha * used_data.X_j.array() *used_data.sqrt_2sigmab *s_MODE).exp()).sum());
 
 			/* Calculate the mixture probability */
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
 			// Calculate the probability that marker is 0
 			//acum = prob_calc0_gauss(pi_L, vi, &used_data, quad_points);
-			acum = prob_calc0_gauss_adaptive(pi_L, vi, s_MODE, sigma, &used_data);
+			acum = prob_calc0_gauss_adaptive(pi_L, vi, s_MODE, &used_data);
 
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
