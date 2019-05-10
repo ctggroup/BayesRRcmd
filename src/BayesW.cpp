@@ -1797,7 +1797,7 @@ int BayesW::runGibbs_Simpson()
 		used_data.alpha = xsamp[0];
 
 		// 4. sigma_b
-		if(true){
+		if(false){
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
 						(double)(used_data.beta_sigma + 0.5 * betasqn));
 		}else{		//sigma_g version
