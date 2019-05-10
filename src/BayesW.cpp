@@ -605,7 +605,7 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
 			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
 
-	return temp;
+	return sqrt2*sigma*temp;
 }
 
 
