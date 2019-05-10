@@ -1054,7 +1054,7 @@ int BayesW::runGibbs_Gauss()
 
 	//linear model variables   //y is logarithmed
 	VectorXd beta(M);      // effect sizes
-	VectorXd BETA_modes(M);    //The vector for modes
+	VectorXd BETAmodes(M);    //The vector for modes
 
 	int marker; //Marker index
 
@@ -1069,7 +1069,7 @@ int BayesW::runGibbs_Gauss()
 	used_data_alpha.failure_vector = data.fail.cast<double>();
 
 	beta.setZero(); //Exclude everything in the beginning
-	BETA_modes.setZero();
+	BETAmodes.setZero();
 
 	//Initial value for intercept is the mean of the logarithms
 	mu = y.mean();
