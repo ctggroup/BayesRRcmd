@@ -96,7 +96,10 @@ void processDenseData(Options opt) {
 
         std::unique_ptr<AnalysisGraph> graph {nullptr};
         if (opt.analysisType == "PPAsyncBayes") {
-            graph = std::make_unique<ParallelGraph>(opt.numThread);
+            graph = std::make_unique<ParallelGraph>(opt.decompressionTokens, opt.analysisTokens);
+            auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
+            parallelGraph->setDecompressionNodeConcurrency(opt.decompressionNodeConcurrency);
+            parallelGraph->setAnalysisNodeConcurrency(opt.analysisNodeConcurrency);
         } else {
             graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
         }
@@ -169,7 +172,10 @@ void processSparseData(Options options) {
 
     std::unique_ptr<AnalysisGraph> graph {nullptr};
     if (options.analysisType == "PPAsyncBayes") {
-        graph = std::make_unique<ParallelGraph>(options.numThread);
+        graph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
+        auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
+        parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
+        parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
     } else {
         graph = std::make_unique<LimitSequenceGraph>(options.numThread);
     }

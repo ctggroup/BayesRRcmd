@@ -113,6 +113,22 @@ void Options::inputOptions(const int argc, const char* argv[]){
             numThreadSpawned = atoi(argv[++i]);
             ss << "--thread-spawned " << argv[i] << "\n";
         }
+        else if(!strcmp(argv[i], "--decompression-concurrency")) {
+            decompressionNodeConcurrency = atoi(argv[++i]);
+            ss << "--decompression-concurrency " << argv[i] << "\n";
+        }
+        else if(!strcmp(argv[i], "--decompression-tokens")) {
+            decompressionTokens = atoi(argv[++i]);
+            ss << "--decompression-tokens " << argv[i] << "\n";
+        }
+        else if(!strcmp(argv[i], "--analysis-concurrency")) {
+            analysisNodeConcurrency = atoi(argv[++i]);
+            ss << "--analysis-concurrency " << argv[i] << "\n";
+        }
+        else if(!strcmp(argv[i], "--analysis-tokens")) {
+            analysisTokens = atoi(argv[++i]);
+            ss << "--analysis-tokens " << argv[i] << "\n";
+        }
         else if(!strcmp(argv[i], "--preprocess-chunks")) {
             preprocessChunks = atoi(argv[++i]);
             ss << "--preprocess-chunks " << argv[i] << "\n";

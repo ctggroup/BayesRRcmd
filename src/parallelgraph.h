@@ -11,13 +11,17 @@
 class BayesRBase;
 
 struct Marker;
+struct AsyncResult;
+
+using DecompressionToken = size_t;
+using AnalysisToken = size_t;
 
 using namespace tbb::flow;
 
 class ParallelGraph : public AnalysisGraph
 {
 public:
-    explicit ParallelGraph(size_t maxParallel = 6);
+    explicit ParallelGraph(size_t decompressionTokens, size_t analysisTokens);
 
     bool isAsynchronous() const override { return true; }
 
@@ -26,28 +30,66 @@ public:
               unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;
 
+    // The maximum number of decompression_node bodies which can run concurrently
+    size_t decompressionNodeConcurrency() const;
+    void setDecompressionNodeConcurrency(size_t c);
+
+    // The maximum number of decompressed messages in memory
+    size_t decompressionTokens() const;
+    void setDecompressionTokens(size_t t);
+
+    // The maximum number of analysis_node bodies which can run concurrently
+    size_t analysisNodeConcurrency() const;
+    void setAnalysisNodeConcurrency(size_t c);
+
+    // The number of asynchronous analyses to do before forcing synchronisation
+    size_t analysisTokens() const;
+    void setAnalysisTokens(size_t t);
+
 private:
     struct Message {
         unsigned int id = 0;
         unsigned int snp = 0;
         unsigned int numInds = 0;
         std::shared_ptr<Marker> marker = nullptr;
-        Eigen::VectorXd deltaEps; //vector that stores the epsilon update only
-        double old_beta = 0.0;
-        double beta = 0.0;
+        std::shared_ptr<const AsyncResult> result = nullptr;
     };
 
-    std::unique_ptr<graph> m_graph;
-    std::unique_ptr<function_node<Message, Message>> m_decompressNode;
-    std::unique_ptr<function_node<Message, Message>> m_asyncSamplingNode;
-    std::unique_ptr<limiter_node<Message>> m_limit;
-    std::unique_ptr<sequencer_node<Message>> m_ordering;
+    using DecompressionTuple = tbb::flow::tuple<DecompressionToken, Message>;
+    using AnalysisTuple = tbb::flow::tuple<AnalysisToken, DecompressionTuple>;
 
-    using decision_node = multifunction_node<Message, tbb::flow::tuple<continue_msg, Message> >;
+    std::unique_ptr<graph> m_graph;
+
+    using decompression_join_node = join_node<DecompressionTuple, queueing>;
+    std::unique_ptr<decompression_join_node> m_decompressionJoinNode;
+
+    using decompression_node = function_node<DecompressionTuple, DecompressionTuple>;
+    std::unique_ptr<decompression_node> m_decompressionNode;
+
+    using analysis_join_node = join_node<AnalysisTuple, queueing>;
+    std::unique_ptr<analysis_join_node> m_analysisJoinNode;
+
+    using analysis_node = function_node<AnalysisTuple, AnalysisTuple>;
+    std::unique_ptr<analysis_node> m_analysisNode;
+
+    using decision_node = multifunction_node<AnalysisTuple, tbb::flow::tuple<DecompressionToken, AnalysisToken, AnalysisTuple>>;
     std::unique_ptr<decision_node> m_decisionNode;
-    std::unique_ptr<function_node<Message>> m_globalComputeNode;
-    size_t m_decompressSize=20;
-    size_t m_limitSize=1;
+
+    using global_update_node = multifunction_node<AnalysisTuple, tbb::flow::tuple<DecompressionToken, AnalysisToken>>;
+    std::unique_ptr<global_update_node> m_globalUpdateNode;
+
+    using analysis_control_node = function_node<AnalysisToken, continue_msg, lightweight>;
+    std::unique_ptr<analysis_control_node> m_analysisControlNode;
+
+    size_t m_decompressionNodeConcurrency = tbb::flow::unlimited;
+    size_t m_decompressionTokens = 40;
+
+    size_t m_analysisNodeConcurrency = tbb::flow::unlimited;
+    size_t m_analysisTokens = 20;
+    size_t m_analysisTokenCount = 0;
+
+    void queueDecompressionTokens();
+    void queueAnalysisTokens();
 };
 
 #endif // DENSEPARALLELGRAPH_H
