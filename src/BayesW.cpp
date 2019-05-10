@@ -570,40 +570,98 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data, string 
 }
 
 
-inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data, double mu, double sigma){
+inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data, double mu, double sigma, string n){
 	pars p = *(static_cast<pars *>(norm_data));
 
 	double temp = 0;
 	double sqrt_2ck_sigma = sqrt(2*p.mixture_classes(k)*p.sigma_b);
 
-	//Let's try n=5
-	double x1,x2,x3,x4,x5;
-	double w1,w2,w3,w4,w5; //These are adjusted weights
+	// n=5
+	if(n == "5"){
+		double x1,x2,x3,x4,x5;
+		double w1,w2,w3,w4,w5; //These are adjusted weights
 
-	x1 = 2.0201828704561;
-	x2 = -x1;
-	w1 = 1.181488625536;
-	w2 = w1;
+		x1 = 2.0201828704561;
+		x2 = -x1;
+		w1 = 1.181488625536;
+		w2 = w1;
 
-	x3 = 0.95857246461382;
-	x4 = -x3;
-	w3 = 0.98658099675143;
-	w4 = w3;
+		x3 = 0.95857246461382;
+		x4 = -x3;
+		w3 = 0.98658099675143;
+		w4 = w3;
 
-	x5 = 0.0;
-	w5 = 0.94530872048294;
+		x5 = 0.0;
+		w5 = 0.94530872048294;
 
-	x1 = mu +sqrt2*sigma*x1;
-	x2 = mu +sqrt2*sigma*x2;
-	x3 = mu +sqrt2*sigma*x3;
-	x4 = mu +sqrt2*sigma*x4;
-	x5 = mu +sqrt2*sigma*x5;
+		x1 = mu +sqrt2*sigma*x1;
+		x2 = mu +sqrt2*sigma*x2;
+		x3 = mu +sqrt2*sigma*x3;
+		x4 = mu +sqrt2*sigma*x4;
+		x5 = mu +sqrt2*sigma*x5;
 
-	temp = 	w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+		temp = 	w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+	}else if(n == "11"){
+		double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11;
+		double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11; //These are adjusted weights
+
+		x1 = 3.6684708465596;
+		x2 = -x1;
+		w1 = 1.0065267861724;
+		w2 = w1;
+
+		x3 = 2.7832900997817;
+		x4 = -x3;
+		w3 = 0.802516868851;
+		w4 = w3;
+
+		x5 = 2.0259480158258;
+		x6 = -x3;
+		w5 = 0.721953624728;
+		w6 = w5;
+
+		x7 = 1.3265570844949;
+		x8 = -x7;
+		w7 = 0.6812118810667;
+		w8 = w7;
+
+		x9 = 0.6568095668821;
+		x10 = -x9;
+		w9 = 0.66096041944096;
+		w10 = w9;
+
+		x11 = 0.0;
+		w11 = 0.65475928691459;
+
+		x1 = mu +sqrt2*sigma*x1;
+		x2 = mu +sqrt2*sigma*x2;
+		x3 = mu +sqrt2*sigma*x3;
+		x4 = mu +sqrt2*sigma*x4;
+		x5 = mu +sqrt2*sigma*x5;
+		x6 = mu +sqrt2*sigma*x6;
+		x7 = mu +sqrt2*sigma*x7;
+		x8 = mu +sqrt2*sigma*x8;
+		x9 = mu +sqrt2*sigma*x9;
+		x10 = mu +sqrt2*sigma*x10;
+		x11 = mu +sqrt2*sigma*x11;
+
+		temp = 	w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w6 * gh_integrand(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w7 * gh_integrand(x7,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w8 * gh_integrand(x8,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w9 * gh_integrand(x9,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w10 * gh_integrand(x10,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w11 * gh_integrand(x11,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+	}
+
 
 	return sqrt2*sigma*temp;
 }
@@ -623,7 +681,7 @@ inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data
 }
 
 
-inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double mu, void *norm_data){
+inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double mu, void *norm_data, string n){
 	double prob_0 = prior_prob(0) * sqrtPI;
 
 	pars p = *(static_cast<pars *>(norm_data));
@@ -632,7 +690,7 @@ inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
 		double sigma = 1.0/sqrt(1+2*p.alpha*p.alpha*p.sigma_b*p.mixture_classes(i) * exp_sum);
-		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_adaptive_integral(i, vi, norm_data, mu, sigma);
+		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_adaptive_integral(i, vi, norm_data, mu, sigma, n);
 	}
 	return prior_prob(0) * sqrtPI/prob_0;
 }
@@ -1163,8 +1221,8 @@ int BayesW::runGibbs_Gauss()
 				// Change this only when epsilon changes
 				vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 			}
-
-			BETA_MODE = betaMode(BETAmodes(marker) ,&used_data);   //Find the posterior mode using the last mode as the starting value
+//For speed don't calculate the mode
+			BETA_MODE = 0.0;//betaMode(BETAmodes(marker) ,&used_data);   //Find the posterior mode using the last mode as the starting value
 			BETAmodes(marker) = BETA_MODE;
 			double s_MODE = BETA_MODE/used_data.sqrt_2sigmab;
 //			double sigma = 1.0/sqrt(1 + 2*used_data.alpha * used_data.sigma_b *
@@ -1176,7 +1234,7 @@ int BayesW::runGibbs_Gauss()
 
 			// Calculate the probability that marker is 0
 			//acum = prob_calc0_gauss(pi_L, vi, &used_data, quad_points);
-			acum = prob_calc0_gauss_adaptive(pi_L, vi, s_MODE, &used_data);
+			acum = prob_calc0_gauss_adaptive(pi_L, vi, s_MODE, &used_data, quad_points);
 
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
