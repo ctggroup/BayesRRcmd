@@ -1029,7 +1029,7 @@ int BayesW::runGibbs_Gauss()
 
 	//mean and residual variables
 	double mu;         // mean or intercept
-	double s_MODE;  //s mode at hand (beta_j = s* sqrt(2Cksigmab)
+	double BETA_MODE;  //s mode at hand (beta_j = s* sqrt(2Cksigmab)
 
 
 	//Save variance classes
@@ -1054,7 +1054,7 @@ int BayesW::runGibbs_Gauss()
 
 	//linear model variables   //y is logarithmed
 	VectorXd beta(M);      // effect sizes
-	VectorXd s_modes(M);    //The vector for modes
+	VectorXd BETA_modes(M);    //The vector for modes
 
 	int marker; //Marker index
 
@@ -1069,6 +1069,7 @@ int BayesW::runGibbs_Gauss()
 	used_data_alpha.failure_vector = data.fail.cast<double>();
 
 	beta.setZero(); //Exclude everything in the beginning
+	BETA_modes.setZero();
 
 	//Initial value for intercept is the mean of the logarithms
 	mu = y.mean();
@@ -1161,9 +1162,9 @@ int BayesW::runGibbs_Gauss()
 				vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 			}
 
-			s_MODE = sMode(s_modes(marker), vi, &used_data);   //Find the posterior mode using the last mode as the starting value
-			s_modes(marker) = s_MODE;
-
+			BETA_MODE = betaMode(BETAmodes(marker) ,&used_data);   //Find the posterior mode using the last mode as the starting value
+			BETAmodes(marker) = BETA_MODE;
+			double s_MODE = BETA_MODE/used_data.sqrt_2sigmab;
 			double sigma = 1.0/sqrt(1 + 2*used_data.alpha * used_data.sigma_b *
 					(vi.array() * used_data.X_j.array() * used_data.X_j.array() *
 					(-used_data.alpha * used_data.X_j.array() *used_data.sqrt_2sigmab *s_MODE).exp()).sum());
