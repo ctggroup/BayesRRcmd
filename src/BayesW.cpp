@@ -22,6 +22,7 @@
 #define PI 3.14159
 #define PI2 6.283185
 #define sqrtPI 1.77245385090552
+#define sqrt2 1.4142135623731
 #define EuMasc 0.577215664901532
 
 BayesW::BayesW(Data &data, Options &opt, const long memPageSize)
@@ -74,6 +75,9 @@ struct pars{
 
 	/* Number of events (sum of failure indicators) */
 	double d;
+
+	/* Help variable for storing sqrt(2sigma_b)	 */
+	double sqrt_2sigmab;
 
 };
 
@@ -237,7 +241,38 @@ inline double betaMode(double initVal, void *my_data , double error = 0.000001, 
 	}
 	return x_i;
 }
+//Function for calculating the ratio of first and second derivative
+inline double s_dens_12_ratio(double x, VectorXd vi, void *norm_data){
 
+	pars p = *(static_cast<pars *>(norm_data));
+
+	VectorXd dot_prod_vector = p.X_j.array()*vi.array()*(-p.alpha * p.X_j.array()* p.sqrt_2sigmab*x).exp();
+
+	double numerator = -p.alpha * p.sum_failure * p.sqrt_2sigmab +
+			p.alpha *  p.sqrt_2sigmab * dot_prod_vector.sum() - 2*x ;
+
+	double denominator = -2 * p.alpha * p.sigma_b * (dot_prod_vector.array() * p.X_j.array()).sum() -2 ;
+
+	return numerator/denominator;
+}
+
+
+// Function for calculating the mode for Adaptive Gauss-Hermite quadrature
+inline double sMode(double initVal, VectorXd vi ,void *my_data, double error = 0.000001, int max_count = 20){
+	double x_i = initVal;
+	double x_i1 = initVal + 0.00001;
+	int counter = 0;
+
+	while(abs(x_i-x_i1) > error){
+		++counter;
+		if(counter > max_count){
+			return initVal;  //Failure if we repeat iterations too many times
+		}
+		x_i1 = x_i;
+		x_i = x_i1 - s_dens_12_ratio(x_i1, vi, my_data);
+	}
+	return x_i;
+}
 
 
 
@@ -414,6 +449,13 @@ inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sig
 	return exp(temp);
 }
 
+inline double gh_integrand_adaptive(double s,double alpha, double dj, double sqrt_2Ck_sigmab, VectorXd vi, VectorXd Xj){
+//	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
+//			vi.array().exp().sum();
+	//vi is a vector of exp(vi)
+	double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
+	return exp(temp);
+}
 
 //Calculate numerically the value of marginal likelihood using Gauss-Hermite quadrature
 //with n=5 points. Should be increased in the future
@@ -528,17 +570,45 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data, string 
 }
 
 
-inline double taylor_integral_gh(int k, VectorXd vi,void *norm_data){
+inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data, double mu, double sigma){
 	pars p = *(static_cast<pars *>(norm_data));
 
-	VectorXd tempXj = p.X_j.array() * vi.array().exp();
+	double temp = 0;
+	double sqrt_2ck_sigma = sqrt(2*p.mixture_classes(k)*p.sigma_b);
 
-	double Uk = -p.alpha * p.sum_failure * sqrt(2*p.mixture_classes(k)*p.sigma_b) * tempXj.array().sum();
-	double Vk = 1 + p.alpha*p.alpha * p.mixture_classes(k)*p.sigma_b* (tempXj.array() * p.X_j.array()).sum();
+	//Let's try n=5
+	double x1,x2,x3,x4,x5;
+	double w1,w2,w3,w4,w5; //These are adjusted weights
 
-	return sqrt(PI/Vk) * exp(Uk*Uk/(4*Vk));
+	x1 = 2.0201828704561;
+	x2 = -x1;
+	w1 = 1.181488625536;
+	w2 = w1;
 
+	x3 = 0.95857246461382;
+	x4 = -x3;
+	w3 = 0.98658099675143;
+	w4 = w3;
+
+	x5 = 0.0;
+	w5 = 0.94530872048294;
+
+	x1 = mu +sqrt2*sigma*x1;
+	x2 = mu +sqrt2*sigma*x2;
+	x3 = mu +sqrt2*sigma*x3;
+	x4 = mu +sqrt2*sigma*x4;
+	x5 = mu +sqrt2*sigma*x5;
+
+	temp = 	w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+
+	return temp;
 }
+
+
 //n is the number of quadrature points
 inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data,string n){
 	double prob_0 = prior_prob(0) * sqrtPI;
@@ -548,7 +618,19 @@ inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
 		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_integral(i,vi,norm_data,n);
-		//prob_0 = prob_0 + prior_prob(i+1)* taylor_integral_gh(i,vi,norm_data);
+	}
+	return prior_prob(0) * sqrtPI/prob_0;
+}
+
+
+inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double mu, double sigma, void *norm_data){
+	double prob_0 = prior_prob(0) * sqrtPI;
+
+	pars p = *(static_cast<pars *>(norm_data));
+
+	//Sum the comparisons
+	for(int i=0; i < p.mixture_classes.size(); i++){
+		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_adaptive_integral(i, vi, norm_data, mu, sigma);
 	}
 	return prior_prob(0) * sqrtPI/prob_0;
 }
@@ -947,7 +1029,7 @@ int BayesW::runGibbs_Gauss()
 
 	//mean and residual variables
 	double mu;         // mean or intercept
-	double BETA_MODE;  //Beta mode at hand
+	double s_MODE;  //s mode at hand (beta_j = s* sqrt(2Cksigmab)
 
 
 	//Save variance classes
@@ -972,6 +1054,7 @@ int BayesW::runGibbs_Gauss()
 
 	//linear model variables   //y is logarithmed
 	VectorXd beta(M);      // effect sizes
+	VectorXd s_modes(M);    //The vector for modes
 
 	int marker; //Marker index
 
@@ -1078,12 +1161,19 @@ int BayesW::runGibbs_Gauss()
 				vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 			}
 
+			s_MODE = sMode(s_modes(marker), vi, &used_data);   //Find the posterior mode using the last mode as the starting value
+			s_modes(marker) = s_MODE;
+
+			double sigma = 1.0/sqrt(1 + 2*used_data.alpha * used_data.sigma_b *
+					(vi.array() * used_data.X_j.array() * used_data.X_j.array() *
+					(-used_data.alpha * used_data.X_j.array() *used_data.sqrt_2sigmab *s_MODE).exp()).sum());
+
 			/* Calculate the mixture probability */
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
 			// Calculate the probability that marker is 0
-			acum = prob_calc0_gauss(pi_L, vi, &used_data, quad_points);
-
+			//acum = prob_calc0_gauss(pi_L, vi, &used_data, quad_points);
+			acum = prob_calc0_gauss_adaptive(pi_L, vi, s_MODE, sigma, &used_data);
 
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
@@ -1152,7 +1242,8 @@ int BayesW::runGibbs_Gauss()
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
 			                            (double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 		}
-
+		//Update the sqrt(2sigmab) variable
+		used_data.sqrt_2sigmab = sqrt(2*used_data.sigma_b);
 
 		// 5. Mixture probability
 		pi_L = dist.dirichilet_rng(v.array());
