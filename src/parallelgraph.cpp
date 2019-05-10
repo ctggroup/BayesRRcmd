@@ -13,16 +13,14 @@ ParallelGraph::ParallelGraph(size_t maxParallel)
 {
     // Decompress the column for this marker then process the column using the algorithm class
     auto f = [this] (Message msg) -> Message {
-        // Decompress the column
-        std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
-        builder->initialise(msg.snp, msg.numInds);
-        const auto index = m_bayes->indexEntry(msg.snp);
         if (m_bayes->preloaded()) {
             msg.marker = m_bayes->marker(msg.snp);
         } else {
+            std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
+            builder->initialise(msg.snp, msg.numInds);
+            const auto index = m_bayes->indexEntry(msg.snp);
             if (m_bayes->compressed()) {
                 builder->decompress(m_bayes->compressedData(), index);
-                msg.marker.reset(builder->build());
             } else {
                 builder->read(m_bayes->preprocessedFile(), index);
             }
