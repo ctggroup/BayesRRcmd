@@ -387,25 +387,25 @@ inline double simson_integral_0(int quad_points_amount, int k, VectorXd vi, void
 	double integral_value = 0;
 	double quad_point = -0.5 ;
 	integral_value = integral_value + exp(-p.alpha*quad_point*p.sum_failure + (vi.array().exp()*
-					(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
-							quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
+			(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
+			quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
 
 	for(int i=1; i < quad_points_amount; i++){
 		quad_point = -0.5 + i*(0.5-(-0.5))/(quad_points_amount-1);
 		if(i % 2 == 0 ){
 			integral_value = integral_value + 2*exp(-p.alpha*quad_point*p.sum_failure + (vi.array().exp()*
-							(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
-									quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
+					(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
+					quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
 		}else{
 			integral_value = integral_value + 4*exp(-p.alpha*quad_point*p.sum_failure + (vi.array().exp()*
-										(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
-												quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
+					(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
+					quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
 		}
 	}
 	quad_point = 0.5;
 	integral_value = integral_value + exp(-p.alpha*quad_point*p.sum_failure + (vi.array().exp()*
-						(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
-								quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
+			(1- (-p.alpha * p.X_j.array() * quad_point).exp())).sum() -
+			quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b));
 
 	return integral_value/(3*quad_points_amount);
 }
@@ -417,24 +417,24 @@ inline double simson_integral_1(int quad_points_amount, int k, VectorXd vi, void
 	double integral_value = 0;
 	double quad_point = -0.5 ;
 	integral_value = integral_value + exp(-p.alpha*quad_point*p.sum_failure -
-			 (vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
+			(vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
 					quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b);
 
 	for(int i=1; i < quad_points_amount; i++){
 		quad_point = -0.5 + i*(0.5-(-0.5))/(quad_points_amount-1);
 		if(i % 2 == 0 ){
 			integral_value = integral_value + 2*exp(-p.alpha*quad_point*p.sum_failure -
-							 (vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
-									quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b);
+					(vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
+							quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b);
 		}else{
 			integral_value = integral_value + 4*exp(-p.alpha*quad_point*p.sum_failure -
-					 (vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
+					(vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
 							quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b);
 		}
 	}
 	quad_point = 0.5;
 	integral_value = integral_value + exp(-p.alpha*quad_point*p.sum_failure -
-			 (vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
+			(vi.array()-p.alpha * p.X_j.array() * quad_point).exp()).sum() -
 					quad_point*quad_point/(2*p.mixture_classes(k)*p.sigma_b);
 
 	return integral_value/(3*quad_points_amount);
@@ -442,20 +442,20 @@ inline double simson_integral_1(int quad_points_amount, int k, VectorXd vi, void
 
 //Integrand part f(s) in the Gauss-Hermite quadrature formula
 inline double gh_integrand(double s,double alpha, double dj, double sqrt_2Ck_sigmab, VectorXd vi, VectorXd Xj){
-//	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
-//			vi.array().exp().sum();
+	//	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
+	//			vi.array().exp().sum();
 	//vi is a vector of exp(vi)
 	double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum();
 	return exp(temp);
 }
 
 inline double gh_integrand_adaptive(double s,double alpha, double dj, double sqrt_2Ck_sigmab, VectorXd vi, VectorXd Xj){
-//	double temp = -alpha *s*dj*sqrt_2Ck_sigmab - (vi.array() -  Xj.array()*s*sqrt_2Ck_sigmab*alpha ).exp().sum() +
-//			vi.array().exp().sum();
+
 	//vi is a vector of exp(vi)
 	double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
 	return exp(temp);
 }
+
 
 //Calculate numerically the value of marginal likelihood using Gauss-Hermite quadrature
 //with n=5 points. Should be increased in the future
@@ -509,14 +509,14 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data, string 
 		//x9 = 0
 
 		temp = w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w1 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w3 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w5 * gh_integrand(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w7 * gh_integrand(x7,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w7 * gh_integrand(x8,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-			w9 ; // gh_integrand(0) =1
+				w1 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 * gh_integrand(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w7 * gh_integrand(x7,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w7 * gh_integrand(x8,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w9 ; // gh_integrand(0) =1
 
 
 	}else{
@@ -527,7 +527,7 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data, string 
 
 
 	//n=10
-/*	double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;
+	/*	double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;
 	double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10;
 	x1 = -3.4361591188377;
 	x2 = 3.4361591188377;
@@ -569,16 +569,35 @@ inline double gauss_hermite_integral(int k, VectorXd vi,void *norm_data, string 
 	return temp;
 }
 
-
-inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data, double mu, double sigma, string n){
+//Let's assume that mu is always 0 for speed
+inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data, double sigma, string n){
 	pars p = *(static_cast<pars *>(norm_data));
 
 	double temp = 0;
 	double sqrt_2ck_sigma = sqrt(2*p.mixture_classes(k)*p.sigma_b);
 
+	if(n == "3"){
+		double x1,x2;
+		double w1,w2,w3;
+
+		x1 = 1.2247448713916;
+		x2 = -x1;
+
+		w1 = 1.3239311752136;
+		w2 = w1;
+
+		w3 = 1.1816359006037;
+
+		x1 = sqrt2*sigma*x1;
+		x2 = sqrt2*sigma*x2;
+
+		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3;
+	}
 	// n=5
-	if(n == "5"){
-		double x1,x2,x3,x4,x5;
+	else if(n == "5"){
+		double x1,x2,x3,x4;//x5;
 		double w1,w2,w3,w4,w5; //These are adjusted weights
 
 		x1 = 2.0201828704561;
@@ -591,22 +610,57 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		w3 = 0.98658099675143;
 		w4 = w3;
 
-		x5 = 0.0;
+		//	x5 = 0.0;
 		w5 = 0.94530872048294;
 
-		x1 = mu +sqrt2*sigma*x1;
-		x2 = mu +sqrt2*sigma*x2;
-		x3 = mu +sqrt2*sigma*x3;
-		x4 = mu +sqrt2*sigma*x4;
-		x5 = mu +sqrt2*sigma*x5;
+		x1 = sqrt2*sigma*x1;
+		x2 = sqrt2*sigma*x2;
+		x3 = sqrt2*sigma*x3;
+		x4 = sqrt2*sigma*x4;
+		//x5 = sqrt2*sigma*x5;
 
-		temp = 	w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand_adaptive(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w4 * gh_integrand_adaptive(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 ;//* gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j); // This part is just 1
+	}else if(n == "7"){
+		double x1,x2,x3,x4,x5,x6;
+		double w1,w2,w3,w4,w5,w6,w7; //These are adjusted weights
+
+		x1 = 2.6519613568352;
+		x2 = -x1;
+		w1 = 1.1013307296103;
+		w2 = w1;
+
+		x3 = 1.6735516287675;
+		x4 = -x3;
+		w3 = 0.8971846002252;
+		w4 = w3;
+
+		x5 = 0.81628788285897;
+		x6 = -x5;
+		w5 = 0.8286873032836;
+		w6 = w5;
+
+		w7 = 0.81026461755681;
+
+		x1 = sqrt2*sigma*x1;
+		x2 = sqrt2*sigma*x2;
+		x3 = sqrt2*sigma*x3;
+		x4 = sqrt2*sigma*x4;
+		x5 = sqrt2*sigma*x5;
+		x6 = sqrt2*sigma*x6;
+
+		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand_adaptive(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w4 * gh_integrand_adaptive(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 * gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w6 * gh_integrand_adaptive(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w7;
 	}else if(n == "11"){
-		double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11;
+		double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
 		double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11; //These are adjusted weights
 
 		x1 = 3.6684708465596;
@@ -634,34 +688,36 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		w9 = 0.66096041944096;
 		w10 = w9;
 
-		x11 = 0.0;
+		//x11 = 0.0;
 		w11 = 0.65475928691459;
 
-		x1 = mu +sqrt2*sigma*x1;
-		x2 = mu +sqrt2*sigma*x2;
-		x3 = mu +sqrt2*sigma*x3;
-		x4 = mu +sqrt2*sigma*x4;
-		x5 = mu +sqrt2*sigma*x5;
-		x6 = mu +sqrt2*sigma*x6;
-		x7 = mu +sqrt2*sigma*x7;
-		x8 = mu +sqrt2*sigma*x8;
-		x9 = mu +sqrt2*sigma*x9;
-		x10 = mu +sqrt2*sigma*x10;
-		x11 = mu +sqrt2*sigma*x11;
+		x1 = sqrt2*sigma*x1;
+		x2 = sqrt2*sigma*x2;
+		x3 = sqrt2*sigma*x3;
+		x4 = sqrt2*sigma*x4;
+		x5 = sqrt2*sigma*x5;
+		x6 = sqrt2*sigma*x6;
+		x7 = sqrt2*sigma*x7;
+		x8 = sqrt2*sigma*x8;
+		x9 = sqrt2*sigma*x9;
+		x10 = sqrt2*sigma*x10;
+		//	x11 = sqrt2*sigma*x11;
 
-		temp = 	w1 * gh_integrand(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w2 * gh_integrand(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w3 * gh_integrand(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w4 * gh_integrand(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w5 * gh_integrand(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w6 * gh_integrand(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w7 * gh_integrand(x7,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w8 * gh_integrand(x8,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w9 * gh_integrand(x9,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w10 * gh_integrand(x10,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w11 * gh_integrand(x11,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w3 * gh_integrand_adaptive(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w4 * gh_integrand_adaptive(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w5 * gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w6 * gh_integrand_adaptive(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w7 * gh_integrand_adaptive(x7,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w8 * gh_integrand_adaptive(x8,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w9 * gh_integrand_adaptive(x9,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w10 * gh_integrand_adaptive(x10,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+				w11 ;//* gh_integrand_adaptive(x11,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
+	}else{
+		cout << "Possible number of quad_points = 3,5,7,11" << endl;
+		exit(1);
 	}
-
 
 	return sqrt2*sigma*temp;
 }
@@ -681,7 +737,7 @@ inline double prob_calc0_gauss(VectorXd prior_prob, VectorXd vi, void *norm_data
 }
 
 
-inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double mu, void *norm_data, string n){
+inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, void *norm_data, string n){
 	double prob_0 = prior_prob(0) * sqrtPI;
 
 	pars p = *(static_cast<pars *>(norm_data));
@@ -690,9 +746,23 @@ inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, double
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
 		double sigma = 1.0/sqrt(1+2*p.alpha*p.alpha*p.sigma_b*p.mixture_classes(i) * exp_sum);
-		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_adaptive_integral(i, vi, norm_data, mu, sigma, n);
+		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_adaptive_integral(i, vi, norm_data,  sigma, n);
 	}
 	return prior_prob(0) * sqrtPI/prob_0;
+}
+
+//Pass the vector post_marginals of marginal likelihoods by reference
+inline void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, VectorXd vi, void *norm_data, string n){
+	pars p = *(static_cast<pars *>(norm_data));
+
+	double exp_sum = (vi.array() * p.X_j.array() * p.X_j.array()).sum(); //For calculating sigma assume mu=0 and save time on computation
+	// First element is pi_0 *sqrt(pi)
+	post_marginals(0) = prior_prob(0) * sqrtPI;
+	for(int i=0; i < p.mixture_classes.size(); i++){
+		double sigma = 1.0/sqrt(1 + 2*p.alpha * p.alpha * p.sigma_b * p.mixture_classes(i) * exp_sum);
+		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, vi, norm_data, sigma, n);
+	}
+
 }
 
 
@@ -744,9 +814,9 @@ inline double prob_calc0_marginal(VectorXd prior_prob, double U2, double V, void
 	double prob_0 = prior_prob(0)*sqrt(2*p.sigma_b);
 
 	for(int i=0; i < p.mixture_classes.size(); i++){
-			double V_i = V + 1/(2*p.sigma_b*p.mixture_classes(i));
-			prob_0 = prob_0 + prior_prob(i+1)/sqrt(p.mixture_classes(i)*V_i)*
-					exp(U2/(4*V_i)) ;
+		double V_i = V + 1/(2*p.sigma_b*p.mixture_classes(i));
+		prob_0 = prob_0 + prior_prob(i+1)/sqrt(p.mixture_classes(i)*V_i)*
+				exp(U2/(4*V_i)) ;
 	}
 	return prior_prob(0)*sqrt(2*p.sigma_b)/prob_0;
 }
@@ -873,7 +943,7 @@ int BayesW::runGibbs_Taylor()
 	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
 	for(int marker=0; marker<M; marker++){
-			sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+		sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	}
 
 	// Save the number of events
@@ -1010,10 +1080,10 @@ int BayesW::runGibbs_Taylor()
 		// 4. sigma_b
 		if(true){
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-						(double)(used_data.beta_sigma + 0.5 * betasqn));
+					(double)(used_data.beta_sigma + 0.5 * betasqn));
 		}else{		//sigma_g version
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-			                            (double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+					(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 		}
 
 
@@ -1032,8 +1102,8 @@ int BayesW::runGibbs_Taylor()
 			}
 		}
 
-//Print results
-        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
+		//Print results
+		cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -1090,7 +1160,6 @@ int BayesW::runGibbs_Gauss()
 	//mean and residual variables
 	double mu;         // mean or intercept
 	double BETA_MODE;  //s mode at hand (beta_j = s* sqrt(2Cksigmab)
-
 
 	//Save variance classes
 	used_data.mixture_classes.resize(km1);
@@ -1150,7 +1219,7 @@ int BayesW::runGibbs_Gauss()
 	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
 	for(int marker=0; marker<M; marker++){
-			sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+		sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	}
 
 	// Save the number of events
@@ -1175,6 +1244,10 @@ int BayesW::runGibbs_Gauss()
 
 	VectorXi components(M);
 	components.setZero();  //Exclude all the markers from the model
+
+
+	VectorXd marginal_likelihoods(K); //For each mixture
+	marginal_likelihoods.setOnes(); //Initialize with just ones
 
 	for (int iteration = 0; iteration < max_iterations; iteration++) {
 		if (iteration > 0) {
@@ -1216,25 +1289,25 @@ int BayesW::runGibbs_Gauss()
 			if(beta(marker) != 0){
 				// Subtract the weighted last beta²
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
-				betasqn = betasqn - beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
+			//	betasqn = betasqn - beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
 				// Temporary variables for probability calculation (exponent of the adjusted residual without jth effect)
 				// Change this only when epsilon changes
 				vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 			}
-//For speed don't calculate the mode
-			BETA_MODE = 0.0;//betaMode(BETAmodes(marker) ,&used_data);   //Find the posterior mode using the last mode as the starting value
-			BETAmodes(marker) = BETA_MODE;
-			double s_MODE = BETA_MODE/used_data.sqrt_2sigmab;
-//			double sigma = 1.0/sqrt(1 + 2*used_data.alpha * used_data.sigma_b *
-//					(vi.array() * used_data.X_j.array() * used_data.X_j.array() *
-//					(-used_data.alpha * used_data.X_j.array() *used_data.sqrt_2sigmab *s_MODE).exp()).sum());
+
+
 
 			/* Calculate the mixture probability */
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
 			// Calculate the probability that marker is 0
 			//acum = prob_calc0_gauss(pi_L, vi, &used_data, quad_points);
-			acum = prob_calc0_gauss_adaptive(pi_L, vi, s_MODE, &used_data, quad_points);
+
+			// Calculate the (ratios of) marginal likelihoods
+			marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, vi, &used_data, quad_points);
+
+			//acum = prob_calc0_gauss_adaptive(pi_L, vi, &used_data, quad_points);
+			acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
@@ -1266,17 +1339,14 @@ int BayesW::runGibbs_Gauss()
 						// Change the weighted sum of squares of betas
 						v[k] += 1.0;
 						components[marker] = k;
-						betasqn = betasqn + beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
+					//	betasqn = betasqn + beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
 					}
 					break;
 				} else {
 					if((k+1) == (K-1)){
 						acum = 1; // In the end probability will be 1
 					}else{
-						cout <<"Use only spike and slab --S 1" << endl;
-						exit(1);
-
-						//acum += prob_calc_marginal(k, pi_L, U2, V, &used_data);//Currently we try out only one mixture
+						acum += marginal_likelihoods(k+1)/marginal_likelihoods.sum();
 					}
 
 				}
@@ -1298,10 +1368,10 @@ int BayesW::runGibbs_Gauss()
 		// 4. sigma_b
 		if(false){
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-						(double)(used_data.beta_sigma + 0.5 * betasqn));
+					(double)(used_data.beta_sigma + 0.5 * betasqn));
 		}else{		//sigma_g version
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-			                            (double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+					(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 		}
 		//Update the sqrt(2sigmab) variable
 		used_data.sqrt_2sigmab = sqrt(2*used_data.sigma_b);
@@ -1321,8 +1391,8 @@ int BayesW::runGibbs_Gauss()
 			}
 		}
 
-//Print results
-        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
+		//Print results
+		cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -1394,11 +1464,11 @@ int BayesW::runGibbs_old()
 	}
 	// Component variables
 	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
-    VectorXd pi_L_cond1(km1); // Vector of conditional probabilities of belonging to specific mixture, given that the SNP has an effect
+	VectorXd pi_L_cond1(km1); // Vector of conditional probabilities of belonging to specific mixture, given that the SNP has an effect
 
 	//Give all mixtures (and 0 class) equal initial probabilities
 	pi_L.setConstant(1.0/K);
-    pi_L_cond1.setConstant(1.0/km1);
+	pi_L_cond1.setConstant(1.0/km1);
 
 	//Vector to contain probabilities of belonging to a mixture
 	double acum;
@@ -1418,7 +1488,7 @@ int BayesW::runGibbs_old()
 	gi.setZero();
 	double sigma_g;
 
-    double C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ; // Parameter for the estimating the belongingness to spike
+	double C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ; // Parameter for the estimating the belongingness to spike
 
 	VectorXd y;   //y is logarithmed here
 
@@ -1447,7 +1517,7 @@ int BayesW::runGibbs_old()
 	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
 	for(int marker=0; marker<M; marker++){
-			sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+		sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	}
 
 	// Save the number of events
@@ -1581,18 +1651,18 @@ int BayesW::runGibbs_old()
 		// 4. sigma_b
 		if(true){
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-						(double)(used_data.beta_sigma + 0.5 * betasqn));
+					(double)(used_data.beta_sigma + 0.5 * betasqn));
 		}else{		//sigma_g version
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-			                            (double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+					(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 		}
 
 
 		// 5. Mixture probability
 		pi_L = dist.dirichilet_rng(v.array());
 		// Also update the "spike parameter"
-        pi_L_cond1 = pi_L.segment(1,km1).array()/(pi_L.segment(1,km1).array().sum());
-        C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ;
+		pi_L_cond1 = pi_L.segment(1,km1).array()/(pi_L.segment(1,km1).array().sum());
+		C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ;
 
 
 		if (iteration >= burn_in) {
@@ -1606,8 +1676,8 @@ int BayesW::runGibbs_old()
 			}
 		}
 
-//Print results
-        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
+		//Print results
+		cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -1679,11 +1749,11 @@ int BayesW::runGibbs_Simpson()
 	}
 	// Component variables
 	VectorXd pi_L(K); // Vector of mixture probabilities (+1 for 0 class)
-    VectorXd pi_L_cond1(km1); // Vector of conditional probabilities of belonging to specific mixture, given that the SNP has an effect
+	VectorXd pi_L_cond1(km1); // Vector of conditional probabilities of belonging to specific mixture, given that the SNP has an effect
 
 	//Give all mixtures (and 0 class) equal initial probabilities
 	pi_L.setConstant(1.0/K);
-    pi_L_cond1.setConstant(1.0/km1);
+	pi_L_cond1.setConstant(1.0/km1);
 
 	//Vector to contain probabilities of belonging to a mixture
 	double acum;
@@ -1703,7 +1773,7 @@ int BayesW::runGibbs_Simpson()
 	gi.setZero();
 	double sigma_g;
 
-    double C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ; // Parameter for the estimating the belongingness to spike
+	double C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ; // Parameter for the estimating the belongingness to spike
 
 	VectorXd y;   //y is logarithmed here
 
@@ -1730,7 +1800,7 @@ int BayesW::runGibbs_Simpson()
 	VectorXd sum_failure(M);
 
 	for(int marker=0; marker<M; marker++){
-			sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+		sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	}
 
 	// Save the number of events
@@ -1860,18 +1930,18 @@ int BayesW::runGibbs_Simpson()
 		// 4. sigma_b
 		if(false){
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-						(double)(used_data.beta_sigma + 0.5 * betasqn));
+					(double)(used_data.beta_sigma + 0.5 * betasqn));
 		}else{		//sigma_g version
 			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-			                            (double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+					(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 		}
 
 
 		// 5. Mixture probability
 		pi_L = dist.dirichilet_rng(v.array());
 		// Also update the "spike parameter"
-        pi_L_cond1 = pi_L.segment(1,km1).array()/(pi_L.segment(1,km1).array().sum());
-        C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ;
+		pi_L_cond1 = pi_L.segment(1,km1).array()/(pi_L.segment(1,km1).array().sum());
+		C_0 = (pi_L_cond1.array()/used_data.mixture_classes.array().sqrt()).array().sum() ;
 
 
 		if (iteration >= burn_in) {
@@ -1885,8 +1955,8 @@ int BayesW::runGibbs_Simpson()
 			}
 		}
 
-//Print results
-        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
+		//Print results
+		cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
