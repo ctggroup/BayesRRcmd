@@ -55,9 +55,9 @@ add_library(libbrr-dev
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     SparseBayesRRG.cpp
-    BayesRGroupsBase.cpp
     DenseRGroups.cpp
-	SparseRGroups.cpp
+    SparseRGroups.cpp
+    BayesRGroupsBase.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
@@ -86,9 +86,9 @@ add_executable(${PROJECT_NAME}
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     SparseBayesRRG.cpp
-    BayesRGroupsBase.cpp
     DenseRGroups.cpp
-	SparseRGroups.cpp
+    SparseRGroups.cpp
+    BayesRGroupsBase.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
