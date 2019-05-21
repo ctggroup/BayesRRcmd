@@ -37,6 +37,11 @@ void processDenseData(Options opt) {
         data.readPhenotypeFile(opt.phenotypeFile);
         data.readBedFile_noMPI(opt.bedFile+".bed");
 
+        // If there is a file for fixed effects (model matrix), then read the data
+        if(opt.fixedFile != ""){
+        	data.readFixedEffectMatrix(opt.fixedFile);
+        }
+
         // Option bayesType="bayesMmap" is going to be deprecated
         if (opt.bayesType == "bayesMmap" || opt.bayesType == "bayes"){
             BayesRRm analysis(data, opt, sysconf(_SC_PAGE_SIZE));
@@ -49,12 +54,10 @@ void processDenseData(Options opt) {
             	analysis.runGibbs_old();
             }else if(opt.bayesW_version == "taylor"){
             	analysis.runGibbs_Taylor();
-            }else if(opt.bayesW_version == "simpson"){
-            	analysis.runGibbs_Simpson();
             }else if(opt.bayesW_version == "gauss"){
             	analysis.runGibbs_Gauss();
             }else{
-            	cout << "Choose either bayesW_version = old / marginal / simpson" << endl;
+            	cout << "Choose either bayesW_version = old / taylor / gauss" << endl;
             }
 
         } else if (opt.bayesType == "bayesG") {

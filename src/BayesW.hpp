@@ -38,7 +38,6 @@ public:
     virtual ~BayesW();
     int runGibbs_old(); // where we run Gibbs sampling over the parametrised model
     int runGibbs_Taylor(); // where we run Gibbs sampling over the parametrised model
-    int runGibbs_Simpson(); // where we run Gibbs sampling over the parametrised model
 
     int runGibbs_Gauss(); // where we run Gibbs sampling over the parametrised model
 

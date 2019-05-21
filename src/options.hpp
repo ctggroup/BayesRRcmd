@@ -35,6 +35,7 @@ public:
     string failureFile;
     string bayesW_version;
     string quad_points;
+    string fixedFile;
 
     string title;
     string analysisType;
@@ -63,6 +64,7 @@ public:
         title                   = "brr";
         analysisType            = "Bayes";
         bayesType               = "C";
+        fixedFile 				= "";
         phenotypeFile           = "";
         bedFile                 = "";
         mcmcSampleFile          = "bayesOutput.csv";

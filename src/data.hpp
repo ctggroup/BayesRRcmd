@@ -122,7 +122,7 @@ public:
     vector<bool> fullSnpFlag;
     vector<vector<SnpInfo*> > mldmVec;
 
-    unsigned numFixedEffects;
+    unsigned numFixedEffects = 0;
     unsigned numSnps;
     unsigned numInds;
 
@@ -132,6 +132,8 @@ public:
 
     void mapCompressedPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
     void unmapCompressedPreprocessedBedFile();
+
+    void readFixedEffectMatrix(const string &filename);
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);

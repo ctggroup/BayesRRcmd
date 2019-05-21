@@ -94,7 +94,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
             groupFile = argv[++i];
             ss << "--group " << argv[i] << "\n";
         }
-
+        // Fixed effects matrix file
+        else if (!strcmp(argv[i], "--fixed_effects")) {
+        	fixedFile = argv[++i];
+           	ss << "--fixed_effects " << argv[i] << "\n";
+      	}
         // Failure vector file
         else if (!strcmp(argv[i], "--failure")) {
         	failureFile = argv[++i];

@@ -21,8 +21,12 @@ public:
     void setIndividualCount(unsigned int individualCount) { m_individualCount = individualCount; }
     unsigned int individualCount() const { return m_individualCount; }
 
+    void setFixedCount(unsigned int fixedCount) { m_fixedCount = fixedCount; }
+    unsigned int fixedCount() const { return m_fixedCount; }
+
     void open();
     void open_bayesW();
+    void open_bayesW_fixed();
 
     void write(const Eigen::VectorXd &sample);
     void close();
@@ -32,6 +36,7 @@ private:
     std::ofstream m_outFile;
     unsigned int m_markerCount;
     unsigned int m_individualCount;
+    unsigned int m_fixedCount;
     Eigen::IOFormat m_commaInitFormat;
 };
 
