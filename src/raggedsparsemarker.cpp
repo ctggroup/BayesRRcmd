@@ -6,13 +6,10 @@ VectorXdPtr RaggedSparseMarker::calculateEpsilonChange(const double beta_old, co
 {
     SparseMarker::calculateEpsilonChange(beta_old, beta);
 
-    auto delta = std::make_unique<VectorXd>(numInds);
-    delta->setZero();
-
     const double dBeta = beta_old - beta;
     const auto meanAdjustment = dBeta * mean / sd;
     // 1. Adjust for the means. If snp is 0, this will be the only adjustment made
-    delta->array() -= meanAdjustment;
+    auto delta = std::make_unique<VectorXd>(VectorXd::Constant(numInds, -meanAdjustment));
 
     // 2. Adjust for snp 1 values
     const double oneAdjustment = dBeta / sd;
