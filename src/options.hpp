@@ -36,6 +36,7 @@ public:
     string bayesW_version;
     string quad_points;
     string fixedFile;
+    unsigned int fixedEffectNumber;
 
     string title;
     string analysisType;

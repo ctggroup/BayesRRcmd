@@ -99,6 +99,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
         	fixedFile = argv[++i];
            	ss << "--fixed_effects " << argv[i] << "\n";
       	}
+        // Fixed effects number
+        else if (!strcmp(argv[i], "--fixedEffectNumber")) {
+                fixedEffectNumber = atoi(argv[++i]);
+                ss << "--fixedEffectNumber " << argv[i] << "\n";
+        }
         // Failure vector file
         else if (!strcmp(argv[i], "--failure")) {
         	failureFile = argv[++i];

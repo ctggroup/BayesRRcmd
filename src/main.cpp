@@ -39,7 +39,7 @@ void processDenseData(Options opt) {
 
         // If there is a file for fixed effects (model matrix), then read the data
         if(opt.fixedFile != ""){
-        	data.readFixedEffectMatrix(opt.fixedFile);
+        	data.readCSV(opt.fixedFile,opt.fixedEffectNumber);
         }
 
         // Option bayesType="bayesMmap" is going to be deprecated

@@ -133,7 +133,7 @@ public:
     void mapCompressedPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
     void unmapCompressedPreprocessedBedFile();
 
-    void readFixedEffectMatrix(const string &filename);
+    void readCSV(string &filename, int cols);
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);
