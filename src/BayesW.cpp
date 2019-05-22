@@ -1236,10 +1236,12 @@ int BayesW::runGibbs_Gauss()
 			for(int fix_i = 0; fix_i < numFixedEffects; fix_i++){
 				new_xinit << theta(fix_i)-0.01, theta(fix_i),  theta(fix_i)+0.005, theta(fix_i)+0.01;  // New values for abscissae evaluation
 				assignArray(p_xinit,new_xinit);
-                used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * theta(fix_i)).array();
-
 				used_data.X_j = data.X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
 				used_data.sum_failure = sum_failure_fix(fix_i);
+
+                used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * theta(fix_i)).array();
+
+
 
 				err = arms(xinit,ninit,&xl,&xr,theta_dens,&used_data,&convex,
 						npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
