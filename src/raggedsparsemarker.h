@@ -15,9 +15,8 @@ struct RaggedSparseMarker : public SparseMarker
     // the indexes of elements of the bed matrix which are missing for this column
     IndexVector Zmissing;
 
-    void updateEpsilon(VectorXd &epsilon,
-                       const double beta_old,
-                       const double beta) override;
+    VectorXdPtr calculateEpsilonChange(const double beta_old,
+                                       const double beta) override;
 
     std::streamsize size() const override;
     void read(std::istream *inStream) override;

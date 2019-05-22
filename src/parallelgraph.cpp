@@ -75,7 +75,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
         m_bayes->updateGlobal(msg.marker.get(),
                               msg.result->betaOld,
                               msg.result->beta,
-                              msg.result->deltaEpsilon);
+                              *msg.result->deltaEpsilon);
 
         std::get<0>(outputPorts).try_put(std::get<0>(decompressionTuple));
         std::get<1>(outputPorts).try_put(std::get<0>(input));

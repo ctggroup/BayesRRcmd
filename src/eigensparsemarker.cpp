@@ -2,12 +2,11 @@
 
 #include <iostream>
 
-void EigenSparseMarker::updateEpsilon(VectorXd &epsilon, const double beta_old, const double beta)
+VectorXdPtr EigenSparseMarker::calculateEpsilonChange(const double beta_old, const double beta)
 {
-    SparseMarker::updateEpsilon(epsilon, beta_old, beta);
-
+    SparseMarker::calculateEpsilonChange(beta_old, beta);
     const double dBeta = beta_old - beta;
-    epsilon += dBeta * Zg / sd - dBeta * mean / sd * *ones;
+    return std::make_unique<VectorXd>(dBeta * Zg / sd - dBeta * mean / sd * *ones);
 }
 
 std::streamsize EigenSparseMarker::size() const

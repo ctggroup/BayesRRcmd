@@ -25,7 +25,7 @@ class MarkerBuilder;
 struct AsyncResult {
     double betaOld = 0.0;
     double beta = 0.0;
-    VectorXd deltaEpsilon;
+    std::unique_ptr<VectorXd> deltaEpsilon;
 };
 
 class BayesRBase

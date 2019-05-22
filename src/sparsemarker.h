@@ -14,9 +14,8 @@ struct SparseMarker : public Marker
 
     double computeNum(VectorXd &epsilon, const double beta_old) override;
 
-    void updateEpsilon(VectorXd &epsilon,
-                       const double beta_old,
-                       const double beta) override;
+    VectorXdPtr calculateEpsilonChange(const double beta_old,
+                                       const double beta) override;
 
     virtual void updateStatistics(unsigned int allele1, unsigned int allele2);
 

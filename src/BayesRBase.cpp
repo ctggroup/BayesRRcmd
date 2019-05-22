@@ -343,7 +343,7 @@ void BayesRBase::processColumn(Marker *marker)
     const auto eps_begin = std::chrono::high_resolution_clock::now();
     if (!skipUpdate) {
       
-        marker->updateEpsilon(m_epsilon, beta_old, beta_new);
+        m_epsilon += *marker->calculateEpsilonChange(beta_old, beta_new);
         writeWithUniqueLock(marker);
 
     }
@@ -367,8 +367,6 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
     double component = 0;
     VectorXd epsilon(m_data->numInds);
     auto result = std::make_unique<AsyncResult>();
-    result->deltaEpsilon.resize(m_data->numInds); //vector that will contain the delta epsilon message
-    result->deltaEpsilon.setZero();
     // to keep track of the column processing time     
     const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(marker);
@@ -466,7 +464,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {    
           // this  also updates epsilonSum!
-        marker->updateEpsilon(result->deltaEpsilon, result->betaOld, result->beta);
+        result->deltaEpsilon = marker->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum    
     }
     // In the new version of Async we do not synchronise epsilon Async, we will handle this through the global node

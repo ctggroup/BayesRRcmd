@@ -8,6 +8,8 @@
 
 using namespace Eigen;
 
+using VectorXdPtr = std::unique_ptr<VectorXd>;
+
 struct CompressedMarker
 {
     std::shared_ptr<unsigned char[]> buffer = nullptr;
@@ -24,9 +26,8 @@ struct Marker
     virtual double computeNum(VectorXd &epsilon,
                               const double beta_old) = 0;
 
-    virtual void updateEpsilon(VectorXd &epsilon,
-                               const double beta_old,
-                               const double beta) = 0;
+    virtual VectorXdPtr calculateEpsilonChange(const double beta_old,
+                                               const double beta) = 0;
 
     virtual CompressedMarker compress() const;
     virtual void decompress(unsigned char* data,
