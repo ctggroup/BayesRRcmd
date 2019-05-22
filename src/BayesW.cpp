@@ -1076,7 +1076,7 @@ int BayesW::runGibbs_Gauss()
 
 	//If we have fixed effects, then record their number to samplewriter and create a different header
 	if(numFixedEffects > 0){
-		writer.setMarkerCount(numFixedEffects);
+		writer.setFixedCount(numFixedEffects);
 		writer.open_bayesW_fixed();
 		sample.resize(numFixedEffects+2*M+4); // all ther rest + theta (fixed effects)
 
@@ -1181,7 +1181,7 @@ int BayesW::runGibbs_Gauss()
 	VectorXd sum_failure_fix(numFixedEffects);
 	if(numFixedEffects > 0){
 		for(int fix_i=0; fix_i < numFixedEffects; fix_i++){
-			sum_failure_fix(marker) = ((data.X.col(fix_i).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+			sum_failure_fix(fix_i) = ((data.X.col(fix_i).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 		}
 	}
 
@@ -1220,6 +1220,7 @@ int BayesW::runGibbs_Gauss()
 		xl = 3; xr = 5;
 		new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
 
+		used_data.epsilon = used_data.epsilon.array() + mu;// we add to epsilon =Y+mu-X*beta
 
 		err = arms(xinit,ninit,&xl,&xr,mu_dens,&used_data,&convex,
 				npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
@@ -1234,7 +1235,8 @@ int BayesW::runGibbs_Gauss()
 			for(int fix_i = 0; fix_i < numFixedEffects; fix_i++){
 				new_xinit << theta(fix_i)-0.01, theta(fix_i),  theta(fix_i)+0.005, theta(fix_i)+0.01;  // New values for abscissae evaluation
 				assignArray(p_xinit,new_xinit);
-				used_data.epsilon = used_data.epsilon.array() + theta(fix_i);//  we add the previous value
+                used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * theta(fix_i)).array();
+
 				used_data.X_j = data.X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
 				used_data.sum_failure = sum_failure_fix(fix_i);
 
@@ -1243,7 +1245,7 @@ int BayesW::runGibbs_Gauss()
 				errorCheck(err);
 
 				theta(fix_i) = xsamp[0];  // Save the new result
-				used_data.epsilon = used_data.epsilon - used_data.X_j * theta(fix_i);
+                used_data.epsilon = used_data.epsilon - used_data.X_j * theta(fix_i);
 			}
 		}
 
