@@ -56,25 +56,21 @@ void processDenseData(Options opt) {
         cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
 
         clock_t start_bed = clock();
-        if (opt.numThread > 1) {
-            std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
-            if (opt.numThreadSpawned > 0)
-                taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
+        std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+        if (opt.numThreadSpawned > 0)
+            taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
-            std::cout << "Preprocessing with " << opt.numThread << " threads ("
-                      << (opt.numThreadSpawned > 0 ? std::to_string(opt.numThreadSpawned) : "auto") << " spawned) and "
-                      << opt.preprocessChunks << " columns per thread."
-                      << endl;
+        std::cout << "Preprocessing with " << opt.numThread << " threads ("
+                  << (opt.numThreadSpawned > 0 ? std::to_string(opt.numThreadSpawned) : "auto") << " spawned) and "
+                  << opt.preprocessChunks << " columns per thread."
+                  << endl;
 
-            PreprocessGraph graph(opt.numThread);
-            graph.preprocessBedFile(opt.bedFile,
-                                    opt.dataType,
-                                    opt.compress,
-                                    &data,
-                                    opt.preprocessChunks);
-        } else {
-            data.preprocessBedFile(bedFile, ppFile, ppIndexFile, opt.compress);
-        }
+        PreprocessGraph graph(opt.numThread);
+        graph.preprocessBedFile(opt.bedFile,
+                                opt.dataType,
+                                opt.compress,
+                                &data,
+                                opt.preprocessChunks);
 
         clock_t end = clock();
         printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
