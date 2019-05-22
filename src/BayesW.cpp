@@ -1219,6 +1219,7 @@ int BayesW::runGibbs_Gauss()
 		/* 1. Mu */
 		xl = 3; xr = 5;
 		new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
+		assignArray(p_xinit,new_xinit);
 
 		used_data.epsilon = used_data.epsilon.array() + mu;// we add to epsilon =Y+mu-X*beta
 
