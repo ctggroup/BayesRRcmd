@@ -84,7 +84,10 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
     }));
 
     // Control the number of messages flowing through the graph
-    m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
+    const auto limit = m_maxParallel == unlimited
+            ? static_cast<size_t>(tbb::this_task_arena::max_concurrency())
+            : m_maxParallel;
+    m_limit.reset(new limiter_node<Message>(*m_graph, limit));
 
     auto writeToDisk = [this] (Message msg) -> Message {
         // Write out the preprocessed data

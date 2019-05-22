@@ -38,7 +38,10 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
 
     // Do not allow predecessors to carry on blindly until later parts of
     // the graph have finished and freed up some resources.
-    m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
+    const auto limit = m_maxParallel == unlimited
+            ? static_cast<size_t>(tbb::this_task_arena::max_concurrency())
+            : m_maxParallel;
+    m_limit.reset(new limiter_node<Message>(*m_graph, limit));
 
     auto g = [this] (Message msg) -> continue_msg {
         // Delegate the processing of this column to the algorithm class

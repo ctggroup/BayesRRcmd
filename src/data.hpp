@@ -125,7 +125,6 @@ public:
     unsigned numSnps;
     unsigned numInds;
 
-    void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile);
     void unmapPreprocessedBedFile();
 
