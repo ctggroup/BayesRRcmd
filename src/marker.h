@@ -23,7 +23,7 @@ struct Marker
     unsigned int i = 0;
     unsigned int numInds = 0;
 
-    virtual double computeNum(VectorXd &epsilon,
+    virtual double computeNum(const VectorXd &epsilon,
                               const double beta_old) = 0;
 
     virtual VectorXdPtr calculateEpsilonChange(const double beta_old,

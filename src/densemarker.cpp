@@ -5,7 +5,7 @@
 
 #include <fstream>
 
-double DenseMarker::computeNum(VectorXd &epsilon, const double beta_old)
+double DenseMarker::computeNum(const VectorXd &epsilon, const double beta_old)
 {
     //in order to not break async and sync updates for dense we change this
     //we now CX dot CX = N-1 given that both are already centered and scaled

@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 
-double SparseMarker::computeNum(VectorXd &epsilon, const double beta_old)
+double SparseMarker::computeNum(const VectorXd &epsilon, const double beta_old)
 {
     return computeNum(epsilon, beta_old, epsilonSum);
 }
@@ -71,7 +71,7 @@ void SparseMarker::write(std::ostream *outStream) const
     writeDouble(Zsum);
 }
 
-double SparseMarker::computeNum(VectorXd &epsilon, const double beta_old, const double epsilonSum)
+double SparseMarker::computeNum(const VectorXd &epsilon, const double beta_old, const double epsilonSum)
 {
     return beta_old * (static_cast<double>(numInds) - 1.0) - mean * epsilonSum / sd + dot(epsilon);
 }
