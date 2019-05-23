@@ -84,8 +84,8 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_sigmaE = 0.0;   // residuals variance
 
     // Linear model variables
-    m_beta = VectorXd(markerCount);           // effect sizes
-    m_y_tilde = VectorXd(individualCount);    // variable containing the adjusted residuals to exclude the effects of a given marker
+    m_beta = VectorXd::Zero(markerCount);           // effect sizes
+    m_y_tilde = VectorXd::Zero(individualCount);    // variable containing the adjusted residuals to exclude the effects of a given marker
     m_epsilon = VectorXd(individualCount);    // variable containing the residuals
 
     m_y = VectorXd();
@@ -97,11 +97,9 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_cVa.segment(1, km1) = m_cva;
     m_priorPi[0] = 0.5;
     m_priorPi.segment(1, km1) = m_priorPi[0] * m_cVa.segment(1, km1).array() / m_cVa.segment(1, km1).sum();
-    m_y_tilde.setZero();
 
     m_cVaI[0] = 0;
     m_cVaI.segment(1, km1) = m_cVa.segment(1, km1).cwiseInverse();
-    m_beta.setZero();
     m_sigmaG = m_dist.beta_rng(1,1);
 
     m_pi = m_priorPi;
@@ -184,8 +182,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     const auto t1 = std::chrono::high_resolution_clock::now();
 
     // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
-    m_components.resize(M);
-    m_components.setZero();
+    m_components = VectorXd::Zero(M);
 
     long meanIterationTime = 0;
     long meanFlowGraphIterationTime = 0;
@@ -205,7 +202,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         std::random_shuffle(markerI.begin(), markerI.end());
 
         m_m0 = 0;
-        m_v.setZero();
+        m_v = VectorXd::Zero(K);
 
         // This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution.
         // The flow graph is constructed to allow the data to be decompressed in parallel for enforce sequential processing of each column
@@ -343,7 +340,7 @@ void BayesRBase::processColumn(Marker *marker)
     const auto eps_begin = std::chrono::high_resolution_clock::now();
     if (!skipUpdate) {
       
-        marker->updateEpsilon(m_epsilon, beta_old, beta_new);
+        m_epsilon += *marker->calculateEpsilonChange(beta_old, beta_new);
         writeWithUniqueLock(marker);
 
     }
@@ -367,8 +364,6 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
     double component = 0;
     VectorXd epsilon(m_data->numInds);
     auto result = std::make_unique<AsyncResult>();
-    result->deltaEpsilon.resize(m_data->numInds); //vector that will contain the delta epsilon message
-    result->deltaEpsilon.setZero();
     // to keep track of the column processing time     
     const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(marker);
@@ -437,8 +432,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
             return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
         });
     }
-    VectorXd v = VectorXd(K);
-    v.setZero();
+    VectorXd v = VectorXd::Zero(K);
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
@@ -466,7 +460,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {    
           // this  also updates epsilonSum!
-        marker->updateEpsilon(result->deltaEpsilon, result->betaOld, result->beta);
+        result->deltaEpsilon = marker->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum    
     }
     // In the new version of Async we do not synchronise epsilon Async, we will handle this through the global node
