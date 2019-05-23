@@ -231,7 +231,7 @@ void Data::readPhenotypeFile(const string &phenFile) {
     string id;
     unsigned line=0;
     //correct loop to go through numInds
-    y.setZero(numInds);
+    y = VectorXf::Zero(numInds);
 
     while (getline(in,inputStr)) {
         colData.getTokens(inputStr, sep);
