@@ -362,29 +362,22 @@ void BayesRBase::processColumn(Marker *marker)
 std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
 {
     double component = 0;
-    VectorXd epsilon(m_data->numInds);
     auto result = std::make_unique<AsyncResult>();
     // to keep track of the column processing time     
     const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(marker);
 
+    double num = 0;
     {
         // Use a shared lock to allow multiple threads to read updates
         std::shared_lock lock(m_mutex);
 
-        // std::memcpy is faster than epsilon = m_epsilon which compiles down to a loop over pairs of
-        // doubles and uses _mm_load_pd(source) SIMD intrinsics. Just be careful if we change the type
-        // contained in the vector back to floats.
-        // we copy global into local
-        std::memcpy(epsilon.data(), m_epsilon.data(), static_cast<size_t>(epsilon.size()) * sizeof(double));
         result->beta = m_beta(marker->i);
+        result->betaOld = result->beta;
         component = m_components(marker->i);
-	 readWithSharedLock(marker);//here we are reading the column and also epsilonsum
+        readWithSharedLock(marker);//here we are reading the column and also epsilonsum
+        num = marker->computeNum(m_epsilon, result->betaOld);
     }
-  
-    result->betaOld = result->beta;
-
-    const double num = marker->computeNum(epsilon, result->betaOld);
 
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / m_sigmaG;

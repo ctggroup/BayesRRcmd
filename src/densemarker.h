@@ -11,7 +11,7 @@ struct DenseMarker : public Marker
     std::shared_ptr<unsigned char[]> buffer = nullptr;
     std::shared_ptr<Map<VectorXd>> Cx = nullptr;
 
-    double computeNum(VectorXd &epsilon, const double beta_old) override;
+    double computeNum(const VectorXd &epsilon, const double beta_old) override;
     VectorXdPtr calculateEpsilonChange(const double beta_old,
                                        const double beta) override;
 
