@@ -5,6 +5,7 @@
 #include "BayesRGroupsBase.hpp"
 #include "DenseRGroups.hpp"
 #include "SparseRGroups.hpp"
+#include "SparseBayesRRG.hpp"
 #include "BayesRRm.h"
 #include "data.hpp"
 #include "options.hpp"
@@ -25,16 +26,14 @@ void processDenseData(Options opt) {
     data.readFamFile(opt.bedFile + ".fam");
     data.readBimFile(opt.bedFile + ".bim");
 
-
     const auto bedFile = opt.bedFile + ".bed";
     const auto ppFile = ppFileForType(opt.dataType, opt.bedFile);
     const auto ppIndexFile = ppIndexFileForType(opt.dataType, opt.bedFile);
 
-    // BayesG files to read
     if (opt.bayesType == "bayesG") {
-    	data.readGroupFile(opt.groupFile);
-    	data.readmSFile(opt.mSfile);
-    }
+        	data.readGroupFile(opt.groupFile);
+        	data.readmSFile(opt.mSfile);
+        }
 
     // RAM solution (analysisType = RAMBayes)
     if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe" || opt.bayesType == "bayesG")) {
@@ -90,7 +89,8 @@ void processDenseData(Options opt) {
         clock_t end = clock();
         printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
         cout << endl;
-    }else if (opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes") {
+
+    	} else if (opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes") {
         clock_t start = clock();
         data.readPhenotypeFile(opt.phenotypeFile);
         // Run analysis using mapped data files
@@ -111,8 +111,10 @@ void processDenseData(Options opt) {
         } else {
             graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
         }
+
         DenseRGroups analysis(&data, opt);
         analysis.runGibbs(graph.get());
+
         data.unmapCompressedPreprocessedBedFile();
     }else {
         throw(" Error: Wrong analysis type: " + opt.analysisType);
@@ -137,6 +139,12 @@ void processSparseData(Options options) {
     const auto bedFile = options.bedFile + ".bed";
     const auto ppFile = ppFileForType(options.dataType, options.bedFile);
     const auto ppIndexFile = ppIndexFileForType(options.dataType, options.bedFile);
+
+    if (options.bayesType == "bayesG") {
+        	data.readGroupFile(options.groupFile);
+        	data.readmSFile(options.mSfile);
+    	}
+
 
     if (options.analysisType == "Preprocess") {
         cout << "Start preprocessing " << bedFile << endl;
@@ -187,6 +195,9 @@ void processSparseData(Options options) {
 
     SparseRGroups analysis(&data, options);
     analysis.runGibbs(graph.get());
+
+    //SparseBayesRRG analysis(&data, options);
+    //analysis.runGibbs(graph.get());
 
     data.unmapCompressedPreprocessedBedFile();
 }

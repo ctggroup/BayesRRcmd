@@ -100,13 +100,14 @@ int BayesRGroupsBase::runGibbs(AnalysisGraph *analysis)
     writer.openGroups(nGroups);
 
     // Sampler variables
-    VectorXd sample(2*M+3+nGroups+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
+    VectorXd sample(2*M+3+nGroups+N); // varible containg a sample of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
     std::vector<unsigned int> markerI(M);
     std::iota(markerI.begin(), markerI.end(), 0);
 
     std::cout << "Number of groups: " << nGroups << std::endl;
 
     std::cout << "Running Gibbs sampling" << std::endl;
+
     const auto t1 = std::chrono::high_resolution_clock::now();
 
     // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
@@ -115,7 +116,6 @@ int BayesRGroupsBase::runGibbs(AnalysisGraph *analysis)
 
     long meanIterationTime = 0;
     long meanFlowGraphIterationTime = 0;
-
 
     for (unsigned int iteration = 0; iteration < m_maxIterations; iteration++) {
         // Output progress
@@ -139,10 +139,18 @@ int BayesRGroupsBase::runGibbs(AnalysisGraph *analysis)
         // The flow graph is constructed to allow the data to be decompressed in parallel for enforce sequential processing of each column
         // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
         // of data.
-        const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
-        analysis->exec(this, N, M, markerI);
-        const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
+        cout << "HELLO" << endl;
+
+        const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
+
+        cout << "HELLO1" << endl;
+
+        analysis->exec(this, N, M, markerI);
+
+        cout << "HELLO2" << endl;
+
+        const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
         if (m_showDebug)
             printDebugInfo();

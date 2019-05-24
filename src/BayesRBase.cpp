@@ -160,6 +160,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     std::iota(markerI.begin(), markerI.end(), 0);
 
     std::cout << "Running Gibbs sampling" << endl;
+
     const auto t1 = std::chrono::high_resolution_clock::now();
 
     // This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
