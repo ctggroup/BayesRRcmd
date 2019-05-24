@@ -70,7 +70,7 @@ public:
     BayesRRm(Data &data, Options &opt, const long memPageSize);
     virtual ~BayesRRm();
 
-    int runGibbs(); // where we run Gibbs sampling over the parametrised model
+  
     void setDebugEnabled(bool enabled) { showDebug = enabled; }
     bool isDebugEnabled() const { return showDebug; }
 
@@ -81,7 +81,7 @@ public:
 #endif
 
 private:
-    void init(int K, unsigned int markerCount, unsigned int individualCount);
+    
     VectorXd getSnpData(unsigned int marker) const;
     void printDebugInfo() const;
 };
