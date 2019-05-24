@@ -13,7 +13,7 @@ echo "==========================================="
 echo
 
 module purge
-module load gcc/7.3.0 mvapich2 openblas boost eigen zlib
+module load Development/mpi/openmpi-x86_64 gcc/7.3.0 mvapich2 openblas boost eigen zlib
 
 cd src
 make $1 -f Makefile_G

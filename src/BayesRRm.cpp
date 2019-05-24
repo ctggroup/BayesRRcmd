@@ -45,7 +45,7 @@ BayesRRm::~BayesRRm()
 {
 }
 
-void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCount, unsigned int fixedEffectsCount)
+void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCount)
 {
     // Component variables
     priorPi = VectorXd(K);      // prior probabilities for each component
@@ -110,9 +110,7 @@ void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCoun
     betasqn    = 0.0;
     epsilonsum = 0.0;
     ytildesum  = 0.0;
-    gamma = VectorXd(fixedEffectsCount);
-    gamma.setZero();
-    X = data.X; //fixed effects matrix
+    
 }
 
 
@@ -839,6 +837,7 @@ int BayesRRm::runMpiGibbs() {
     const double        s02E   = 0.0001;
     const double        v0G    = 0.0001;
     const double        s02G   = 0.0001;
+    const double        s02F   = 1.0;
     const unsigned int  K      = int(cva.size()) + 1;
     const unsigned int  km1    = K - 1;
     double              dNm1   = (double)(N - 1);
@@ -1107,7 +1106,7 @@ int BayesRRm::runMpiGibbs() {
 
     if(opt.covariate)
     {
-    	gamma = VectorXd(X.cols());
+    	gamma = VectorXd(data.X.cols());
     	gamma.setZero();
     }
     double y_mean = 0.0;
@@ -1378,13 +1377,14 @@ int BayesRRm::runMpiGibbs() {
         if(opt.covariate){
            for(int i=0; i < data.X.cols(); i++ ){
         	  double gamma_old = gamma(i);
-        	  double num_f=0;
+        	  double num_f = 0;
+                  double denom_f = 0;
         	  for( int j = 0; j < N ; j++)
-        	   	num += data.X(j,i)*(epsilon[j] + gamma_old * data.X(j,i));
-        	  denom = dNm1 +  sigmaE / S02F;
-        	  gamma(i) = dist.norm_rng(num/denom, sigmaE/denom);
+        	   	num_f += data.X(j,i)*(epsilon[j] + gamma_old * data.X(j,i));
+        	  denom_f = dNm1 +  sigmaE / s02F;
+        	  gamma(i) = dist.norm_rng(num_f/denom_f, sigmaE/denom_f);
         	  for(int j = 0 ; j < N ; j++  )
-        		epsilon[j] = epsilon[j] + (gamma_old - gamma(i))*X.(j,i)
+		    epsilon[j] = epsilon[j] + (gamma_old - gamma(i))*data.X(j,i);
           }
         }
 
