@@ -139,6 +139,12 @@ void Options::inputOptions(const int argc, const char* argv[]){
             numThreadSpawned = atoi(argv[++i]);
             ss << "--thread-spawned " << argv[i] << "\n";
         }
+        else if(!strcmp(argv[i], "--covariates")){
+            covariate = true;
+            covariateFile = argv[++i];
+            ss << "--covariates " << argv[i] << "\n";
+
+        }
         else {
             stringstream errmsg;
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";

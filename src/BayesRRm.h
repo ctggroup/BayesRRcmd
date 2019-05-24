@@ -5,7 +5,7 @@
  *      Author: admin
  */
 
-#ifndef SRC_BAYESRRM_H_
+#ifndef SRC_BAYESRRM_Hl_
 #define SRC_BAYESRRM_H_
 
 #include "data.hpp"
@@ -36,6 +36,8 @@ class BayesRRm
     bool showDebug;
     double betasqn;
 
+    MatrixXd X; //"fixed effects" matrix.
+    VectorXd gamma; //fixed effects coefficients
     // Component variables
     VectorXd priorPi;   // prior probabilities for each component
     VectorXd pi;        // mixture probabilities

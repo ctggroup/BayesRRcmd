@@ -47,6 +47,9 @@ public:
     string bedFile;
     string mcmcSampleFile, mcmcBetFile;
     string optionFile;
+    string covariateFile; //for extra covariates.
+    bool covariate = false; //for extra covatiates.
+
     bool compress = false;
 
     string options_s;

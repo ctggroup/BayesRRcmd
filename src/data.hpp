@@ -91,7 +91,7 @@ public:
     PpBedIndex ppbedIndex;
 
     // Original data
-    MatrixXf X;              // coefficient matrix for fixed effects
+    MatrixXd X;              // coefficient matrix for fixed effects
     //MatrixXf Z;              // coefficient matrix for SNP effects
     MatrixXd Z;
     VectorXf D;              // 2pqn
@@ -160,6 +160,9 @@ public:
     void readBedFile_noMPI(const string &bedFile);
     void readPhenotypeFile(const string &phenFile);
     void readGroupFile(const string &groupFile);
+    template<typename M>
+    M readCSVFile(const string &covariateFile);
+    void readCovariateFile(const string &covariateFile);
 };
 
 #endif /* data_hpp */

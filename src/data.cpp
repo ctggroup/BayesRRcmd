@@ -818,3 +818,31 @@ void Data::readGroupFile(const string &groupFile) {
 
     cout << "Groups read from file" << endl;
 }
+
+
+template<typename M>
+M Data::readCSVFile (const string &path) {
+    std::ifstream indata;
+    indata.open(path);
+    std::string line;
+    std::vector<double> values;
+    uint rows = 0;
+    while (std::getline(indata, line)) {
+        std::stringstream lineStream(line);
+        std::string cell;
+        while (std::getline(lineStream, cell, ',')) {
+            values.push_back(std::stod(cell));
+        }
+        ++rows;
+    }
+    if(rows!= numInds)throw(" Error: covariate file has different number of individuals as BED file");
+    numFixedEffects = values.size()/rows;
+    return Map<const Matrix<typename M::Scalar, Dynamic, Dynamic, RowMajor>>(values.data(), rows, values.size()/rows);
+}
+
+void Data::readCovariateFile(const string &covariateFile ){
+	X.resize(numInds,numFixedEffects);
+	X = readCSVFile<MatrixXd>(covariateFile);
+}
+
+

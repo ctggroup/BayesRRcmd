@@ -45,7 +45,7 @@ BayesRRm::~BayesRRm()
 {
 }
 
-void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCount)
+void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCount, unsigned int fixedEffectsCount)
 {
     // Component variables
     priorPi = VectorXd(K);      // prior probabilities for each component
@@ -110,6 +110,9 @@ void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCoun
     betasqn    = 0.0;
     epsilonsum = 0.0;
     ytildesum  = 0.0;
+    gamma = VectorXd(fixedEffectsCount);
+    gamma.setZero();
+    X = data.X; //fixed effects matrix
 }
 
 
@@ -857,6 +860,7 @@ int BayesRRm::runMpiGibbs() {
     VectorXd            v(K);            // variable storing the component assignment
     VectorXd            sum_v(K);        // To store the sum of v elements over all ranks
     VectorXd            beta(M);
+    VectorXd            gamma;
 
     dalloc += M * sizeof(double) / 1E9; // for components
     dalloc += M * sizeof(double) / 1E9; // for beta
@@ -1101,6 +1105,11 @@ int BayesRRm::runMpiGibbs() {
     beta.setZero();
     components.setZero();
 
+    if(opt.covariate)
+    {
+    	gamma = VectorXd(X.cols());
+    	gamma.setZero();
+    }
     double y_mean = 0.0;
     for (int i=0; i<N; ++i) {
         y[i]    = (double)data.y(i);
@@ -1201,6 +1210,7 @@ int BayesRRm::runMpiGibbs() {
                 //printf("%d/%d/%d: Cx[0] = %20.15f / %20.15f\n", iteration, rank, marker, Cx[0], ppdata[markoff]);
                 
                 bet =  beta(marker);
+
                 //printf("beta = %20.15f, mean = %20.15f, std = %20.15f\n", bet, mave[marker], mstd[marker]);
                 
                 //we compute the denominator in the variance expression to save computations
@@ -1363,6 +1373,20 @@ int BayesRRm::runMpiGibbs() {
         m0 = double(Mtot) - v[0];
 
         sigmaG  = dist.inv_scaled_chisq_rng(v0G+m0, (beta_squaredNorm * m0 + v0G*s02G) /(v0G+m0));
+
+        //For the fixed effects
+        if(opt.covariate){
+           for(int i=0; i < data.X.cols(); i++ ){
+        	  double gamma_old = gamma(i);
+        	  double num_f=0;
+        	  for( int j = 0; j < N ; j++)
+        	   	num += data.X(j,i)*(epsilon[j] + gamma_old * data.X(j,i));
+        	  denom = dNm1 +  sigmaE / S02F;
+        	  gamma(i) = dist.norm_rng(num/denom, sigmaE/denom);
+        	  for(int j = 0 ; j < N ; j++  )
+        		epsilon[j] = epsilon[j] + (gamma_old - gamma(i))*X.(j,i)
+          }
+        }
 
         e_sqn = 0.0d;
         for (int i=0; i<N; ++i)
