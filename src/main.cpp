@@ -4,8 +4,13 @@
 #include "BayesRBase.hpp"
 #include "BayesRGroupsBase.hpp"
 #include "DenseRGroups.hpp"
-#include "SparseRGroups.hpp"
 #include "SparseBayesRRG.hpp"
+#include "SparseRGroups.hpp"
+<<<<<<< HEAD
+#include "SparseBayesRRG.hpp"
+=======
+#include "DenseBayesRRmz.hpp"
+>>>>>>> branch 'Genetics_groups' of https://github.com/ctggroup/BayesRRcmd.git
 #include "BayesRRm.h"
 #include "data.hpp"
 #include "options.hpp"
@@ -50,8 +55,10 @@ void processDenseData(Options opt) {
             analysis.runGibbs();
         } else if (opt.bayesType == "horseshoe") {
             //TODO Finish horseshoe
+	  throw("feature not available yet");
         } else if (opt.bayesType == "bayesW") {
             //TODO Add BayesW
+	  throw("feature not available yet");
         } else if (opt.bayesType == "bayesG") {
         	//TODO Add BayesG
         }
@@ -111,10 +118,23 @@ void processDenseData(Options opt) {
         } else {
             graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
         }
+<<<<<<< HEAD
 
         DenseRGroups analysis(&data, opt);
         analysis.runGibbs(graph.get());
 
+=======
+        if(opt.bayesType == "bayesG")
+	{
+          DenseRGroups analysis(&data, opt);
+          analysis.runGibbs(graph.get());
+        }
+        else
+	{
+	    DenseBayesRRmz analysis(&data, opt);
+            analysis.runGibbs(graph.get());
+	}
+>>>>>>> branch 'Genetics_groups' of https://github.com/ctggroup/BayesRRcmd.git
         data.unmapCompressedPreprocessedBedFile();
     }else {
         throw(" Error: Wrong analysis type: " + opt.analysisType);
@@ -192,13 +212,27 @@ void processSparseData(Options options) {
     } else {
         graph = std::make_unique<LimitSequenceGraph>(options.numThread);
     }
+    if(options.bayesType=="bayesG")
+    {
+        SparseRGroups analysis(&data, options);
+        analysis.runGibbs(graph.get());
+    }
+    else
+    {
+       SparseBayesRRG analysis(&data, options);
+       analysis.runGibbs(graph.get());
+    }
 
+<<<<<<< HEAD
     SparseRGroups analysis(&data, options);
     analysis.runGibbs(graph.get());
 
     //SparseBayesRRG analysis(&data, options);
     //analysis.runGibbs(graph.get());
 
+=======
+    
+>>>>>>> branch 'Genetics_groups' of https://github.com/ctggroup/BayesRRcmd.git
     data.unmapCompressedPreprocessedBedFile();
 }
 

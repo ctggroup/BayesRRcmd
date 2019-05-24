@@ -140,16 +140,8 @@ int BayesRGroupsBase::runGibbs(AnalysisGraph *analysis)
         // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
         // of data.
 
-        cout << "HELLO" << endl;
-
         const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
-
-        cout << "HELLO1" << endl;
-
         analysis->exec(this, N, M, markerI);
-
-        cout << "HELLO2" << endl;
-
         const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 
         if (m_showDebug)
