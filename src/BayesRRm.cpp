@@ -1307,17 +1307,7 @@ int BayesRRm::runMpiGibbs() {
 
         //For the fixed effects
         if(opt.covariate){
-           for(int i=0; i < data.X.cols(); i++ ){
-        	  double gamma_old = gamma(i);
-        	  double num_f = 0;
-                  double denom_f = 0;
-        	  for( int j = 0; j < N ; j++)
-        	   	num_f += data.X(j,i)*(epsilon[j] + gamma_old * data.X(j,i));
-        	  denom_f = dNm1 +  sigmaE / s02F;
-        	  gamma(i) = dist.norm_rng(num_f/denom_f, sigmaE/denom_f);
-        	  for(int j = 0 ; j < N ; j++  )
-		    epsilon[j] = epsilon[j] + (gamma_old - gamma(i))*data.X(j,i);
-          }
+        	sampleFixedEffects(s02f,N);
         }
 
         e_sqn = 0.0d;
@@ -1418,6 +1408,23 @@ int BayesRRm::runMpiGibbs() {
 }
 
 #endif
+
+void BayesRRm::sampleFixedEffects(double s02F, double N){
+	for(int i=0; i < data.X.cols(); i++ )
+	{
+		double dNm1 = N-1;
+		double gamma_old = gamma(i);
+		double num_f = 0;
+		double denom_f = 0;
+		for( int j = 0; j < N ; j++)
+			num_f += data.X(j,i)*(epsilon[j] + gamma_old * data.X(j,i));
+		denom_f = dNm1 +  sigmaE / s02F;
+		gamma(i) = dist.norm_rng(num_f/denom_f, sigmaE/denom_f);
+		for(int j = 0 ; j < N ; j++  )
+			epsilon[j] = epsilon[j] + (gamma_old - gamma(i))*data.X(j,i);
+	}
+}
+
 
 VectorXd BayesRRm::getSnpData(unsigned int marker) const
 {

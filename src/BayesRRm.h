@@ -79,7 +79,7 @@ public:
     void read_sparse_data_files(size_t*& I1, size_t*& I2, size_t*& N1S, size_t*& N1L,  size_t*& N2S, size_t*& N2L, int* MrankS, int* MrankL);
     int  runMpiGibbs();
 #endif
-
+    inline void sampleFixedEffects(double s02F, double N);
 private:
     
     VectorXd getSnpData(unsigned int marker) const;
