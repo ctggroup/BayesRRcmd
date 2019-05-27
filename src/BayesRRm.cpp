@@ -769,6 +769,7 @@ int BayesRRm::runMpiGibbs() {
     const double        s02E   = 0.0001;
     const double        v0G    = 0.0001;
     const double        s02G   = 0.0001;
+    const double        v0F    = 0.001;
     const double        s02F   = 1.0;
     const unsigned int  K      = int(cva.size()) + 1;
     const unsigned int  km1    = K - 1;
@@ -779,6 +780,7 @@ int BayesRRm::runMpiGibbs() {
     double              mu;              // mean or intercept
     double              sigmaG;          // genetic variance
     double              sigmaE;          // residuals variance
+    double              sigmaF;          // covariates variance if using ridge;
     VectorXd            priorPi(K);      // prior probabilities for each component
     VectorXd            pi(K);           // mixture probabilities
     VectorXd            muk(K);          // mean of k-th component marker effect size
@@ -1075,8 +1077,10 @@ int BayesRRm::runMpiGibbs() {
     size_t   markoff;
     int      marker, left;
     VectorXd logL(K);
+    std::vector<unsigned int> xI(data.X.cols());
+    std::iota(xI.begin(), xI.end(), 0);
 
-
+    sigmaF = s02F;
     // Main iteration loop
     // -------------------
     for (int iteration=0; iteration < max_it; iteration++) {
@@ -1307,7 +1311,24 @@ int BayesRRm::runMpiGibbs() {
 
         //For the fixed effects
         if(opt.covariate){
-        	sampleFixedEffects(s02f,N);
+        	std::shuffle(xI.begin(), xI.end(), dist.rng);
+        	for(int i=0; i < data.X.cols(); i++ )
+        		{
+
+        			double dNm1 = N-1;
+        			double gamma_old = gamma(xI[i]);
+        			double num_f = 0;
+        			double denom_f = 0;
+        			for( int j = 0; j < N ; j++)
+        				num_f += data.X(j,xI[i])*(epsilon[j] + gamma_old * data.X(j,xI[i]));
+        			denom_f = dNm1 +  sigmaE / sigmaF;
+        			gamma(i) = dist.norm_rng(num_f/denom_f, sigmaE/denom_f);
+        			for(int j = 0 ; j < N ; j++  )
+        				epsilon[j] = epsilon[j] + (gamma_old - gamma(xI[i]))*data.X(j,xI[i]);
+        		}
+        	//the next line should be uncommented if we want to use ridge for the other covariates.
+        	//sigmaF = inv_scaled_chisq_rng(0.001 + F, (gamma.squaredNorm() + 0.001)/(0.001+F));
+        	sigmaF = s02F;
         }
 
         e_sqn = 0.0d;
@@ -1409,21 +1430,6 @@ int BayesRRm::runMpiGibbs() {
 
 #endif
 
-void BayesRRm::sampleFixedEffects(double s02F, double N){
-	for(int i=0; i < data.X.cols(); i++ )
-	{
-		double dNm1 = N-1;
-		double gamma_old = gamma(i);
-		double num_f = 0;
-		double denom_f = 0;
-		for( int j = 0; j < N ; j++)
-			num_f += data.X(j,i)*(epsilon[j] + gamma_old * data.X(j,i));
-		denom_f = dNm1 +  sigmaE / s02F;
-		gamma(i) = dist.norm_rng(num_f/denom_f, sigmaE/denom_f);
-		for(int j = 0 ; j < N ; j++  )
-			epsilon[j] = epsilon[j] + (gamma_old - gamma(i))*data.X(j,i);
-	}
-}
 
 
 VectorXd BayesRRm::getSnpData(unsigned int marker) const
