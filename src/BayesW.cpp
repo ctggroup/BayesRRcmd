@@ -368,10 +368,7 @@ inline void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_mar
 		double sigma = 1.0/sqrt(1 + 2*p.alpha * p.alpha * p.sigma_b * p.mixture_classes(i) * exp_sum);
 		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, vi, norm_data, sigma, n);
 	}
-
 }
-
-
 
 
 
@@ -415,11 +412,9 @@ int BayesW::runGibbs_Gauss()
 	int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
 	int neval;
 	double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
-
 	double convex = 1.0;
 	int dometrop = 0;
 	double xprev = 0.0;
-
 	double xl, xr ;			  // Initial left and right (pseudo) extremes
 	double xinit[4] = {2.5,3,5,10};     // Initial abscissae
 	double *p_xinit = xinit;
@@ -428,9 +423,6 @@ int BayesW::runGibbs_Gauss()
 	/* For ARS, we keep the data in this structure */
 	struct pars used_data;
 	struct pars_alpha used_data_alpha; // For alpha we keep it in a separate structure
-
-	//mean and residual variables
-	double mu;         // mean or intercept
 
 	//Save variance classes
 	used_data.mixture_classes.resize(km1);
@@ -445,9 +437,6 @@ int BayesW::runGibbs_Gauss()
 	pi_L(0) = 0.99;
 	pi_L.segment(1,K-1).setConstant((1-pi_L(0))/km1);
 
-	//Vector to contain probabilities of belonging to a mixture
-	double acum;
-
 	VectorXd prob_vec(km1);   //exclude 0 mixture which is done before
 	VectorXd v(K);            // variable storing the count in each component assignment
 
@@ -456,22 +445,25 @@ int BayesW::runGibbs_Gauss()
 
 	VectorXd theta(numFixedEffects);
 
-	int marker; //Marker index
-
 	VectorXd y;   //y is logarithmed here
 
 	y = data.y.cast<double>();
 
+	//Store the vector of failures only in the structure used for sampling alpha
 	used_data_alpha.failure_vector = data.fail.cast<double>();
 
 	beta.setZero(); //Exclude everything in the beginning
 	theta.setZero();
+
+	//mean and residual variables
+	double mu;         // mean or intercept
 
 	//Initial value for intercept is the mean of the logarithms
 	mu = y.mean();
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
 	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
 
+	//Fill the residual vector
 	(used_data.epsilon).resize(y.size());
 	used_data_alpha.epsilon.resize(y.size());
 	for(int i=0; i<(y.size()); ++i){
@@ -486,10 +478,11 @@ int BayesW::runGibbs_Gauss()
 	//for(int marker=0; marker<M; marker++){
 	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
+
 	for(int marker=0; marker<M; marker++){
 		sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	}
-
+	//If there are fixed effects, find the same values for them
 	VectorXd sum_failure_fix(numFixedEffects);
 	if(numFixedEffects > 0){
 		for(int fix_i=0; fix_i < numFixedEffects; fix_i++){
@@ -523,13 +516,14 @@ int BayesW::runGibbs_Gauss()
 	VectorXd marginal_likelihoods(K); //For each mixture
 	marginal_likelihoods.setOnes();   //Initialize with just ones
 
+	//Do Gibbs sampling
 	for (int iteration = 0; iteration < max_iterations; iteration++) {
 		if (iteration > 0) {
 			if (iteration % (int)std::ceil(max_iterations / 10) == 0)
 				std::cout << "iteration: "<<iteration <<"\n";
 		}
 		/* 1. Mu */
-		xl = 3; xr = 5;
+		xl = 2; xr = 5;   //xl and xr and the maximum and minimum values between which we sample
 		new_xinit << 0.95*mu, mu,  1.05*mu, 1.1*mu;  // New values for abscissae evaluation
 		assignArray(p_xinit,new_xinit);
 
@@ -553,8 +547,6 @@ int BayesW::runGibbs_Gauss()
 
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * theta(fix_i)).array();
 
-
-
 				err = arms(xinit,ninit,&xl,&xr,theta_dens,&used_data,&convex,
 						npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
@@ -570,35 +562,32 @@ int BayesW::runGibbs_Gauss()
 
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
 		v.setOnes();           //Reset the counter
-		double beta_diff_sum=0;
+		int marker; //Marker index
 		for (int j = 0; j < M; j++) {
 			marker = markerI[j];
 			// Preprocessed solution
 			//used_data.X_j = data.mappedZ.col(marker).cast<double>();
 
-			// At the moment use RAM solution
+			// Save the SNP effect column to a structure
 			used_data.X_j = data.Z.col(marker).cast<double>();
 
-			//Save sum(X_j*failure)
+			//Save sum(X_j*failure) to structure
 			used_data.sum_failure = sum_failure(marker);
 
 			//Change the residual vector only if the previous beta was non-zero
-
 			if(beta(marker) != 0){
-				// Subtract the weighted last beta²
 				used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
-
+				//Also find the transformed residuals
 				vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 			}
 
 			/* Calculate the mixture probability */
 			double p = dist.unif_rng();  //Generate number from uniform distribution
 
-
 			// Calculate the (ratios of) marginal likelihoods
 			marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, vi, &used_data, quad_points);
 			// Calculate the probability that marker is 0
-			acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
+			double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
 			//Loop through the possible mixture classes
 			for (int k = 0; k < K; k++) {
@@ -630,7 +619,6 @@ int BayesW::runGibbs_Gauss()
 						// Change the weighted sum of squares of betas
 						v[k] += 1.0;
 						components[marker] = k;
-						//	betasqn = betasqn + beta(marker)*beta(marker)/used_data.mixture_classes(components[marker]-1);
 					}
 					break;
 				} else {
@@ -639,11 +627,10 @@ int BayesW::runGibbs_Gauss()
 					}else{
 						acum += marginal_likelihoods(k+1)/marginal_likelihoods.sum();
 					}
-
 				}
 			}
 		}
-		// 3. Alpha
+		// 3. Sample Alpha parameter
 		xl = 0.0; xr = 400.0;
 		new_xinit << (used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3;  // New values for abscissae evaluation
 		assignArray(p_xinit,new_xinit);
@@ -657,19 +644,16 @@ int BayesW::runGibbs_Gauss()
 		used_data.alpha = xsamp[0];
 
 		// 4. sigma_b
-		if(false){
-			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-					(double)(used_data.beta_sigma + 0.5 * betasqn));
-		}else{		//sigma_g version
-			used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-					(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
-		}
+		used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
+							(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+
 		//Update the sqrt(2sigmab) variable
 		used_data.sqrt_2sigmab = sqrt(2*used_data.sigma_b);
 
 		// 5. Mixture probability
 		pi_L = dist.dirichilet_rng(v.array());
 
+		// Write the result to file
 		if (iteration >= burn_in) {
 			if (iteration % thinning == 0) {
 				if(numFixedEffects > 0){

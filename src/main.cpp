@@ -50,14 +50,10 @@ void processDenseData(Options opt) {
             //TODO Finish horseshoe
         } else if (opt.bayesType == "bayesW") {
             BayesW analysis(data, opt, sysconf(_SC_PAGE_SIZE));
-            if(opt.bayesW_version == "old"){
-            	analysis.runGibbs_old();
-            }else if(opt.bayesW_version == "taylor"){
-            	analysis.runGibbs_Taylor();
-            }else if(opt.bayesW_version == "gauss"){
+            if(opt.bayesW_version == "gauss"){
             	analysis.runGibbs_Gauss();
             }else{
-            	cout << "Choose either bayesW_version = old / taylor / gauss" << endl;
+            	cout << "Choose either bayesW_version = gauss" << endl;
             }
 
         } else if (opt.bayesType == "bayesG") {
