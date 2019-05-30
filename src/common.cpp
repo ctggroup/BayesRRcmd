@@ -7,6 +7,12 @@
 #include <cassert>
 #include <iostream>
 
+#include <Eigen/Eigen>
+#include <vector>
+#include <fstream>
+
+using namespace Eigen;
+
 MarkerBuilder *builderForType(const DataType type)
 {
     switch (type)
@@ -69,4 +75,24 @@ std::string ppIndexFileForType(DataType type, const std::string &bedFile)
         assert(false);
         return {};
     }
+}
+
+
+
+template<typename M>
+M load_csv (const std::string & path) {
+    std::ifstream indata;
+    indata.open(path);
+    std::string line;
+    std::vector<double> values;
+    uint rows = 0;
+    while (std::getline(indata, line)) {
+        std::stringstream lineStream(line);
+        std::string cell;
+        while (std::getline(lineStream, cell, ',')) {
+            values.push_back(std::stod(cell));
+        }
+        ++rows;
+    }
+    return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
 }

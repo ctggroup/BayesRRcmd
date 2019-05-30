@@ -18,92 +18,106 @@ using namespace std;
 void processDenseData(Options opt) {
     Data data;
 
-    // Read in the data for every possible option
-    data.readFamFile(opt.bedFile + ".fam");
-    data.readBimFile(opt.bedFile + ".bim");
+    if(opt.bedFile != "" && opt.csvFile != "")
+    {
+        //TODO implement reading from csv and bed files in the same analysis
+        throw( "Error: cannot process bed file and csv File in the same analysis yet");
+    } // if trying to analyse bed and csv files
+    else// process either csv or bed file
+    {
+        const auto prefix = (opt.bedFile == "") ? opt.csvFile : opt.bedFile ;
+        const auto inFile = (opt.bedFile == "") ? opt.csvFile + ".csv" : opt.bedFile + ".bed";
 
-    const auto bedFile = opt.bedFile + ".bed";
-    const auto ppFile = ppFileForType(opt.dataType, opt.bedFile);
-    const auto ppIndexFile = ppIndexFileForType(opt.dataType, opt.bedFile);
-
-    // RAM solution (analysisType = RAMBayes)
-    if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe")) {
-
-        clock_t start = clock();
-
-        // Read phenotype file and bed file for the option specified
-        data.readPhenotypeFile(opt.phenotypeFile);
-        data.readBedFile_noMPI(opt.bedFile+".bed");
-
-        // Option bayesType="bayesMmap" is going to be deprecated
-        if (opt.bayesType == "bayesMmap" || opt.bayesType == "bayes"){
-            BayesRRm analysis(data, opt, sysconf(_SC_PAGE_SIZE));
-            analysis.runGibbs();
-        } else if (opt.bayesType == "horseshoe") {
-            //TODO Finish horseshoe
-        } else if (opt.bayesType == "bayesW") {
-            //TODO Add BayesW
-        } else if (opt.bayesType == "bayesG") {
-            //TODO add Bayes groups
+        const auto ppFile = ppFileForType(opt.dataType, prefix);
+        const auto ppIndexFile = ppIndexFileForType(opt.dataType, prefix);
+        // Analysis type
+        if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe"))
+        {
+            //TODO reimplement RAM and other solutions in a cleaner manner
+            throw( "Error " + opt.analysisType +  " not implemented yet");
         }
+        else if(opt.analysisType == "Preprocess") //preprocess and compress data
+        {
+            cout << "Start preprocessing " << inFile  << endl;
+            clock_t start_bed = clock();
 
-        clock_t end   = clock();
-        printf("OVERALL read+compute time = %.3f sec.\n", (float)(end - start) / CLOCKS_PER_SEC);
-    }
+            if(opt.bedFile != "")
+            {
+                data.readFamFile(prefix + ".fam");
+                data.readBimFile(prefix + ".bim");
+                std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+                if (opt.numThreadSpawned > 0)
+                    taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
-    // Pre-processing the data (centering and scaling)
-    else if (opt.analysisType == "Preprocess") {
-        cout << "Start preprocessing " << opt.bedFile + ".bed" << endl;
+                std::cout << "Preprocessing with " << opt.numThread << " threads ("
+                          << (opt.numThreadSpawned > 0 ? std::to_string(opt.numThreadSpawned) : "auto") << " spawned) and "
+                          << opt.preprocessChunks << " columns per thread."
+                          << endl;
 
-        clock_t start_bed = clock();
-        std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
-        if (opt.numThreadSpawned > 0)
-            taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
+                PreprocessGraph graph(opt.numThread);
+                graph.preprocessBedFile(opt.bedFile,
+                                        opt.dataType,
+                                        opt.compress,
+                                        &data,
+                                        opt.preprocessChunks);
+            }
+            else
+            {
+                data.readCSVFile(inFile);
+                data.preprocessCSVFile(inFile,ppFile,ppIndexFile,opt.compress);
+            } //end if bedfile
 
-        std::cout << "Preprocessing with " << opt.numThread << " threads ("
-                  << (opt.numThreadSpawned > 0 ? std::to_string(opt.numThreadSpawned) : "auto") << " spawned) and "
-                  << opt.preprocessChunks << " columns per thread."
-                  << endl;
+            clock_t end = clock();
+            printf("Finished preprocessing in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+            cout << endl;
 
-        PreprocessGraph graph(opt.numThread);
-        graph.preprocessBedFile(opt.bedFile,
-                                opt.dataType,
-                                opt.compress,
-                                &data,
-                                opt.preprocessChunks);
+        }//end if preprocess
+        else if(opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes")
+        {
+            if(opt.bedFile != "")
+            {
+                data.readFamFile(prefix + ".fam");
+                data.readBimFile(prefix + ".bim");
+                data.readPhenotypeFile(opt.phenotypeFile);
+            }
+            else
+            {
+                data.readCSVFile(prefix + ".csv");
+                data.readCSVPhenFile(opt.phenotypeFile);
+            }
 
-        clock_t end = clock();
-        printf("Finished preprocessing the bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-        cout << endl;
-    }else if (opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes") {
-        clock_t start = clock();
-        data.readPhenotypeFile(opt.phenotypeFile);
-        // Run analysis using mapped data files
-        cout << "Start reading preprocessed bed file: " << ppFile << endl;
-        clock_t start_bed = clock();
-        data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
-        clock_t end = clock();
-        printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-        cout << endl;
+            // Run analysis using mapped data files
+            cout << "Start reading preprocessed bed file: " << ppFile << endl;
+            clock_t start_bed = clock();
+            data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+            clock_t end = clock();
+            printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+            cout << endl;
 
-        std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
-        if (opt.numThreadSpawned > 0)
-            taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
+            std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+            if (opt.numThreadSpawned > 0)
+                taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
-        std::unique_ptr<AnalysisGraph> graph {nullptr};
-        if (opt.analysisType == "PPAsyncBayes") {
-            graph = std::make_unique<ParallelGraph>(opt.decompressionTokens, opt.analysisTokens);
-            auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
-            parallelGraph->setDecompressionNodeConcurrency(opt.decompressionNodeConcurrency);
-            parallelGraph->setAnalysisNodeConcurrency(opt.analysisNodeConcurrency);
-        } else {
-            graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
-        }
-        DenseBayesRRmz analysis(&data, opt);
-        analysis.runGibbs(graph.get());
-        data.unmapCompressedPreprocessedBedFile();
-    }else {
-        throw(" Error: Wrong analysis type: " + opt.analysisType);
+            std::unique_ptr<AnalysisGraph> graph {nullptr};
+            if (opt.analysisType == "PPAsyncBayes")
+            {
+                graph = std::make_unique<ParallelGraph>(opt.decompressionTokens, opt.analysisTokens);
+                auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
+                parallelGraph->setDecompressionNodeConcurrency(opt.decompressionNodeConcurrency);
+                parallelGraph->setAnalysisNodeConcurrency(opt.analysisNodeConcurrency);
+            }
+            else
+            {
+                graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
+            }
+            DenseBayesRRmz analysis(&data, opt);
+            analysis.runGibbs(graph.get());
+            data.unmapCompressedPreprocessedBedFile();
+        }//end if ppbayes
+        else
+        {
+            throw(" Error: Wrong analysis type: " + opt.analysisType);
+        }//end if analysis type
     }
 }
 
