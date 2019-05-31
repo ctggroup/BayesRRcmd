@@ -367,26 +367,24 @@ void Data::readCSVPhenFile( const string &csvFile)
    std::vector<double> values;
    uint rows = 0;
    uint cols = 0;
-   y.setZero(numInds);
+   y.resize(numInds);
    std::getline(indata, line);
     
    std::stringstream lineStream(line);
    std::string cell;
-   VectorXf tmp(numInds);
   
    while (std::getline(lineStream, cell, ',') && cols<numInds)
-     {
-        if (!cell.empty())
-	  tmp[++cols]= std::stof(cell);
-	  else
-	    throw("Error, there are missing values in the file");
-	
-    }
+   {
+       if (!cell.empty())
+           y[++cols]= std::stof(cell);
+       else
+           throw("Error, there are missing values in the file");
+
+   }
       
     indata.clear();
     indata.close();
-    
-    y=tmp;
+
   
 
    cout << cols << " \n phenotype measures to be included from [" + csvFile + "]." << endl;
