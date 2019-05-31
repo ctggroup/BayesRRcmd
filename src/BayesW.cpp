@@ -713,7 +713,7 @@ inline void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_mar
 	// First element is pi_0 *sqrt(pi)
 	post_marginals(0) = prior_prob(0) * sqrtPI;
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		double sigma = 1.0/sqrt(1 + 2*p.alpha * p.alpha * p.sigma_b * p.mixture_classes(i) * exp_sum);
+		double sigma = 1.0/sqrt(2 + 2*p.alpha * p.alpha * p.sigma_b * p.mixture_classes(i) * exp_sum);
 		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, vi, norm_data, sigma, n);
 	}
 
