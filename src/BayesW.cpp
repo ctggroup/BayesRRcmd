@@ -542,8 +542,8 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 
 		w3 = 1.1816359006037;
 
-		x1 = sqrt2*sigma*x1;
-		x2 = sqrt2*sigma*x2;
+		x1 = sigma*x1;
+		x2 = sigma*x2;
 
 		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
 				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
@@ -567,10 +567,10 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		//	x5 = 0.0;
 		w5 = 0.94530872048294;
 
-		x1 = sqrt2*sigma*x1;
-		x2 = sqrt2*sigma*x2;
-		x3 = sqrt2*sigma*x3;
-		x4 = sqrt2*sigma*x4;
+		x1 = sigma*x1;
+		x2 = sigma*x2;
+		x3 = sigma*x3;
+		x4 = sigma*x4;
 		//x5 = sqrt2*sigma*x5;
 
 		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
@@ -599,12 +599,12 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 
 		w7 = 0.81026461755681;
 
-		x1 = sqrt2*sigma*x1;
-		x2 = sqrt2*sigma*x2;
-		x3 = sqrt2*sigma*x3;
-		x4 = sqrt2*sigma*x4;
-		x5 = sqrt2*sigma*x5;
-		x6 = sqrt2*sigma*x6;
+		x1 = sigma*x1;
+		x2 = sigma*x2;
+		x3 = sigma*x3;
+		x4 = sigma*x4;
+		x5 = sigma*x5;
+		x6 = sigma*x6;
 
 		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
 				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
@@ -645,16 +645,16 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		//x11 = 0.0;
 		w11 = 0.65475928691459;
 
-		x1 = sqrt2*sigma*x1;
-		x2 = sqrt2*sigma*x2;
-		x3 = sqrt2*sigma*x3;
-		x4 = sqrt2*sigma*x4;
-		x5 = sqrt2*sigma*x5;
-		x6 = sqrt2*sigma*x6;
-		x7 = sqrt2*sigma*x7;
-		x8 = sqrt2*sigma*x8;
-		x9 = sqrt2*sigma*x9;
-		x10 = sqrt2*sigma*x10;
+		x1 = sigma*x1;
+		x2 = sigma*x2;
+		x3 = sigma*x3;
+		x4 = sigma*x4;
+		x5 = sigma*x5;
+		x6 = sigma*x6;
+		x7 = sigma*x7;
+		x8 = sigma*x8;
+		x9 = sigma*x9;
+		x10 =sigma*x10;
 		//	x11 = sqrt2*sigma*x11;
 
 		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
@@ -673,7 +673,7 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		exit(1);
 	}
 
-	return sqrt2*sigma*temp;
+	return sigma*temp;  //sigma contains 1/sqrt(2)
 }
 
 
@@ -699,7 +699,7 @@ inline double prob_calc0_gauss_adaptive(VectorXd prior_prob, VectorXd vi, void *
 	double exp_sum = (vi.array() * p.X_j.array() * p.X_j.array()).sum(); //For calculating sigma assume mu=0 and save time on computation
 	//Sum the comparisons
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		double sigma = 1.0/sqrt(1+2*p.alpha*p.alpha*p.sigma_b*p.mixture_classes(i) * exp_sum);
+		double sigma = 1.0/sqrt(1 + p.alpha*p.alpha*p.sigma_b*p.mixture_classes(i) * exp_sum);
 		prob_0 = prob_0 + prior_prob(i+1)* gauss_hermite_adaptive_integral(i, vi, norm_data,  sigma, n);
 	}
 	return prior_prob(0) * sqrtPI/prob_0;
@@ -713,7 +713,7 @@ inline void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_mar
 	// First element is pi_0 *sqrt(pi)
 	post_marginals(0) = prior_prob(0) * sqrtPI;
 	for(int i=0; i < p.mixture_classes.size(); i++){
-		double sigma = 1.0/sqrt(2 + 2*p.alpha * p.alpha * p.sigma_b * p.mixture_classes(i) * exp_sum);
+		double sigma = 1.0/sqrt(1 + p.alpha * p.alpha * p.sigma_b * p.mixture_classes(i) * exp_sum);
 		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, vi, norm_data, sigma, n);
 	}
 
