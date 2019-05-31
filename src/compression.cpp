@@ -125,6 +125,15 @@ void extractData(unsigned char *compressedData,
     (void) inflateEnd(&strm);
 }
 
+void writeUncompressedDataWithIndex(const unsigned char *data,
+                                    const unsigned long size,
+                                    std::ostream &outStream,
+                                    std::ostream &indexStream,
+                                    unsigned long &pos)
+{
+    writeCompressedDataWithIndex(data, size, size, outStream, indexStream, pos);
+}
+
 void writeCompressedDataWithIndex(const unsigned char *data,
                                   const unsigned long compressedSize,
                                   const unsigned long originalSize,

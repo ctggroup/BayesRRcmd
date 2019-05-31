@@ -307,8 +307,8 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
 	}
       
       if (!compress)
-	{
-	  ppCSVOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(double));
+    {
+      writeUncompressedDataWithIndex(reinterpret_cast<unsigned char *>(&snpData[0]), numInds * sizeof(double), ppCSVOutput, ppCSVIndexOutput, pos);
 	}
       else
 	{
