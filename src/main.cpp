@@ -113,8 +113,15 @@ void processDenseData(Options opt) {
         } else {
             graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
         }
-        DenseBayesRRmz analysis(&data, opt);
-        analysis.runGibbs(graph.get());
+
+        if(opt.bayesType == "bayesW"){
+
+        }else{
+            DenseBayesRRmz analysis(&data, opt);
+            analysis.runGibbs(graph.get());
+        }
+
+
         data.unmapCompressedPreprocessedBedFile();
     }else {
         throw(" Error: Wrong analysis type: " + opt.analysisType);
