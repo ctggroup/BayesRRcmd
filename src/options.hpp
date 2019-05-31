@@ -64,6 +64,9 @@ public:
     string mSfile;
     string failureFile;
     string leftTruncFile;
+    string quad_points;
+    string fixedFile;
+    unsigned int fixedEffectNumber;
 
     string title;
     string analysisType;
@@ -117,6 +120,7 @@ public:
         title                   = "brr";
         analysisType            = "Bayes";
         bayesType               = "C";
+        fixedFile 				= "";
         algorithm               = "";
         optionFile              = "";
         phenotypeFile           = "";

@@ -97,7 +97,7 @@ int main(int argc, const char * argv[]) {
 				//data.readGroupFile2(opt.groupFile);
 				//Eigen::VectorXi G=data.G;
 				BayesW mmapToy(data, opt, sysconf(_SC_PAGE_SIZE));
-				mmapToy.runGibbs_Preprocessed();
+				mmapToy.runGibbs_Gauss();
 			}
 
 			end = clock();
@@ -238,7 +238,7 @@ int main(int argc, const char * argv[]) {
 					if(opt.leftTruncFile != ""){
 						//mmapToy.runGibbs_Preprocessed_LeftTruncated();
 					}else{ // Regular version
-						mmapToy.runGibbs_Preprocessed();
+						mmapToy.runGibbs_Gauss();
 					}
 				}
 

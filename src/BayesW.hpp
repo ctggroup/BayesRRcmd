@@ -36,7 +36,7 @@ class BayesW
 public:
     BayesW(Data &data, Options &opt, const long memPageSize);
     virtual ~BayesW();
-    int runGibbs_Preprocessed(); // where we run Gibbs sampling over the parametrised model
+    int runGibbs_Gauss(); // where we run Gibbs sampling over the parametrised model
  //   int runGibbs_Preprocessed_LeftTruncated(); // Add also the starting time
  //   int runGibbs_notPreprocessed(); // Separate two functions for either preprocessed or not preprocessed data
 };
