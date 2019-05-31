@@ -329,6 +329,8 @@ void Data::readCSVFile( const string &csvFile)
 {
    std::ifstream indata;
    indata.open(csvFile);
+   if (!indata)
+       throw("Error: Unable to open the CSV data file [" + csvFile + "] for reading.");
    std::string line;
    std::vector<double> values;
    uint rows = 0;
@@ -359,6 +361,8 @@ void Data::readCSVPhenFile( const string &csvFile)
 {
    std::ifstream indata;
    indata.open(csvFile);
+   if (!indata)
+       throw("Error: Unable to open the CSV phenotype file [" + csvFile + "] for reading.");
    std::string line;
    std::vector<double> values;
    uint rows = 0;
