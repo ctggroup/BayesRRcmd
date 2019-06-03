@@ -115,7 +115,9 @@ void processDenseData(Options opt) {
         }
 
         if(opt.bayesType == "bayesW"){
-
+        	cout << "bayesW pp solution not completed" << endl;
+        	exit(55);
+        	//TODO
         }else{
             DenseBayesRRmz analysis(&data, opt);
             analysis.runGibbs(graph.get());
