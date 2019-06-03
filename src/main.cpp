@@ -6,11 +6,8 @@
 #include "DenseRGroups.hpp"
 #include "SparseBayesRRG.hpp"
 #include "SparseRGroups.hpp"
-<<<<<<< HEAD
 #include "SparseBayesRRG.hpp"
-=======
 #include "DenseBayesRRmz.hpp"
->>>>>>> branch 'Genetics_groups' of https://github.com/ctggroup/BayesRRcmd.git
 #include "BayesRRm.h"
 #include "data.hpp"
 #include "options.hpp"
@@ -118,12 +115,7 @@ void processDenseData(Options opt) {
         } else {
             graph = std::make_unique<LimitSequenceGraph>(opt.numThread);
         }
-<<<<<<< HEAD
 
-        DenseRGroups analysis(&data, opt);
-        analysis.runGibbs(graph.get());
-
-=======
         if(opt.bayesType == "bayesG")
 	{
           DenseRGroups analysis(&data, opt);
@@ -134,7 +126,7 @@ void processDenseData(Options opt) {
 	    DenseBayesRRmz analysis(&data, opt);
             analysis.runGibbs(graph.get());
 	}
->>>>>>> branch 'Genetics_groups' of https://github.com/ctggroup/BayesRRcmd.git
+
         data.unmapCompressedPreprocessedBedFile();
     }else {
         throw(" Error: Wrong analysis type: " + opt.analysisType);
@@ -223,16 +215,7 @@ void processSparseData(Options options) {
        analysis.runGibbs(graph.get());
     }
 
-<<<<<<< HEAD
-    SparseRGroups analysis(&data, options);
-    analysis.runGibbs(graph.get());
 
-    //SparseBayesRRG analysis(&data, options);
-    //analysis.runGibbs(graph.get());
-
-=======
-    
->>>>>>> branch 'Genetics_groups' of https://github.com/ctggroup/BayesRRcmd.git
     data.unmapCompressedPreprocessedBedFile();
 }
 
