@@ -272,10 +272,8 @@ double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma,
 
 //Pass the vector post_marginals of marginal likelihoods by reference
 void BayesW::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, VectorXd vi, string n){
-//	pars p = *(static_cast<pars *>(norm_data));
 	double exp_sum = (vi.array() * used_data.X_j.array() * used_data.X_j.array()).sum(); //For calculating sigma assume mu=0 and save time on computation
-	// First element is pi_0 *sqrt(pi)
-	post_marginals(0) = prior_prob(0) * sqrtPI;
+
 	for(int i=0; i < used_data.mixture_classes.size(); i++){
 		//Calculate the sigma for the adaptive G-H
 		double sigma = 1.0/sqrt(1 + used_data.alpha * used_data.alpha * used_data.sigma_b * used_data.mixture_classes(i) * exp_sum);
@@ -594,6 +592,9 @@ int BayesW::runGibbs_Gauss()
 
 		// Set counter for each mixture to be 1 ( (1,...,1) prior)
 		v.setOnes();
+
+		// First element for the marginal likelihoods is always is pi_0 *sqrt(pi) for
+		marginal_likelihoods(0) = pi_L(0) * sqrtPI;
 		for (int j = 0; j < M; j++) {
 			marker = markerI[j];
 			sampleBeta(marker);
