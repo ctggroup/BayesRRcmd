@@ -301,10 +301,6 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 	sum_failure = VectorXd(markerCount);	// Vector to sum SNP data vector * failure vector per SNP
 	sum_failure_fix = VectorXd(fixedCount); // Vector to sum fixed vector * failure vector per fixed effect
 
-	// Some of the parameters need to be stored in structures for ARS
-	struct pars used_data;
-	struct pars_alpha used_data_alpha;
-
 	//phenotype vector
 	y = VectorXd();
 
