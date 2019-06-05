@@ -117,11 +117,11 @@ inline double gh_integrand_adaptive(double s,double alpha, double dj, double sqr
 
 //Calculate the value of the integral using Adaptive Gauss-Hermite quadrature
 //Let's assume that mu is always 0 for speed
-inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data, double sigma, string n){
-	pars p = *(static_cast<pars *>(norm_data));
+double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma, string n){
+//	pars p = *(static_cast<pars *>(norm_data));
 
 	double temp = 0;
-	double sqrt_2ck_sigma = sqrt(2*p.mixture_classes(k)*p.sigma_b);
+	double sqrt_2ck_sigma = sqrt(2*used_data.mixture_classes(k)*used_data.sigma_b);
 
 	if(n == "3"){
 		double x1,x2;
@@ -138,8 +138,8 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		x1 = sigma*x1;
 		x2 = sigma*x2;
 
-		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+		temp = 	w1 * gh_integrand_adaptive(x1,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w2 * gh_integrand_adaptive(x2,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
 				w3;
 	}
 	// n=5
@@ -166,10 +166,10 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		x4 = sigma*x4;
 		//x5 = sigma*x5;
 
-		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w3 * gh_integrand_adaptive(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w4 * gh_integrand_adaptive(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+		temp = 	w1 * gh_integrand_adaptive(x1,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w2 * gh_integrand_adaptive(x2,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w3 * gh_integrand_adaptive(x3,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w4 * gh_integrand_adaptive(x4,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
 				w5 ;//* gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j); // This part is just 1
 	}else if(n == "7"){
 		double x1,x2,x3,x4,x5,x6;
@@ -199,14 +199,14 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 		x5 = sigma*x5;
 		x6 = sigma*x6;
 
-		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w3 * gh_integrand_adaptive(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w4 * gh_integrand_adaptive(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w5 * gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w6 * gh_integrand_adaptive(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+		temp = 	w1 * gh_integrand_adaptive(x1,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w2 * gh_integrand_adaptive(x2,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w3 * gh_integrand_adaptive(x3,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w4 * gh_integrand_adaptive(x4,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w5 * gh_integrand_adaptive(x5,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w6 * gh_integrand_adaptive(x6,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
 				w7;
-	}else if(n == "11"){
+	}/*else if(n == "11"){
 		double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
 		double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11; //These are adjusted weights
 
@@ -261,7 +261,7 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 				w9 * gh_integrand_adaptive(x9,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
 				w10 * gh_integrand_adaptive(x10,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
 				w11 ;//* gh_integrand_adaptive(x11,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
-	}else{
+	}*/else{
 		cout << "Possible number of quad_points = 3,5,7,11" << endl;
 		exit(1);
 	}
@@ -271,15 +271,15 @@ inline double gauss_hermite_adaptive_integral(int k, VectorXd vi,void *norm_data
 
 
 //Pass the vector post_marginals of marginal likelihoods by reference
-inline void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, VectorXd vi, void *norm_data, string n){
-	pars p = *(static_cast<pars *>(norm_data));
-	double exp_sum = (vi.array() * p.X_j.array() * p.X_j.array()).sum(); //For calculating sigma assume mu=0 and save time on computation
+void BayesW::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, VectorXd vi, string n){
+//	pars p = *(static_cast<pars *>(norm_data));
+	double exp_sum = (vi.array() * used_data.X_j.array() * used_data.X_j.array()).sum(); //For calculating sigma assume mu=0 and save time on computation
 	// First element is pi_0 *sqrt(pi)
 	post_marginals(0) = prior_prob(0) * sqrtPI;
-	for(int i=0; i < p.mixture_classes.size(); i++){
+	for(int i=0; i < used_data.mixture_classes.size(); i++){
 		//Calculate the sigma for the adaptive G-H
-		double sigma = 1.0/sqrt(1 + p.alpha * p.alpha * p.sigma_b * p.mixture_classes(i) * exp_sum);
-		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, vi, norm_data, sigma, n);
+		double sigma = 1.0/sqrt(1 + used_data.alpha * used_data.alpha * used_data.sigma_b * used_data.mixture_classes(i) * exp_sum);
+		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, vi, sigma, n);
 	}
 }
 
@@ -454,7 +454,7 @@ void BayesW::sampleBeta(int marker){
 	double p = dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
 
 	// Calculate the (ratios of) marginal likelihoods
-	marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, vi, &used_data, quad_points);
+	marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, vi, quad_points);
 	// Calculate the probability that marker is 0
 	double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 

@@ -114,6 +114,8 @@ private:
 	void sampleBeta(int marker);
 	void sampleAlpha();
 
+	void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, VectorXd vi, string n);
+	double gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma, string n);
 };
 
 
