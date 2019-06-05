@@ -78,8 +78,8 @@ class BayesW
 	Distributions_boost dist;
 
 	// The ARS variables
-	pars used_data;
-	pars_alpha used_data_alpha;
+	struct pars used_data;
+	struct pars_alpha used_data_alpha;
 
 	// Component variables
 	VectorXd pi_L;        // mixture probabilities
@@ -90,7 +90,6 @@ class BayesW
 	// Linear model variables
 	VectorXd theta;		 // Fixed effect sizes
 	VectorXd beta;       // effect sizes
-	VectorXd epsilon;    // variable containing the residuals
 	VectorXd vi;		 // adjusted and exponented epsilon
 
 	VectorXd y;
@@ -100,19 +99,6 @@ class BayesW
 	//Sampled variables (not kept in struct)
 	double mu;
 
-
-
-	// ARS parameters
-	int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
-	int neval;
-	double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
-	double convex = 1.0;
-	int dometrop = 0;
-	double xprev = 0.0;
-	double xl, xr ;			  // Initial left and right (pseudo) extremes
-	double xinit[4] = {2.5,3,5,10};     // Initial abscissae
-	double *p_xinit = xinit;
-	VectorXd new_xinit;
 
 
 public:

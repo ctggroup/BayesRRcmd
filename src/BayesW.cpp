@@ -44,13 +44,6 @@ BayesW::~BayesW()
 {
 }
 
-/* Function to assign initial values */
-inline void assignArray(double *array_arg,VectorXd new_vals){
-	for(int i = 0; i < new_vals.size(); i++){
-		array_arg[i] = new_vals[i];
-	}
-}
-
 /* Function to check if ARS resulted with error*/
 inline void errorCheck(int err){
 	if(err>0){
@@ -303,7 +296,6 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 
 	// Linear model variables
 	beta = VectorXd(markerCount);           // effect sizes
-	epsilon = VectorXd(individualCount);    // variable containing the residuals
 	theta = VectorXd(fixedCount);
 
 	sum_failure = VectorXd(markerCount);	// Vector to sum SNP data vector * failure vector per SNP
@@ -316,15 +308,17 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 	//phenotype vector
 	y = VectorXd();
 
+	// Resize the vectors in the structure
+	used_data.X_j = VectorXd(individualCount);
+	used_data.epsilon.resize(individualCount);
+	used_data_alpha.epsilon.resize(individualCount);
+
 	// Init the working variables
 	const int km1 = K - 1;
 
 	//vector with component class for each marker
 	components = VectorXi(markerCount);
 	components.setZero();
-
-	//Temporary vector to renew the initial abscissae in ARS
-	new_xinit = VectorXd(4);
 
 	//set priors for pi parameters
 	//Give all mixtures (except 0 class) equal initial probabilities
@@ -339,8 +333,6 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 	//initialize epsilon vector as the phenotype vector
 	y = data.y.cast<double>().array();
 	mu = y.mean();       // mean or intercept
-
-	epsilon = (y).array() - mu;
 
 	// Initialize the variables in structures
 	//Save variance classes
@@ -394,9 +386,18 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 }
 // Function for sampling intercept (mu)
 void BayesW::sampleMu(){
-	xl = 2; xr = 5;   //xl and xr and the maximum and minimum values between which we sample
-	new_xinit << 0.995*mu, mu,  1.005*mu, 1.01*mu;  // New values for abscissae evaluation
-	assignArray(p_xinit,new_xinit);
+	// ARS parameters
+	int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
+	int neval;
+	double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
+	double convex = 1.0;
+	int dometrop = 0;
+	double xprev = 0.0;
+	double xinit[4] = {0.995*mu, mu,  1.005*mu, 1.01*mu};     // Initial abscissae
+	double *p_xinit = xinit;
+
+	double xl = 2;
+	double xr = 5;   //xl and xr and the maximum and minimum values between which we sample
 
 	used_data.epsilon = used_data.epsilon.array() + mu;// we add to epsilon =Y+mu-X*beta
 
@@ -411,8 +412,19 @@ void BayesW::sampleMu(){
 
 // Function for sampling fixed effect (theta_i)
 void BayesW::sampleTheta(int fix_i){
-	new_xinit << theta(fix_i)-0.01, theta(fix_i),  theta(fix_i)+0.005, theta(fix_i)+0.01;  // New values for abscissae evaluation
-	assignArray(p_xinit,new_xinit);
+	// ARS parameters
+	int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
+	int neval;
+	double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
+	double convex = 1.0;
+	int dometrop = 0;
+	double xprev = 0.0;
+	double xinit[4] = {theta(fix_i)-0.01, theta(fix_i),  theta(fix_i)+0.005, theta(fix_i)+0.01};     // Initial abscissae
+	double *p_xinit = xinit;
+
+	double xl = -2;
+	double xr = 2;			  // Initial left and right (pseudo) extremes
+
 	used_data.X_j = data.X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
 	used_data.sum_failure = sum_failure_fix(fix_i);
 
@@ -463,11 +475,20 @@ void BayesW::sampleBeta(int marker){
 			else {
 				used_data.used_mixture = k-1; // Save the mixture class before sampling (-1 because we count from 0)
 				double safe_limit = 2 * sqrt(used_data.sigma_b * used_data.mixture_classes(k-1));
-				xl = beta(marker) - safe_limit  ; //Construct the hull around previous beta value
-				xr = beta(marker) + safe_limit;
-				// Set initial values for constructing ARS hull
-				new_xinit << beta(marker) - safe_limit/10 , beta(marker),  beta(marker) + safe_limit/20, beta(marker) + safe_limit/10;
-				assignArray(p_xinit,new_xinit);
+
+				// ARS parameters
+				int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
+				int neval;
+				double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
+				double convex = 1.0;
+				int dometrop = 0;
+				double xprev = 0.0;
+				double xinit[4] = {beta(marker) - safe_limit/10 , beta(marker),  beta(marker) + safe_limit/20, beta(marker) + safe_limit/10};     // Initial abscissae
+				double *p_xinit = xinit;
+
+				double xl = beta(marker) - safe_limit  ; //Construct the hull around previous beta value
+				double xr = beta(marker) + safe_limit;
+
 				// Sample using ARS
 				err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data,&convex,
 						npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
@@ -493,9 +514,19 @@ void BayesW::sampleBeta(int marker){
 
 // Function for sampling Weibull shape parameter (alpha)
 void BayesW::sampleAlpha(){
-	xl = 0.0; xr = 400.0;
-	new_xinit << (used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3;  // New values for abscissae evaluation
-	assignArray(p_xinit,new_xinit);
+	// ARS parameters
+	int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
+	int neval;
+	double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
+	double convex = 1.0;
+	int dometrop = 0;
+	double xprev = 0.0;
+	double xinit[4] = {(used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3};     // Initial abscissae
+	double *p_xinit = xinit;
+
+	// Initial left and right (pseudo) extremes
+	double xl = 0.0;
+	double xr = 400.0;
 
 	//Give the residual to alpha structure
 	used_data_alpha.epsilon = used_data.epsilon;
@@ -554,7 +585,6 @@ int BayesW::runGibbs_Gauss()
 
 		/* 1a. Fixed effects (thetas) */
 		if(numFixedEffects > 0){
-			xl = -2.0; xr = 2.0;
 			for(int fix_i = 0; fix_i < numFixedEffects; fix_i++){
 				sampleTheta(fix_i);
 			}
@@ -562,12 +592,12 @@ int BayesW::runGibbs_Gauss()
 		// Calculate the vector of exponent of the adjusted residuals
 		vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 
-		// Set counter for each mixture to be 1 ( (1,...,1) prior)
-		v.setOnes();
-
 		std::random_shuffle(markerI.begin(), markerI.end());
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
 		// 2. Sample beta parameters
+
+		// Set counter for each mixture to be 1 ( (1,...,1) prior)
+		v.setOnes();
 		for (int j = 0; j < M; j++) {
 			marker = markerI[j];
 			sampleBeta(marker);
