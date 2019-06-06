@@ -361,7 +361,7 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
 	for(int marker=0; marker < markerCount; marker++){
-		sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+		sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	}
 	//If there are fixed effects, find the same values for them
 	if(fixedCount > 0){
@@ -428,7 +428,7 @@ void BayesW::sampleTheta(int fix_i){
 // Function for sampling marker effect (beta_i)
 void BayesW::sampleBeta(int marker){
 	// Save the SNP effect column to a structure
-	used_data.X_j = data.Z.col(marker).cast<double>();
+	used_data.X_j = data.mappedZ.col(marker).cast<double>();;
 
 	//Save sum(X_j*failure) to structure
 	used_data.sum_failure = sum_failure(marker);
