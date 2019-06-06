@@ -41,7 +41,8 @@ public:
     string analysisType;
     string bayesType;
     string phenotypeFile;
-    string bedFile;
+    string dataFile;
+    InputType inputType = InputType::Unknown;
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
@@ -72,8 +73,9 @@ public:
         title                   = "brr";
         analysisType            = "Bayes";
         bayesType               = "C";
+        dataFile                = "";
+        inputType               = InputType::Unknown;
         phenotypeFile           = "";
-        bedFile                 = "";
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;

@@ -33,9 +33,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             compress = true;
             ss << "--compress " << "\n";
         }
-        else if (!strcmp(argv[i], "--bfile")) {
-            bedFile = argv[++i];
-            ss << "--bfile " << argv[i] << "\n";
+        else if (!strcmp(argv[i], "--data-file")) {
+            dataFile = argv[++i];
+            inputType = getInputType(dataFile);
+            ss << "--data-file " << argv[i] << "\n";
         }
         else if (!strcmp(argv[i], "--pheno")) {
             phenotypeFile = argv[++i];
@@ -150,6 +151,21 @@ void Options::inputOptions(const int argc, const char* argv[]){
         }
     }
 
+    ss << "\nInput type: ";
+    switch (inputType) {
+    case InputType::Unknown:
+        ss << "Unknown\n";
+        break;
+
+    case InputType::BED:
+        ss << "BED\n";
+        break;
+
+    case InputType::CSV:
+        ss << "CSV\n";
+        break;
+    }
+
     cout << ss.str() << endl;
 }
 
@@ -165,12 +181,8 @@ void Options::readFile(const string &file){  // input options from file
 
     string key, value;
     while (in >> key >> value) {
-        if (key == "bedFile") {
-            bedFile = value;
-        } else if (key == "phenotypeFile") {
+        if (key == "phenotypeFile") {
             phenotypeFile = value;
-        } else if (key == "bedFile") {
-            bedFile = value;
         } else if (key == "analysisType") {
             analysisType = value;
         } else if (key == "bayesType") {

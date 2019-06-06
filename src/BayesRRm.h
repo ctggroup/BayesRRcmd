@@ -18,7 +18,6 @@ class BayesRRm
 {
     Data            &data; // data matrices
     Options         &opt;
-    const string    bedFile; // bed file
     const long      memPageSize; // size of memory
     const string    outputFile;
     const unsigned int seed;

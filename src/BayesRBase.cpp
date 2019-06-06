@@ -17,7 +17,6 @@
 BayesRBase::BayesRBase(const Data *data, Options &opt)
     : m_data(data)
     , m_opt(opt)
-    , m_bedFile(opt.bedFile + ".bed")
     , m_outputFile(opt.mcmcSampleFile)
     , m_seed(opt.seed)
     , m_maxIterations(opt.chainLength)
@@ -63,7 +62,7 @@ unsigned char* BayesRBase::compressedData() const
 
 std::string BayesRBase::preprocessedFile() const
 {
-    return ppFileForType(m_opt.dataType, m_opt.bedFile);
+    return ppFileForType(m_opt.dataType, m_opt.dataFile);
 }
 
 void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCount)

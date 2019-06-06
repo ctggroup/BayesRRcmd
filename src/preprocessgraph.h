@@ -24,7 +24,7 @@ class PreprocessGraph
 public:
     PreprocessGraph(size_t maxParallel);
 
-    void preprocessBedFile(const std::string &bedFile,
+    void preprocessBedFile(const std::string &dataFile,
                            const DataType type,
                            const bool compress,
                            const Data *data,

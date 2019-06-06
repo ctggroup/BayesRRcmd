@@ -3,6 +3,12 @@
 
 #include <string>
 
+enum InputType : unsigned int {
+    Unknown = 0,
+    BED,
+    CSV
+};
+
 enum DataType : unsigned int {
     None = 0,
     Dense,
@@ -13,8 +19,12 @@ enum DataType : unsigned int {
 class MarkerBuilder;
 MarkerBuilder* builderForType(const DataType type);
 
-std::string ppFileForType(DataType type, const std::string &bedFile);
-std::string ppIndexFileForType(DataType type, const std::string &bedFile);
+std::string fileWithSuffix(const std::string &dataFile, const std::string &suffix);
+
+std::string ppFileForType(DataType type, const std::string &dataFile);
+std::string ppIndexFileForType(DataType type, const std::string &dataFile);
+
+InputType getInputType(const std::string &dataFile);
 
 // An entry for the index to the compressed preprocessed bed file
 struct IndexEntry {
@@ -22,5 +32,10 @@ struct IndexEntry {
     unsigned long compressedSize = 0;
     unsigned long originalSize = 0;
 };
+
+//template to read csv files into an eigen vector.
+template<typename M>
+M load_csv (const std::string & path);
+
 
 #endif // COMMON_H

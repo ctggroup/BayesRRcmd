@@ -18,7 +18,6 @@
 BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
 : data(data)
 , opt(opt)
-, bedFile(opt.bedFile + ".bed")
 , memPageSize(memPageSize)
 , outputFile(opt.mcmcSampleFile)
 , seed(opt.seed)
