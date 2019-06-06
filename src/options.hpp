@@ -43,8 +43,6 @@ public:
     string phenotypeFile;
     string dataFile;
     InputType inputType = InputType::Unknown;
-    string bedFile;
-    string csvFile;
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
@@ -78,8 +76,6 @@ public:
         dataFile                = "";
         inputType               = InputType::Unknown;
         phenotypeFile           = "";
-        bedFile                 = "";
-	csvFile                 = "";
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;

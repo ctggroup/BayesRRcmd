@@ -19,8 +19,10 @@ enum DataType : unsigned int {
 class MarkerBuilder;
 MarkerBuilder* builderForType(const DataType type);
 
-std::string ppFileForType(DataType type, const std::string &bedFile);
-std::string ppIndexFileForType(DataType type, const std::string &bedFile);
+std::string fileWithSuffix(const std::string &dataFile, const std::string &suffix);
+
+std::string ppFileForType(DataType type, const std::string &dataFile);
+std::string ppIndexFileForType(DataType type, const std::string &dataFile);
 
 InputType getInputType(const std::string &dataFile);
 

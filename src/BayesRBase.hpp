@@ -55,7 +55,6 @@ public:
 protected:
     const Data          *m_data; // data matrices
     Options             &m_opt;
-    const string        m_bedFile; // bed file
     const string        m_outputFile;
     const string        m_iterLogFile; //debug file for iteration quantities
     const unsigned int  m_seed;

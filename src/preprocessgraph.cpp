@@ -144,7 +144,7 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
     make_edge(*m_writeNode, m_limit->decrement);
 }
 
-void PreprocessGraph::preprocessBedFile(const std::string &bedFile,
+void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
                                         const DataType type,
                                         const bool compress,
                                         const Data *data,
@@ -173,20 +173,19 @@ void PreprocessGraph::preprocessBedFile(const std::string &bedFile,
         return;
     }
 
-    const auto inFile = bedFile + ".bed";
-    const auto ppFile = ppFileForType(type, bedFile);
-    const auto ppIndexFile = ppIndexFileForType(type, bedFile);
+    const auto ppFile = ppFileForType(type, dataFile);
+    const auto ppIndexFile = ppIndexFileForType(type, dataFile);
 
     if (ppFile.empty() || ppIndexFile.empty())
         return;
 
-    ifstream inStream(inFile.c_str(), ios::binary);
+    ifstream inStream(dataFile.c_str(), ios::binary);
     if (!inStream) {
-        cerr << "Error: can not open the file [" + inFile + "] to read." << endl;
+        cerr << "Error: can not open the file [" + dataFile + "] to read." << endl;
         return;
     }
 
-    cout << "Reading PLINK BED file from [" + inFile + "] in SNP-major format ..." << endl;
+    cout << "Reading PLINK BED file from [" + dataFile + "] in SNP-major format ..." << endl;
 
     char header[3];
     inStream.read(header, 3);
@@ -216,7 +215,7 @@ void PreprocessGraph::preprocessBedFile(const std::string &bedFile,
             snp,
             chunkSize,
             compress,
-            inFile,
+            dataFile,
             data,
             {chunkSize, nullptr}, // snpData
             {chunkSize, {nullptr, 0}}, // compressedData
