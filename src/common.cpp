@@ -10,8 +10,15 @@
 #include <Eigen/Eigen>
 #include <vector>
 #include <fstream>
+#include <type_traits>
 
 using namespace Eigen;
+
+std::ostream &operator<<(std::ostream &os, const PreprocessDataType &obj)
+{
+   os << static_cast<std::underlying_type<PreprocessDataType>::type>(obj);
+   return os;
+}
 
 MarkerBuilder *builderForType(const PreprocessDataType type)
 {

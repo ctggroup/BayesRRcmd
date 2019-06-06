@@ -2,19 +2,22 @@
 #define COMMON_H
 
 #include <string>
+#include <iostream>
 
-enum InputType : unsigned int {
+enum class InputType : unsigned int {
     Unknown = 0,
     BED,
     CSV
 };
 
-enum PreprocessDataType : unsigned int {
+enum class PreprocessDataType : unsigned int {
     None = 0,
     Dense,
     SparseEigen,
     SparseRagged
 };
+
+std::ostream &operator<<(std::ostream &os, const PreprocessDataType &obj);
 
 class MarkerBuilder;
 MarkerBuilder* builderForType(const PreprocessDataType type);
