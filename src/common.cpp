@@ -77,6 +77,24 @@ std::string ppIndexFileForType(DataType type, const std::string &bedFile)
     }
 }
 
+InputType getInputType(const std::string &dataFile)
+{
+    auto endsWith = [](std::string const & value, std::string const & ending)
+    {
+        if (ending.size() > value.size())
+            return false;
+
+        return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    };
+
+    if (endsWith(dataFile, ".bed"))
+        return InputType::BED;
+    else if (endsWith(dataFile, ".csv"))
+        return InputType::CSV;
+    else
+        return InputType::Unknown;
+}
+
 
 
 template<typename M>

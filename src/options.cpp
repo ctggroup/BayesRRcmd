@@ -33,6 +33,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
             compress = true;
             ss << "--compress " << "\n";
         }
+        else if (!strcmp(argv[i], "--data-file")) {
+            dataFile = argv[++i];
+            inputType = getInputType(dataFile);
+            ss << "--data-file " << argv[i] << "\n";
+        }
         else if (!strcmp(argv[i], "--bfile")) {
             bedFile = argv[++i];
             ss << "--bfile " << argv[i] << "\n";
@@ -153,6 +158,21 @@ void Options::inputOptions(const int argc, const char* argv[]){
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";
             throw (errmsg.str());
         }
+    }
+
+    ss << "\nInput type: ";
+    switch (inputType) {
+    case InputType::Unknown:
+        ss << "Unknown\n";
+        break;
+
+    case InputType::BED:
+        ss << "BED\n";
+        break;
+
+    case InputType::CSV:
+        ss << "CSV\n";
+        break;
     }
 
     cout << ss.str() << endl;

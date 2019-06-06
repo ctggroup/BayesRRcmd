@@ -3,6 +3,12 @@
 
 #include <string>
 
+enum InputType : unsigned int {
+    Unknown = 0,
+    BED,
+    CSV
+};
+
 enum DataType : unsigned int {
     None = 0,
     Dense,
@@ -15,6 +21,8 @@ MarkerBuilder* builderForType(const DataType type);
 
 std::string ppFileForType(DataType type, const std::string &bedFile);
 std::string ppIndexFileForType(DataType type, const std::string &bedFile);
+
+InputType getInputType(const std::string &dataFile);
 
 // An entry for the index to the compressed preprocessed bed file
 struct IndexEntry {

@@ -218,6 +218,11 @@ int main(int argc, const char * argv[]) {
         Options opt;
         opt.inputOptions(argc, argv);
 
+        if (opt.inputType == InputType::Unknown) {
+            cerr << "Unknown --datafile type: '" << opt.dataFile << "'\n";
+            exit(1);
+        }
+
         switch (opt.dataType) {
         case DataType::Dense:
             processDenseData(opt);
