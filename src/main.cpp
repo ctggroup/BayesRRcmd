@@ -18,8 +18,8 @@ using namespace std;
 void processDenseData(Options opt) {
     Data data;
 
-    const auto ppFile = ppFileForType(opt.dataType, opt.dataFile);
-    const auto ppIndexFile = ppIndexFileForType(opt.dataType, opt.dataFile);
+    const auto ppFile = ppFileForType(opt.preprocessDataType, opt.dataFile);
+    const auto ppIndexFile = ppIndexFileForType(opt.preprocessDataType, opt.dataFile);
     // Analysis type
     if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe"))
     {
@@ -46,7 +46,7 @@ void processDenseData(Options opt) {
 
             PreprocessGraph graph(opt.numThread);
             graph.preprocessBedFile(opt.dataFile,
-                                    opt.dataType,
+                                    opt.preprocessDataType,
                                     opt.compress,
                                     &data,
                                     opt.preprocessChunks);
@@ -126,8 +126,8 @@ void processSparseData(Options options) {
     data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
     data.readPhenotypeFile(options.phenotypeFile);
 
-    const auto ppFile = ppFileForType(options.dataType, options.dataFile);
-    const auto ppIndexFile = ppIndexFileForType(options.dataType, options.dataFile);
+    const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
+    const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
 
     if (options.analysisType == "Preprocess") {
         cout << "Start preprocessing " << options.dataFile << endl;
@@ -146,7 +146,7 @@ void processSparseData(Options options) {
 
         PreprocessGraph graph(options.numThread);
         graph.preprocessBedFile(options.dataFile,
-                                options.dataType,
+                                options.preprocessDataType,
                                 options.compress,
                                 &data,
                                 options.preprocessChunks);
@@ -212,19 +212,19 @@ int main(int argc, const char * argv[]) {
             exit(1);
         }
 
-        switch (opt.dataType) {
-        case DataType::Dense:
+        switch (opt.preprocessDataType) {
+        case PreprocessDataType::Dense:
             processDenseData(opt);
             break;
 
-        case DataType::SparseEigen:
+        case PreprocessDataType::SparseEigen:
             // Fall through
-        case DataType::SparseRagged:
+        case PreprocessDataType::SparseRagged:
             processSparseData(opt);
             break;
 
         default:
-            cerr << "Unsupported DataType: " << opt.dataType << endl;
+            cerr << "Unsupported DataType: " << opt.preprocessDataType << endl;
         }
     }
     catch (const string &err_msg) {

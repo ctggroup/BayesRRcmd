@@ -21,7 +21,7 @@ DenseBayesRRmz::~DenseBayesRRmz()
 
 MarkerBuilder *DenseBayesRRmz::markerBuilder() const
 {
-    return builderForType(DataType::Dense);
+    return builderForType(PreprocessDataType::Dense);
 }
 
 void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps)

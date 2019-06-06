@@ -145,7 +145,7 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
 }
 
 void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
-                                        const DataType type,
+                                        const PreprocessDataType type,
                                         const bool compress,
                                         const Data *data,
                                         const size_t chunkSize)

@@ -62,7 +62,7 @@ unsigned char* BayesRBase::compressedData() const
 
 std::string BayesRBase::preprocessedFile() const
 {
-    return ppFileForType(m_opt.dataType, m_opt.dataFile);
+    return ppFileForType(m_opt.preprocessDataType, m_opt.dataFile);
 }
 
 void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCount)

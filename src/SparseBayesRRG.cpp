@@ -16,15 +16,15 @@ SparseBayesRRG::~SparseBayesRRG()
 
 MarkerBuilder *SparseBayesRRG::markerBuilder() const
 {
-    switch (m_opt.dataType) {
-    case DataType::SparseEigen:
+    switch (m_opt.preprocessDataType) {
+    case PreprocessDataType::SparseEigen:
         // Fall through
-    case DataType::SparseRagged:
-        return builderForType(m_opt.dataType);
+    case PreprocessDataType::SparseRagged:
+        return builderForType(m_opt.preprocessDataType);
 
     default:
         std::cerr << "SparseBayesRRG::markerBuilder - unsupported type: "
-                  << m_opt.dataType
+                  << m_opt.preprocessDataType
                   << std::endl;
     }
 

@@ -46,7 +46,7 @@ public:
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
-    DataType dataType = DataType::Dense;
+    PreprocessDataType preprocessDataType = PreprocessDataType::Dense;
     string iterLogFile;
     bool iterLog = false;
     string colLogFile;
@@ -79,7 +79,7 @@ public:
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;
-        dataType                = DataType::Dense;
+        preprocessDataType      = PreprocessDataType::Dense;
     }
 
     void inputOptions(const int argc, const char* argv[]);

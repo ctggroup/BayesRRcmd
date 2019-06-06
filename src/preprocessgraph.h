@@ -25,14 +25,14 @@ public:
     PreprocessGraph(size_t maxParallel);
 
     void preprocessBedFile(const std::string &dataFile,
-                           const DataType type,
+                           const PreprocessDataType type,
                            const bool compress,
                            const Data *data,
                            const size_t chunkSize);
 
 protected:
     struct Message {
-        DataType type = DataType::None;
+        PreprocessDataType type = PreprocessDataType::None;
         size_t id = 0;
         std::streamsize startSnp = 0;
         size_t chunkSize = 0;

@@ -9,7 +9,7 @@ enum InputType : unsigned int {
     CSV
 };
 
-enum DataType : unsigned int {
+enum PreprocessDataType : unsigned int {
     None = 0,
     Dense,
     SparseEigen,
@@ -17,12 +17,12 @@ enum DataType : unsigned int {
 };
 
 class MarkerBuilder;
-MarkerBuilder* builderForType(const DataType type);
+MarkerBuilder* builderForType(const PreprocessDataType type);
 
 std::string fileWithSuffix(const std::string &dataFile, const std::string &suffix);
 
-std::string ppFileForType(DataType type, const std::string &dataFile);
-std::string ppIndexFileForType(DataType type, const std::string &dataFile);
+std::string ppFileForType(PreprocessDataType type, const std::string &dataFile);
+std::string ppIndexFileForType(PreprocessDataType type, const std::string &dataFile);
 
 InputType getInputType(const std::string &dataFile);
 

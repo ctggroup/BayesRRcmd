@@ -102,11 +102,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
         else if (!strcmp(argv[i], "--sparse-data")) {
             string sparseDataType = argv[++i];
             if (sparseDataType == "eigen")
-                dataType = DataType::SparseEigen;
+                preprocessDataType = PreprocessDataType::SparseEigen;
             else if (sparseDataType == "ragged")
-                dataType = DataType::SparseRagged;
+                preprocessDataType = PreprocessDataType::SparseRagged;
             else
-                dataType = DataType::None;
+                preprocessDataType = PreprocessDataType::None;
 
             ss << "--sparse-data " << sparseDataType << "\n";
         }
