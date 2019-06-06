@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.1.3)
-
 project(brr)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
