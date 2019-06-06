@@ -2,7 +2,7 @@ project(brr)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_library(libbrr-dev
+add_library(bayes
     BayesRRm.cpp
     data.cpp
     distributions_boost.cpp
@@ -32,10 +32,10 @@ add_library(libbrr-dev
     colwriter.cpp
 )
 
-set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD_REQUIRED ON)
-set_property(TARGET libbrr-dev PROPERTY CXX_STANDARD 17)
+set_property(TARGET bayes PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET bayes PROPERTY CXX_STANDARD 17)
 
-target_link_libraries(libbrr-dev ${ZLIB_LIBRARIES} ${TBB_IMPORTED_TARGETS}
+target_link_libraries(bayes ${ZLIB_LIBRARIES} ${TBB_IMPORTED_TARGETS}
     ${CMAKE_THREAD_LIBS_INIT})
 
 add_executable(${PROJECT_NAME}
@@ -45,7 +45,7 @@ add_executable(${PROJECT_NAME}
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
-target_link_libraries(${PROJECT_NAME} libbrr-dev)
+target_link_libraries(${PROJECT_NAME} bayes)
 
 set(${PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_SOURCE_DIR} ${PROJECT_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR} CACHE INTERNAL "${PROJECT_NAME}: Include Directories"
