@@ -332,7 +332,6 @@ void Data::readCSVFile( const string &csvFile)
    if (!indata)
        throw("Error: Unable to open the CSV data file [" + csvFile + "] for reading.");
    std::string line;
-   std::vector<double> values;
    uint rows = 0;
    uint cols = 0; 
    while (std::getline(indata, line))
@@ -352,9 +351,8 @@ void Data::readCSVFile( const string &csvFile)
    numSnps = rows;
     indata.clear();
     indata.close();
-   cout << numInds << " \n individuals to be included from [" + csvFile + "]." << endl;
+   cout << numInds << " individuals to be included from [" + csvFile + "]." << endl;
    cout << numSnps << " markers to be included from [" + csvFile + "]." << endl;
-  
 }
 
 void Data::readCSVPhenFile( const string &csvFile)
@@ -385,8 +383,5 @@ void Data::readCSVPhenFile( const string &csvFile)
     indata.clear();
     indata.close();
 
-  
-
-   cout << cols << " \n phenotype measures to be included from [" + csvFile + "]." << endl;
-   
+   cout << cols << " phenotype measures to be included from [" + csvFile + "]." << endl;
 }
