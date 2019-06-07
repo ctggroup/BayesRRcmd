@@ -19,6 +19,8 @@ enum class InputType : unsigned int {
     CSV
 };
 
+std::ostream &operator<<(std::ostream &os, const InputType &obj);
+
 enum class PreprocessDataType : unsigned int {
     None = 0,
     Dense,
