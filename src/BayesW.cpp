@@ -206,7 +206,7 @@ double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma,
 				w5 * gh_integrand_adaptive(x5,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
 				w6 * gh_integrand_adaptive(x6,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
 				w7;
-	}/*else if(n == "11"){
+	}else if(n == "11"){
 		double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
 		double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11; //These are adjusted weights
 		x1 = 3.6684708465596;
@@ -242,18 +242,18 @@ double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma,
 		x9 = sigma*x9;
 		x10 = sigma*x10;
 		//	x11 = sigma*x11;
-		temp = 	w1 * gh_integrand_adaptive(x1,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w2 * gh_integrand_adaptive(x2,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w3 * gh_integrand_adaptive(x3,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w4 * gh_integrand_adaptive(x4,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w5 * gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w6 * gh_integrand_adaptive(x6,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w7 * gh_integrand_adaptive(x7,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w8 * gh_integrand_adaptive(x8,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w9 * gh_integrand_adaptive(x9,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
-				w10 * gh_integrand_adaptive(x10,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j)+
+		temp = 	w1 * gh_integrand_adaptive(x1,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w2 * gh_integrand_adaptive(x2,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w3 * gh_integrand_adaptive(x3,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w4 * gh_integrand_adaptive(x4,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w5 * gh_integrand_adaptive(x5,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w6 * gh_integrand_adaptive(x6,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w7 * gh_integrand_adaptive(x7,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w8 * gh_integrand_adaptive(x8,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w9 * gh_integrand_adaptive(x9,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
+				w10 * gh_integrand_adaptive(x10,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
 				w11 ;//* gh_integrand_adaptive(x11,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j);
-	}*/else{
+	}else{
 		cout << "Possible number of quad_points = 3,5,7,11" << endl;
 		exit(1);
 	}
