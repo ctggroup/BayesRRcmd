@@ -14,24 +14,25 @@
 #include <chrono>
 #include <mutex>
 
-BayesRBase::BayesRBase(const Data *data, Options &opt)
+BayesRBase::BayesRBase(const Data *data, const Options &opt)
     : m_data(data)
     , m_opt(opt)
     , m_outputFile(opt.mcmcSampleFile)
+    , m_iterLogFile(opt.iterLogFile)
     , m_seed(opt.seed)
     , m_maxIterations(opt.chainLength)
     , m_burnIn(opt.burnin)
     , m_thinning(opt.thin)
     , m_dist(opt.seed)
     , m_showDebug(opt.iterLog)
-    , m_iterLogFile(opt.iterLogFile)
     , m_colLog(opt.colLog)
     , m_colLogFile(opt.colLogFile)
 {
     assert(m_data);
 
-    float* ptr =static_cast<float*>(&opt.S[0]);
-    m_cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
+    const Eigen::Map<const Eigen::VectorXf> map {static_cast<const float*>(&m_opt.S[0]),
+                static_cast<Eigen::Index>(m_opt.S.size())};
+    m_cva = map.cast<double>();
 }
 
 BayesRBase::~BayesRBase()

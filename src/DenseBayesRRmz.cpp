@@ -9,8 +9,8 @@
 #include "densemarker.h"
 #include "common.h"
 
-DenseBayesRRmz::DenseBayesRRmz(const Data *data, Options &opt)
-    : BayesRBase (data, opt)
+DenseBayesRRmz::DenseBayesRRmz(const Data *data, const Options &opt)
+    : BayesRBase(data, opt)
 {
 
 }

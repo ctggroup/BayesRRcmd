@@ -4,7 +4,7 @@
 #include "eigensparsemarker.h"
 #include "sparsemarker.h"
 
-SparseBayesRRG::SparseBayesRRG(const Data *data, Options &opt)
+SparseBayesRRG::SparseBayesRRG(const Data *data, const Options &opt)
     : BayesRBase(data, opt)
 {
 }
