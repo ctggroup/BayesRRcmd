@@ -4,6 +4,15 @@
 #include <string>
 #include <iostream>
 
+enum class AnalysisType : unsigned int {
+    Unknown = 0,
+    Preprocess,
+    PpBayes,
+    AsyncPpBayes
+};
+
+std::ostream &operator<<(std::ostream &os, const AnalysisType &obj);
+
 enum class InputType : unsigned int {
     Unknown = 0,
     BED,

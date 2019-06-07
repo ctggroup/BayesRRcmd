@@ -38,8 +38,7 @@ public:
     string groupFile;
    
     string title;
-    string analysisType;
-    string bayesType;
+    AnalysisType analysisType = AnalysisType::Unknown;
     string phenotypeFile;
     string dataFile;
     InputType inputType = InputType::Unknown;
@@ -71,8 +70,7 @@ public:
         S[2]                    = 0.0001;
 
         title                   = "brr";
-        analysisType            = "Bayes";
-        bayesType               = "C";
+        analysisType            = AnalysisType::Unknown;
         dataFile                = "";
         inputType               = InputType::Unknown;
         phenotypeFile           = "";

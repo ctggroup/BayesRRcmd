@@ -21,12 +21,7 @@ void processDenseData(Options opt) {
     const auto ppFile = ppFileForType(opt.preprocessDataType, opt.dataFile);
     const auto ppIndexFile = ppIndexFileForType(opt.preprocessDataType, opt.dataFile);
     // Analysis type
-    if (opt.analysisType == "RAMBayes" && ( opt.bayesType == "bayes" || opt.bayesType == "bayesMmap" || opt.bayesType == "horseshoe"))
-    {
-        //TODO reimplement RAM and other solutions in a cleaner manner
-        throw( "Error " + opt.analysisType +  " not implemented yet");
-    }
-    else if(opt.analysisType == "Preprocess") //preprocess and compress data
+    if(opt.analysisType == AnalysisType::Preprocess) //preprocess and compress data
     {
         cout << "Start preprocessing " << opt.dataFile << endl;
         clock_t start_bed = clock();
@@ -62,7 +57,7 @@ void processDenseData(Options opt) {
         cout << endl;
 
     }//end if preprocess
-    else if(opt.analysisType == "PPBayes" || opt.analysisType == "PPAsyncBayes")
+    else if(opt.analysisType == AnalysisType::PpBayes || opt.analysisType == AnalysisType::AsyncPpBayes)
     {
         if(opt.inputType == InputType::BED)
         {
@@ -89,7 +84,7 @@ void processDenseData(Options opt) {
             taskScheduler = std::make_unique<tbb::task_scheduler_init>(opt.numThreadSpawned);
 
         std::unique_ptr<AnalysisGraph> graph {nullptr};
-        if (opt.analysisType == "PPAsyncBayes")
+        if (opt.analysisType == AnalysisType::AsyncPpBayes)
         {
             graph = std::make_unique<ParallelGraph>(opt.decompressionTokens, opt.analysisTokens);
             auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
@@ -106,14 +101,19 @@ void processDenseData(Options opt) {
     }//end if ppbayes
     else
     {
-        throw(" Error: Wrong analysis type: " + opt.analysisType);
+        std::cout << "Error: Wrong analysis type: " << opt.analysisType << std::endl;
+        return;
     }//end if analysis type
 }
 
 void processSparseData(Options options) {
-    if (options.analysisType != "PPBayes" &&
-            options.analysisType != "PPAsyncBayes" &&
-            options.analysisType != "Preprocess") {
+    switch (options.analysisType) {
+    case AnalysisType::Preprocess:
+    case AnalysisType::PpBayes:
+    case AnalysisType::AsyncPpBayes:
+        break;
+
+    default:
         std::cout << "Error: Wrong analysis type: " << options.analysisType << std::endl;
         return;
     }
@@ -129,7 +129,7 @@ void processSparseData(Options options) {
     const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
     const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
 
-    if (options.analysisType == "Preprocess") {
+    if (options.analysisType == AnalysisType::Preprocess) {
         cout << "Start preprocessing " << options.dataFile << endl;
 
         clock_t start_bed = clock();
@@ -170,7 +170,7 @@ void processSparseData(Options options) {
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
     std::unique_ptr<AnalysisGraph> graph {nullptr};
-    if (options.analysisType == "PPAsyncBayes") {
+    if (options.analysisType == AnalysisType::AsyncPpBayes) {
         graph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
         auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
         parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);

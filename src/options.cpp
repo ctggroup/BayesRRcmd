@@ -1,5 +1,17 @@
 #include "options.hpp"
 
+AnalysisType parseAnalysisType(const std::string &type)
+{
+    if (type.compare("preprocess") == 0)
+        return AnalysisType::Preprocess;
+    else if (type.compare("ppbayes") == 0)
+        return AnalysisType::PpBayes;
+    else if (type.compare("asyncppbayes") == 0)
+        return AnalysisType::AsyncPpBayes;
+    else
+        return AnalysisType::Unknown;
+}
+
 void Options::inputOptions(const int argc, const char* argv[]){
     stringstream ss;
     for (unsigned i=1; i<argc; ++i) {
@@ -10,23 +22,14 @@ void Options::inputOptions(const int argc, const char* argv[]){
         } else {
             if (i==1) ss << "\nOptions:\n\n";
         }
-        if (!strcmp(argv[i], "--bayes")) {
-            analysisType = "RAMBayes";
-            bayesType = argv[++i];
-            ss << "--bayes " << argv[i] << "\n";
-        }
-        else if (!strcmp(argv[i], "--ppbayes")) {
-            analysisType = "PPBayes";
-            bayesType = argv[++i];
-            ss << "--ppbayes " << argv[i] << "\n";
-        }
-        else if (!strcmp(argv[i], "--ppasyncbayes")) {
-            analysisType = "PPAsyncBayes";
-            bayesType = argv[++i];
-            ss << "--ppasyncbayes " << argv[i] << "\n";
+        if (!strcmp(argv[i], "--analysis-type")) {
+            const auto type = argv[++i];
+            analysisType = parseAnalysisType(type);
+
+            ss << "--analysis-type" << type << "\n";
         }
         else if (!strcmp(argv[i], "--preprocess")) {
-            analysisType = "Preprocess";
+            analysisType = AnalysisType::Preprocess;
             ss << "--preprocess " << "\n";
         }
         else if (!strcmp(argv[i], "--compress")) {
@@ -184,9 +187,7 @@ void Options::readFile(const string &file){  // input options from file
         if (key == "phenotypeFile") {
             phenotypeFile = value;
         } else if (key == "analysisType") {
-            analysisType = value;
-        } else if (key == "bayesType") {
-            bayesType = value;
+            analysisType = parseAnalysisType(value);
         } else if (key == "mcmcSampleFile") {
             mcmcSampleFile = value;
         } else if (key == "chainLength") {

@@ -14,6 +14,12 @@
 
 using namespace Eigen;
 
+std::ostream &operator<<(std::ostream &os, const AnalysisType &obj)
+{
+    os << static_cast<std::underlying_type<AnalysisType>::type>(obj);
+    return os;
+}
+
 std::ostream &operator<<(std::ostream &os, const PreprocessDataType &obj)
 {
    os << static_cast<std::underlying_type<PreprocessDataType>::type>(obj);

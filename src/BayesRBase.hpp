@@ -68,7 +68,6 @@ protected:
     const double        m_s02G    = 0.0001;
     Eigen::VectorXd     m_cva;
     Distributions_boost m_dist;
-    bool m_usePreprocessedData;
     bool m_showDebug;
 
     bool m_colLog=false;       //log for columns

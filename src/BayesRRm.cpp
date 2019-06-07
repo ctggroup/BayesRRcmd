@@ -25,7 +25,7 @@ BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
 , burn_in(opt.burnin)
 , thinning(opt.thin)
 , dist(opt.seed)
-, usePreprocessedData(opt.analysisType == "PPBayes")
+, usePreprocessedData(opt.analysisType == AnalysisType::PpBayes || opt.analysisType == AnalysisType::AsyncPpBayes)
 , showDebug(false)
 {
     float* ptr =static_cast<float*>(&opt.S[0]);
