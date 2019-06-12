@@ -32,6 +32,12 @@ void readMetaData(Data &data, const Options &options) {
         cout << "Cannot read meta data for input type: " << options.inputType << endl;
         return;
     }
+
+    if (!options.mSfile.empty())
+        data.readmSFile(options.mSfile);
+
+    if (!options.groupFile.empty())
+        data.readGroupFile(options.groupFile);
 };
 
 void preprocessBed(const Options &options) {
