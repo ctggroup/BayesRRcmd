@@ -33,9 +33,6 @@ void readMetaData(Data &data, const Options &options) {
         return;
     }
 
-    if (!options.mSfile.empty())
-        data.readmSFile(options.mSfile);
-
     if (!options.groupFile.empty())
         data.readGroupFile(options.groupFile);
 };
@@ -194,7 +191,7 @@ int main(int argc, const char * argv[]) {
         options.inputOptions(argc, argv);
 
         if (options.inputType == InputType::Unknown) {
-            cerr << "Unknown --datafile type: '" << options.dataFile << "'\n";
+            cerr << "Unknown --datafile type: '" << options.dataFile << "'" << endl;
             exit(1);
         }
 
@@ -206,6 +203,11 @@ int main(int argc, const char * argv[]) {
         case AnalysisType::PpBayes:
             // Fall through
         case AnalysisType::AsyncPpBayes:
+            if (options.S.size() == 0) {
+                cerr << "Variance components `--S` are missing or could not be parsed!" << endl;
+                exit(1);
+            }
+
             runPpBayesAnalysis(options);
             break;
 

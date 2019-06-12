@@ -24,12 +24,11 @@ BayesRRm::BayesRRm(Data &data, Options &opt, const long memPageSize)
 , max_iterations(opt.chainLength)
 , burn_in(opt.burnin)
 , thinning(opt.thin)
+, cva(opt.S.row(0))
 , dist(opt.seed)
 , usePreprocessedData(opt.analysisType == AnalysisType::PpBayes || opt.analysisType == AnalysisType::AsyncPpBayes)
 , showDebug(false)
 {
-    float* ptr =static_cast<float*>(&opt.S[0]);
-    cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
 }
 
 BayesRRm::~BayesRRm()

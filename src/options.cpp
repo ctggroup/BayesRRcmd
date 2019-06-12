@@ -12,6 +12,69 @@ AnalysisType parseAnalysisType(const std::string &type)
         return AnalysisType::Unknown;
 }
 
+MatrixXd parseVarianceComponentsFromString(const std::string &string)
+{
+    static const std::string groupSeparator = ";";
+    static const std::string componentSeparator = ",";
+
+    Gadget::Tokenizer groupTokenizer;
+    groupTokenizer.getTokens(string, groupSeparator);
+
+    // If we find no semi-colon, assume there is only one group
+    if (groupTokenizer.empty())
+        groupTokenizer.push_back(string);
+
+    assert(!groupTokenizer.empty());
+
+    Gadget::Tokenizer componentTokenizer;
+    componentTokenizer.getTokens(groupTokenizer[0], componentSeparator);
+
+    if (componentTokenizer.empty()) {
+        cout << "Failed to parse variance components: " << string << endl;
+        return {};
+    }
+
+    MatrixXd S(groupTokenizer.size(), componentTokenizer.size());
+    const auto expectedComponentCount = static_cast<Gadget::Tokenizer::size_type>(S.cols());
+    for (auto group = 0; group < S.rows(); ++group) {
+        componentTokenizer.getTokens(groupTokenizer[group], componentSeparator);
+        if (componentTokenizer.size() != expectedComponentCount) {
+            cout << "Incorrect number of variance components! "
+                 << "Got: " << componentTokenizer.size()
+                 << ", expected: " << expectedComponentCount
+                 << endl;
+            return {};
+        }
+
+        for (unsigned int i = 0; i < expectedComponentCount; ++ i)
+            S(group, i) = stod(componentTokenizer[i]);
+    }
+
+    return S;
+}
+
+MatrixXd parseVarianceComponentsFromFile(const std::string &file)
+{
+    ifstream in(file);
+    if (!in.is_open()) {
+        cout << "Error opening variance components file: " << file << endl;
+        return {};
+    }
+
+    return parseVarianceComponentsFromString({istreambuf_iterator<char>(in), istreambuf_iterator<char>()});
+}
+
+MatrixXd parseVarianceComponents(const std::string &arg)
+{
+    static const std::string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    Gadget::Tokenizer pathTokenizer;
+    pathTokenizer.getTokens(arg, letters);
+    if (pathTokenizer.size() == 1)
+        return parseVarianceComponentsFromString(arg);
+    else
+        return parseVarianceComponentsFromFile(arg);
+}
+
 void Options::inputOptions(const int argc, const char* argv[]){
     stringstream ss;
     for (unsigned i=1; i<argc; ++i) {
@@ -70,18 +133,8 @@ void Options::inputOptions(const int argc, const char* argv[]){
             ss << "--thin " << argv[i] << "\n";
         }
         else if (!strcmp(argv[i], "--S")) {
-            Gadget::Tokenizer strvec;
-            strvec.getTokens(argv[++i], " ,");
-            S.resize(strvec.size());
-            for (unsigned j=0; j<strvec.size(); ++j) {
-                S[j] = stof(strvec[j]);
-            }
+            S = parseVarianceComponents(argv[++i]);
             ss << "--S " << argv[i] << "\n";
-        }
-        //Daniel, include variance components matrix for groups
-        else if (!strcmp(argv[i], "--mS")) {
-        	mSfile = argv[++i];
-        	ss << "--mS " << argv[i] << "\n";
         }
         //Daniel group assignment file
         else if (!strcmp(argv[i], "--group")) {
@@ -189,12 +242,7 @@ void Options::readFile(const string &file){  // input options from file
         } else if (key == "thin") {
             thin = stoi(value);
         } else if (key == "S") {
-            Gadget::Tokenizer strvec;
-            strvec.getTokens(value, " ,");
-            S.resize(strvec.size());
-            for (unsigned j=0; j<strvec.size(); ++j) {
-                S[j] = stof(strvec[j]);
-            }
+            S = parseVarianceComponents(value);
         } else if (key == "numThread") {
             numThread = stoi(value);
         } else if (key.substr(0,2) == "//" ||

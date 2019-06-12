@@ -91,7 +91,6 @@ public:
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
     VectorXi G; 			 // groups
-    MatrixXd mS;			 // mixtures in groups
 
     MatrixXf XPX;            // X'X the MME lhs
     MatrixXf ZPX;            // Z'X the covariance matrix of SNPs and fixed effects

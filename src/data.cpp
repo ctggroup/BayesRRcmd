@@ -394,33 +394,3 @@ void Data::readCSVPhenFile( const string &csvFile)
 
    cout << cols << " phenotype measures to be included from [" + csvFile + "]." << endl;
 }
-
-void Data::readmSFile(const string& mSfile){
-
-	ifstream in(mSfile);
-
-	if(!in.is_open()){
-		cout<<"Error opening the file"<< endl;
-		return;
-	}
-
-	else if(in.is_open()){
-
-		string whole_text{ istreambuf_iterator<char>(in), istreambuf_iterator<char>() };
-
-		Gadget::Tokenizer strvec;
-		Gadget::Tokenizer strT;
-		strvec.getTokens(whole_text, ";");
-		strT.getTokens(strvec[0],",");
-		mS=Eigen::MatrixXd(strvec.size(),strT.size());
-		numGroups=strvec.size();
-
-		for (unsigned j=0; j<strvec.size(); ++j) {
-			strT.getTokens(strvec[j],",");
-			for(unsigned k=0;k<strT.size();++k)
-				mS(j,k) = stod(strT[k]);
-		}
-	}
-
-	cout << "Mixtures read from file" << endl;
-}

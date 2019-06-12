@@ -23,16 +23,13 @@ BayesRBase::BayesRBase(const Data *data, const Options &opt)
     , m_maxIterations(opt.chainLength)
     , m_burnIn(opt.burnin)
     , m_thinning(opt.thin)
+    , m_cva(opt.S.row(0))
     , m_dist(opt.seed)
     , m_showDebug(opt.iterLog)
     , m_colLog(opt.colLog)
     , m_colLogFile(opt.colLogFile)
 {
     assert(m_data);
-
-    const Eigen::Map<const Eigen::VectorXf> map {static_cast<const float*>(&m_opt.S[0]),
-                static_cast<Eigen::Index>(m_opt.S.size())};
-    m_cva = map.cast<double>();
 }
 
 BayesRBase::~BayesRBase()

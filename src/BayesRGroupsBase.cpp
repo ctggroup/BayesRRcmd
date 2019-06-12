@@ -14,7 +14,7 @@ BayesRGroupsBase::BayesRGroupsBase(const Data *data, Options &opt): BayesRBase(d
     //float* ptr =static_cast<float*>(&opt.S[0]);
     //m_cva = (Eigen::Map<Eigen::VectorXf>(ptr, static_cast<long>(opt.S.size()))).cast<double>();
 
-    m_cva = MatrixXd(m_data->mS);
+    m_cva = opt.S;
 }
 
 BayesRGroupsBase::~BayesRGroupsBase()
@@ -89,7 +89,7 @@ int BayesRGroupsBase::runGibbs(AnalysisGraph *analysis)
     const unsigned int M(m_data->numSnps);
     const unsigned int N(m_data->numInds);
     const unsigned int nGroups(m_data->numGroups);
-    const int K(m_data->mS.cols() + 1);
+    const int K(m_opt.S.cols() + 1);
 
     init(K, M, N, nGroups);
 
