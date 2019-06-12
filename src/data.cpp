@@ -127,6 +127,7 @@ void Data::readBimFile(const string &bimFile) {
     }
     in.close();
     numSnps = (unsigned) snpInfoVec.size();
+    G = vector<int>(numSnps, 0);
 
     cout << numSnps << " SNPs to be included from [" + bimFile + "]." << endl;
 }
@@ -366,6 +367,7 @@ void Data::readCSVFile( const string &csvFile)
     }
    numInds = cols;
    numSnps = rows;
+   G = vector<int>(numSnps, 0);
     indata.clear();
     indata.close();
    cout << numInds << " individuals to be included from [" + csvFile + "]." << endl;

@@ -125,7 +125,7 @@ public:
     unsigned numSnps;
     unsigned numInds;
 
-    unsigned numGroups;	// number of groups
+    unsigned numGroups = 1; // number of groups
 
     void preprocessCSVFile(const string &csvFile, const string &preprocessedCSVFile, const string &preprovessedCSVIndexFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile);
