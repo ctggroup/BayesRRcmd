@@ -66,7 +66,7 @@ protected:
     const double        m_s02E    = 0.0001;
     const double        m_v0G     = 0.0001;
     const double        m_s02G    = 0.0001;
-    Eigen::VectorXd     m_cva;
+    MatrixXd            m_cva;
     Distributions_boost m_dist;
     bool m_showDebug;
 
@@ -75,25 +75,25 @@ protected:
     string m_colLogFile;
 
   // Component variables
-    VectorXd m_priorPi;   // prior probabilities for each component
-    VectorXd m_pi;        // mixture probabilities
+    MatrixXd m_priorPi;   // prior probabilities for each component
+    MatrixXd m_pi;        // mixture probabilities
     VectorXd m_cVa;       // component-specific variance
     VectorXd m_muk;       // mean of k-th component marker effect size
     VectorXd m_denom;     // temporal variable for computing the inflation of the effect variance for a given non-zero componnet
     int m_m0;             // total number of markers in model
-    VectorXd m_v;         // variable storing the component assignment
+    MatrixXd m_v;         // variable storing the component assignment
     VectorXd m_cVaI;      // inverse of the component variances
 
     // Mean and residual variables
     double m_mu;          // mean or intercept
-    double m_sigmaG;      // genetic variance
+    VectorXd m_sigmaG;    // genetic variance
     double m_sigmaE;      // residuals variance
 
     // Linear model variables
     VectorXd m_beta;       // effect sizes
     VectorXd m_y_tilde;    // variable containing the adjusted residuals to exclude the effects of a given marker
     VectorXd m_epsilon;    // variable containing the residuals
-    double m_betasqn = 0.0;
+    VectorXd m_betasqnG;
     double m_epsilonSum=0.0;
     VectorXd m_y;
     VectorXd m_components;

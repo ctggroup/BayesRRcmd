@@ -57,5 +57,5 @@ void DenseRGroups::updateGlobal(Marker *marker, const double beta_old, const dou
     assert(denseMarker);
 
     m_epsilon += deltaEps;
-    m_betasqn+=beta*beta-beta_old*beta_old;
+//    m_betasqn+=beta*beta-beta_old*beta_old;
 }

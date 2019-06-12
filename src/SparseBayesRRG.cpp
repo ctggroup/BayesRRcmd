@@ -80,7 +80,6 @@ void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const d
 {
     BayesRBase::updateGlobal(marker, beta_old, beta, deltaEps);
 
-    // No mutex required here whilst m_globalComputeNode uses the serial policy
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
     m_epsilonSum+=sparseMarker->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
