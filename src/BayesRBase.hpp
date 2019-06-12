@@ -46,7 +46,7 @@ public:
 
     virtual std::unique_ptr<AsyncResult> processColumnAsync(Marker *marker);
 
-    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps) = 0;
+    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps);
     virtual void updateMu(double old_mu, double N)=0;
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }

@@ -475,6 +475,15 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
     return result;
 }
 
+void BayesRBase::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd &deltaEps)
+{
+    (void) marker; // Unused
+    assert(marker);
+
+    m_epsilon += deltaEps;
+    m_betasqn += beta*beta-beta_old*beta_old;
+}
+
 void BayesRBase::printDebugInfo() const
 {
     
