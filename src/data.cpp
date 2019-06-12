@@ -252,27 +252,35 @@ void Data::readPhenotypeFile(const string &phenFile) {
 }
 
 
-void Data::readGroupFile(const string& groupFile){
+void Data::readGroupFile(const string& groupFile) {
+    G.clear();
+    numGroups = 1;
 
-	ifstream input(groupFile);
-	vector<int> tmp;
-	string col1;
-	int col2;
-
+    ifstream input(groupFile);
 	if(!input.is_open()){
 		cout<<"Error opening the file"<< endl;
 		return;
 	}
 
+    // Read the groups
+    G.reserve(numSnps);
+
+    string col1;
+    int col2;
 	while(true){
 		input >> col1 >> col2;
 		if(input.eof()) break;
-		tmp.push_back(col2);
+        G.emplace_back(col2);
 	}
 
-	G=Eigen::VectorXi::Map(tmp.data(), tmp.size());
+    // Calculate the number of groups
+    auto temp{G};
+    std::sort(temp.begin(), temp.end());
+    auto last = std::unique(temp.begin(), temp.end());
+    temp.erase(last, temp.end());
+    numGroups = temp.size();
 
-	cout << "Groups read from file" << endl;
+    cout << "Groups read from file: " << numGroups << endl;
 }
 
 void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVFile, const string &preprocessedCSVIndexFile, bool compress)

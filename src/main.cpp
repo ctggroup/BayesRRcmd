@@ -33,8 +33,13 @@ void readMetaData(Data &data, const Options &options) {
         return;
     }
 
-    if (!options.groupFile.empty())
+    if (!options.groupFile.empty()) {
         data.readGroupFile(options.groupFile);
+        if (options.S.rows() != data.numGroups)
+            cerr << "Number of groups " << data.numGroups
+                 << " does not match the number of variance sets: " << options.S.rows()
+                 << endl;
+    }
 };
 
 void preprocessBed(const Options &options) {

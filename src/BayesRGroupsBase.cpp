@@ -201,10 +201,10 @@ void BayesRGroupsBase::processColumn(Marker *marker)
     m_muk[0] = 0.0;
 
     // get sigmaGG
-    sigmaG_process = m_sigmaGG[m_data->G(marker->i)];
+    sigmaG_process = m_sigmaGG[m_data->G[marker->i]];
 
     // set variable cVa
-    m_cVa.segment(1, km1) = m_cva.row(m_data->G(marker->i));
+    m_cVa.segment(1, km1) = m_cva.row(m_data->G[marker->i]);
     m_cVaI.segment(1, km1) = m_cVa.segment(1, km1).cwiseInverse();
 
     // We compute the denominator in the variance expression to save computations
@@ -221,7 +221,7 @@ void BayesRGroupsBase::processColumn(Marker *marker)
     // Update the log likelihood for each component
     VectorXd logL(K);
     const double logLScale = sigmaG_process / m_sigmaE * NM1;
-    logL = m_pi.row(m_data->G(marker->i)).array().log();
+    logL = m_pi.row(m_data->G[marker->i]).array().log();
     // First component probabilities remain unchanged
     logL.segment(1, km1) = logL.segment(1, km1).array()
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
@@ -242,9 +242,9 @@ void BayesRGroupsBase::processColumn(Marker *marker)
                 m_beta(marker->i) = 0;
             } else {
                 m_beta(marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
-                m_betasqnG(m_data->G(marker->i))+= pow(m_beta(marker->i),2);
+                m_betasqnG(m_data->G[marker->i])+= pow(m_beta(marker->i),2);
             }
-            m_v.row(m_data->G(marker->i))(k)+=1.0;
+            m_v.row(m_data->G[marker->i])(k)+=1.0;
             m_components[marker->i] = k;
             break;
         } else {

@@ -90,7 +90,7 @@ public:
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
-    VectorXi G; 			 // groups
+    vector<int> G; 			 // groups
 
     MatrixXf XPX;            // X'X the MME lhs
     MatrixXf ZPX;            // Z'X the covariance matrix of SNPs and fixed effects
