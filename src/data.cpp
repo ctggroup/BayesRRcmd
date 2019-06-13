@@ -250,20 +250,29 @@ void Data::readPhenotypeFile(const string &phenFile) {
 
     in.close();
 }
-//TODO Finish function to read the group file
-void Data::readGroupFile(const string &groupFile) {
-    // NA: missing phenotype
-    ifstream in(groupFile.c_str());
-    if (!in) throw ("Error: can not open the group file [" + groupFile + "] to read.");
 
-    cout << "Reading groups from [" + groupFile + "]." << endl;
 
-    std::istream_iterator<double> start(in), end;
-    std::vector<int> numbers(start, end);
-    int* ptr =(int*)&numbers[0];
-    G=(Eigen::Map<Eigen::VectorXi>(ptr,numbers.size()));
+void Data::readGroupFile(const string& groupFile){
 
-    cout << "Groups read from file" << endl;
+	ifstream input(groupFile);
+	vector<int> tmp;
+	string col1;
+	int col2;
+
+	if(!input.is_open()){
+		cout<<"Error opening the file"<< endl;
+		return;
+	}
+
+	while(true){
+		input >> col1 >> col2;
+		if(input.eof()) break;
+		tmp.push_back(col2);
+	}
+
+	G=Eigen::VectorXi::Map(tmp.data(), tmp.size());
+
+	cout << "Groups read from file" << endl;
 }
 
 void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVFile, const string &preprocessedCSVIndexFile, bool compress)
@@ -384,4 +393,34 @@ void Data::readCSVPhenFile( const string &csvFile)
     indata.close();
 
    cout << cols << " phenotype measures to be included from [" + csvFile + "]." << endl;
+}
+
+void Data::readmSFile(const string& mSfile){
+
+	ifstream in(mSfile);
+
+	if(!in.is_open()){
+		cout<<"Error opening the file"<< endl;
+		return;
+	}
+
+	else if(in.is_open()){
+
+		string whole_text{ istreambuf_iterator<char>(in), istreambuf_iterator<char>() };
+
+		Gadget::Tokenizer strvec;
+		Gadget::Tokenizer strT;
+		strvec.getTokens(whole_text, ";");
+		strT.getTokens(strvec[0],",");
+		mS=Eigen::MatrixXd(strvec.size(),strT.size());
+		numGroups=strvec.size();
+
+		for (unsigned j=0; j<strvec.size(); ++j) {
+			strT.getTokens(strvec[j],",");
+			for(unsigned k=0;k<strT.size();++k)
+				mS(j,k) = stod(strT[k]);
+		}
+	}
+
+	cout << "Mixtures read from file" << endl;
 }

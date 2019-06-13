@@ -5,92 +5,28 @@
 		<Option title="brr"/>
 		<Option makefile_is_custom="1"/>
 		<Option compiler="gcc"/>
-		<Option virtualFolders="CMake Files\;CMake Files\src\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\usr\;CMake Files\..\..\..\..\usr\lib\;CMake Files\..\..\..\..\usr\lib\cmake\;CMake Files\..\..\..\..\usr\lib\cmake\eigen3\;CMake Files\tbb\;CMake Files\tbb\cmake\;CMake Files\tbb\cmake\templates\;"/>
+		<Option virtualFolders="CMake Files\;CMake Files\src\;CMake Files\tbb\;CMake Files\tbb\cmake\;CMake Files\tbb\cmake\templates\;CMake Files\test\;CMake Files\test\googletest-src\;CMake Files\test\googletest-src\googlemock\;CMake Files\test\googletest-src\googlemock\cmake\;CMake Files\test\googletest-src\googletest\;CMake Files\test\googletest-src\googletest\cmake\;"/>
 		<Build>
 			<Target title="all">
-				<Option working_dir="/home/sven/git/BayesRRcmd/src"/>
+				<Option working_dir="/home/marion/git/BayesRRcmd/src"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/ninja -v all"/>
-					<CompileFile command="/usr/bin/ninja -v &quot;$file&quot;"/>
-					<Clean command="/usr/bin/ninja -v clean"/>
-					<DistClean command="/usr/bin/ninja -v clean"/>
-				</MakeCommands>
-			</Target>
-			<Target title="libbrr-dev">
-				<Option output="/home/sven/git/BayesRRcmd/src/liblibbrr-dev.a" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/sven/git/BayesRRcmd/src"/>
-				<Option object_output="./"/>
-				<Option type="2"/>
-				<Option compiler="gcc"/>
-				<Compiler>
-					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
-					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
-					<Add directory="/usr/include/c++/7"/>
-					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
-					<Add directory="/usr/include/c++/7/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
-					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
-					<Add directory="/usr/include"/>
-				</Compiler>
-				<MakeCommands>
-					<Build command="/usr/bin/ninja -v libbrr-dev"/>
-					<CompileFile command="/usr/bin/ninja -v &quot;$file&quot;"/>
-					<Clean command="/usr/bin/ninja -v clean"/>
-					<DistClean command="/usr/bin/ninja -v clean"/>
-				</MakeCommands>
-			</Target>
-			<Target title="libbrr-dev/fast">
-				<Option output="/home/sven/git/BayesRRcmd/src/liblibbrr-dev.a" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/sven/git/BayesRRcmd/src"/>
-				<Option object_output="./"/>
-				<Option type="2"/>
-				<Option compiler="gcc"/>
-				<Compiler>
-					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
-					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
-					<Add directory="/usr/include/c++/7"/>
-					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
-					<Add directory="/usr/include/c++/7/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
-					<Add directory="/usr/local/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
-					<Add directory="/usr/include/x86_64-linux-gnu"/>
-					<Add directory="/usr/include"/>
-				</Compiler>
-				<MakeCommands>
-					<Build command="/usr/bin/ninja -v libbrr-dev/fast"/>
-					<CompileFile command="/usr/bin/ninja -v &quot;$file&quot;"/>
-					<Clean command="/usr/bin/ninja -v clean"/>
-					<DistClean command="/usr/bin/ninja -v clean"/>
+					<Build command="/usr/local/bin/ninja -v all"/>
+					<CompileFile command="/usr/local/bin/ninja -v &quot;$file&quot;"/>
+					<Clean command="/usr/local/bin/ninja -v clean"/>
+					<DistClean command="/usr/local/bin/ninja -v clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="brr">
-				<Option output="/home/sven/git/BayesRRcmd/src/brr" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/sven/git/BayesRRcmd/src"/>
+				<Option output="/home/marion/git/BayesRRcmd/src/brr" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/marion/git/BayesRRcmd/src"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
-					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
+					<Add directory="/home/marion/git/BayesRRcmd/src"/>
+					<Add directory="/home/marion/git/BayesRRcmd/src/../eigen"/>
+					<Add directory="/home/marion/git/BayesRRcmd/tbb/include"/>
 					<Add directory="/usr/include/c++/7"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
 					<Add directory="/usr/include/c++/7/backward"/>
@@ -101,26 +37,22 @@
 					<Add directory="/usr/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/ninja -v brr"/>
-					<CompileFile command="/usr/bin/ninja -v &quot;$file&quot;"/>
-					<Clean command="/usr/bin/ninja -v clean"/>
-					<DistClean command="/usr/bin/ninja -v clean"/>
+					<Build command="/usr/local/bin/ninja -v brr"/>
+					<CompileFile command="/usr/local/bin/ninja -v &quot;$file&quot;"/>
+					<Clean command="/usr/local/bin/ninja -v clean"/>
+					<DistClean command="/usr/local/bin/ninja -v clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="brr/fast">
-				<Option output="/home/sven/git/BayesRRcmd/src/brr" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/sven/git/BayesRRcmd/src"/>
+				<Option output="/home/marion/git/BayesRRcmd/src/brr" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/marion/git/BayesRRcmd/src"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
 				<Compiler>
-					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
-					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
+					<Add directory="/home/marion/git/BayesRRcmd/src"/>
+					<Add directory="/home/marion/git/BayesRRcmd/src/../eigen"/>
+					<Add directory="/home/marion/git/BayesRRcmd/tbb/include"/>
 					<Add directory="/usr/include/c++/7"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
 					<Add directory="/usr/include/c++/7/backward"/>
@@ -131,128 +63,340 @@
 					<Add directory="/usr/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/ninja -v brr/fast"/>
-					<CompileFile command="/usr/bin/ninja -v &quot;$file&quot;"/>
-					<Clean command="/usr/bin/ninja -v clean"/>
-					<DistClean command="/usr/bin/ninja -v clean"/>
+					<Build command="/usr/local/bin/ninja -v brr/fast"/>
+					<CompileFile command="/usr/local/bin/ninja -v &quot;$file&quot;"/>
+					<Clean command="/usr/local/bin/ninja -v clean"/>
+					<DistClean command="/usr/local/bin/ninja -v clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="libbrr-dev">
+				<Option output="/home/marion/git/BayesRRcmd/src/liblibbrr-dev.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/marion/git/BayesRRcmd/src"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/marion/git/BayesRRcmd/src"/>
+					<Add directory="/home/marion/git/BayesRRcmd/src/../eigen"/>
+					<Add directory="/home/marion/git/BayesRRcmd/tbb/include"/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/local/bin/ninja -v libbrr-dev"/>
+					<CompileFile command="/usr/local/bin/ninja -v &quot;$file&quot;"/>
+					<Clean command="/usr/local/bin/ninja -v clean"/>
+					<DistClean command="/usr/local/bin/ninja -v clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="libbrr-dev/fast">
+				<Option output="/home/marion/git/BayesRRcmd/src/liblibbrr-dev.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/marion/git/BayesRRcmd/src"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/marion/git/BayesRRcmd/src"/>
+					<Add directory="/home/marion/git/BayesRRcmd/src/../eigen"/>
+					<Add directory="/home/marion/git/BayesRRcmd/tbb/include"/>
+					<Add directory="/usr/include/c++/7"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
+					<Add directory="/usr/include/c++/7/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/local/bin/ninja -v libbrr-dev/fast"/>
+					<CompileFile command="/usr/local/bin/ninja -v &quot;$file&quot;"/>
+					<Clean command="/usr/local/bin/ninja -v clean"/>
+					<DistClean command="/usr/local/bin/ninja -v clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRRm.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/BayesRBase.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRRm.h">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/BayesRBase.hpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRRmz.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/BayesRGroupsBase.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRRmz.hpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/BayesRGroupsBase.hpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/analysisgraph.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/BayesRRm.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/analysisgraph.hpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/BayesRRm.h">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/compression.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/DenseBayesRRmz.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/compression.h">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/DenseBayesRRmz.hpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/data.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/DenseRGroups.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/data.hpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/DenseRGroups.hpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/distributions_boost.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/SparseBayesRRG.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/distributions_boost.hpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/SparseBayesRRG.hpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/gadgets.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/SparseRGroups.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/gadgets.hpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/SparseRGroups.hpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/limitsequencegraph.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/analysisgraph.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/limitsequencegraph.hpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/analysisgraph.hpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/main.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/common.cpp">
 			<Option target="brr"/>
-		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/options.cpp">
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/options.hpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/common.h">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/samplewriter.cpp">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/compression.cpp">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
-			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/samplewriter.h">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/compression.h">
+			<Option target="brr"/>
 			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/data.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/data.hpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/densemarker.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/densemarker.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/densemarkerbuilder.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/densemarkerbuilder.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/distributions_boost.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/distributions_boost.hpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/eigensparsemarker.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/eigensparsemarker.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/eigensparsemarkerbuilder.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/eigensparsemarkerbuilder.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/gadgets.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/gadgets.hpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/limitsequencegraph.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/limitsequencegraph.hpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/main.cpp">
 			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/CMakeLists.txt">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/marker.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/marker.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/markerbuilder.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/markerbuilder.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/options.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/options.hpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/parallelgraph.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/parallelgraph.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/preprocessgraph.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/preprocessgraph.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/raggedsparsemarker.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/raggedsparsemarker.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/raggedsparsemarkerbuilder.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/raggedsparsemarkerbuilder.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/samplewriter.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/samplewriter.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/sparsemarker.cpp">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/src/sparsemarker.h">
+			<Option target="brr"/>
+			<Option target="libbrr-dev"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/CMakeLists.txt">
+		<Unit filename="/home/marion/git/BayesRRcmd/src/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\src\"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/../../../../usr/lib/cmake/eigen3/Eigen3Config.cmake">
-			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\cmake\eigen3\"/>
-		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/../../../../usr/lib/cmake/eigen3/Eigen3ConfigVersion.cmake">
-			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\cmake\eigen3\"/>
-		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/../../../../usr/lib/cmake/eigen3/Eigen3Targets.cmake">
-			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\cmake\eigen3\"/>
-		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/tbb/cmake/TBBBuild.cmake">
+		<Unit filename="/home/marion/git/BayesRRcmd/tbb/cmake/TBBBuild.cmake">
 			<Option virtualFolder="CMake Files\tbb\cmake\"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/tbb/cmake/TBBConfig.cmake">
+		<Unit filename="/home/marion/git/BayesRRcmd/tbb/cmake/TBBConfig.cmake">
 			<Option virtualFolder="CMake Files\tbb\cmake\"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/tbb/cmake/TBBConfigVersion.cmake">
+		<Unit filename="/home/marion/git/BayesRRcmd/tbb/cmake/TBBConfigVersion.cmake">
 			<Option virtualFolder="CMake Files\tbb\cmake\"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/tbb/cmake/TBBMakeConfig.cmake">
+		<Unit filename="/home/marion/git/BayesRRcmd/tbb/cmake/TBBMakeConfig.cmake">
 			<Option virtualFolder="CMake Files\tbb\cmake\"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/tbb/cmake/templates/TBBConfigForSource.cmake.in">
+		<Unit filename="/home/marion/git/BayesRRcmd/tbb/cmake/templates/TBBConfigForSource.cmake.in">
 			<Option virtualFolder="CMake Files\tbb\cmake\templates\"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/tbb/cmake/templates/TBBConfigVersion.cmake.in">
+		<Unit filename="/home/marion/git/BayesRRcmd/tbb/cmake/templates/TBBConfigVersion.cmake.in">
 			<Option virtualFolder="CMake Files\tbb\cmake\templates\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\test\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/CMakeLists.txt.in">
+			<Option virtualFolder="CMake Files\test\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\test\googletest-src\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googlemock/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\test\googletest-src\googlemock\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googlemock/cmake/gmock.pc.in">
+			<Option virtualFolder="CMake Files\test\googletest-src\googlemock\cmake\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googlemock/cmake/gmock_main.pc.in">
+			<Option virtualFolder="CMake Files\test\googletest-src\googlemock\cmake\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googletest/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\test\googletest-src\googletest\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googletest/cmake/Config.cmake.in">
+			<Option virtualFolder="CMake Files\test\googletest-src\googletest\cmake\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googletest/cmake/gtest.pc.in">
+			<Option virtualFolder="CMake Files\test\googletest-src\googletest\cmake\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googletest/cmake/gtest_main.pc.in">
+			<Option virtualFolder="CMake Files\test\googletest-src\googletest\cmake\"/>
+		</Unit>
+		<Unit filename="/home/marion/git/BayesRRcmd/test/googletest-src/googletest/cmake/internal_utils.cmake">
+			<Option virtualFolder="CMake Files\test\googletest-src\googletest\cmake\"/>
 		</Unit>
 	</Project>
 </CodeBlocks_project_file>

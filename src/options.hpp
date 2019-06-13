@@ -36,7 +36,8 @@ public:
     unsigned int numGroups;
     Eigen::MatrixXd mS;
     string groupFile;
-   
+    string mSfile;
+
     string title;
     AnalysisType analysisType = AnalysisType::Unknown;
     string phenotypeFile;
