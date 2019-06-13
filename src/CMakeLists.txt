@@ -30,6 +30,7 @@ add_library(bayes
     writer.cpp
     logwriter.cpp
     colwriter.cpp
+    analysisrunner.cpp
 )
 
 set_property(TARGET bayes PROPERTY CXX_STANDARD_REQUIRED ON)
