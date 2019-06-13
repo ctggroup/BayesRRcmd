@@ -286,12 +286,15 @@ void BayesRRg::runGibbs() {
 
 	  }
 	  outFile<<"sigmaE,";
-	  for(unsigned int i = 0; i < M; ++i){
-	    outFile << "comp[" << (i+1) << "],";
-	  }
+
 	  for(unsigned int i = 0; i < numberGroups; ++i){
 	    outFile << "sigmaG[" << (i+1) << "],";
 	  }
+
+	  for(unsigned int i = 0; i < (M-1); ++i){
+	    outFile << "comp[" << (i+1) << "],";
+	  }
+	  outFile << "comp[" << M << "]";
 /*	  for(unsigned int i = 0; i < (N-1); ++i){
 	    outFile << "epsilon[" << (i+1) << "],";
 	  }
