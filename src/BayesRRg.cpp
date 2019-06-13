@@ -277,7 +277,7 @@ void BayesRRg::runGibbs() {
 	  queueFull=0;
 	  std::ofstream outFile;
 	  outFile.open(outputFile);
-	  VectorXd sampleq(2*M+3+numberGroups+N);
+	  VectorXd sampleq(2*M+3+numberGroups); //+N for each individual
 
 	  IOFormat CommaInitFmt(StreamPrecision, DontAlignCols, ", ", ", ", "", "", "", "");
 	  outFile<< "iteration,"<<"mu,";
@@ -292,10 +292,10 @@ void BayesRRg::runGibbs() {
 	  for(unsigned int i = 0; i < numberGroups; ++i){
 	    outFile << "sigmaG[" << (i+1) << "],";
 	  }
-	  for(unsigned int i = 0; i < (N-1); ++i){
+/*	  for(unsigned int i = 0; i < (N-1); ++i){
 	    outFile << "epsilon[" << (i+1) << "],";
 	  }
-      outFile << "epsilon[" << N << "]";
+      outFile << "epsilon[" << N << "]";*/
 	  outFile<<"\n";
 
 	  while(!flag ){
