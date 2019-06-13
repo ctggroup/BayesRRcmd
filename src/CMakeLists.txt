@@ -16,9 +16,6 @@ add_library(bayes
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     SparseBayesRRG.cpp
-    DenseRGroups.cpp
-    SparseRGroups.cpp
-    BayesRGroupsBase.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
