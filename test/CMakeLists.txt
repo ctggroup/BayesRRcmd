@@ -26,7 +26,6 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
 # Now simply link against gtest or gtest_main as needed. 
 
 add_executable(tests
-    functionTest.cpp
     optionstest.cpp
 )
 
