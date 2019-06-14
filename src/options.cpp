@@ -79,7 +79,7 @@ MatrixXd parseVarianceComponentsFromFile(const fs::path &path)
     return parseVarianceComponentsFromString({istreambuf_iterator<char>(in), istreambuf_iterator<char>()});
 }
 
-MatrixXd parseVarianceComponents(const std::string &arg)
+MatrixXd Options::parseVarianceComponents(const std::string &arg)
 {
     const fs::path path(arg);
     if (fs::is_regular_file(path))
