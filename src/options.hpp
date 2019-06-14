@@ -20,6 +20,8 @@ const unsigned Megabase = 1e6;
 
 class Options {
 public:
+    static MatrixXd parseVarianceComponents(const std::string &arg);
+
     unsigned chainLength;
     unsigned burnin;
     unsigned seed;

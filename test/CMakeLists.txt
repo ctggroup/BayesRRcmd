@@ -25,7 +25,14 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
 
 # Now simply link against gtest or gtest_main as needed. 
 
-add_executable(tests functionTest.cpp)
+add_executable(tests
+    optionstest.cpp
+    ppbayestest.cpp
+)
+
+target_compile_definitions(tests PRIVATE TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test/data/")
+target_compile_definitions(tests PRIVATE GROUPS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test.groups/")
+target_compile_definitions(tests PRIVATE TEST_RESULTS="${CMAKE_CURRENT_BINARY_DIR}/results/")
 
 set_property(TARGET tests PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET tests PROPERTY CXX_STANDARD 17)

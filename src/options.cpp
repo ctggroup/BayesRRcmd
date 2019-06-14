@@ -1,5 +1,9 @@
 #include "options.hpp"
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 AnalysisType parseAnalysisType(const std::string &type)
 {
     if (type.compare("preprocess") == 0)
@@ -46,33 +50,42 @@ MatrixXd parseVarianceComponentsFromString(const std::string &string)
             return {};
         }
 
-        for (unsigned int i = 0; i < expectedComponentCount; ++ i)
-            S(group, i) = stod(componentTokenizer[i]);
+        for (unsigned int i = 0; i < expectedComponentCount; ++ i) {
+            try {
+                S(group, i) = stod(componentTokenizer[i]);
+            }
+            catch (const std::invalid_argument &) {
+                cerr << "Could not parse variance component: " << componentTokenizer[i] << endl;
+                return {};
+            }
+            catch (const std::out_of_range &) {
+                cerr << "Variance component is out of range: " << componentTokenizer[i] << endl;
+                return {};
+            }
+        }
     }
 
     return S;
 }
 
-MatrixXd parseVarianceComponentsFromFile(const std::string &file)
+MatrixXd parseVarianceComponentsFromFile(const fs::path &path)
 {
-    ifstream in(file);
+    ifstream in(path);
     if (!in.is_open()) {
-        cout << "Error opening variance components file: " << file << endl;
+        cout << "Error opening variance components file: " << path << endl;
         return {};
     }
 
     return parseVarianceComponentsFromString({istreambuf_iterator<char>(in), istreambuf_iterator<char>()});
 }
 
-MatrixXd parseVarianceComponents(const std::string &arg)
+MatrixXd Options::parseVarianceComponents(const std::string &arg)
 {
-    static const std::string letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    Gadget::Tokenizer pathTokenizer;
-    pathTokenizer.getTokens(arg, letters);
-    if (pathTokenizer.size() == 1)
-        return parseVarianceComponentsFromString(arg);
+    const fs::path path(arg);
+    if (fs::is_regular_file(path))
+        return parseVarianceComponentsFromFile(path);
     else
-        return parseVarianceComponentsFromFile(arg);
+        return parseVarianceComponentsFromString(arg);
 }
 
 void Options::inputOptions(const int argc, const char* argv[]){

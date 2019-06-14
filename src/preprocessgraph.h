@@ -4,6 +4,7 @@
 #include "common.h"
 #include "compression.h"
 #include "data.hpp"
+#include "marker.h"
 
 #include "tbb/flow_graph.h"
 #include <Eigen/Eigen>
@@ -12,12 +13,6 @@
 #include <memory>
 
 using namespace tbb::flow;
-
-class Data;
-class IndInfo;
-
-struct CompressedMarker;
-struct Marker;
 
 class PreprocessGraph
 {
