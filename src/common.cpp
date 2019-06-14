@@ -10,23 +10,42 @@
 #include <Eigen/Eigen>
 #include <vector>
 #include <fstream>
+#include <type_traits>
 
 using namespace Eigen;
 
-MarkerBuilder *builderForType(const DataType type)
+std::ostream &operator<<(std::ostream &os, const AnalysisType &obj)
+{
+    os << static_cast<std::underlying_type<AnalysisType>::type>(obj);
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const InputType &obj)
+{
+    os << static_cast<std::underlying_type<InputType>::type>(obj);
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const PreprocessDataType &obj)
+{
+   os << static_cast<std::underlying_type<PreprocessDataType>::type>(obj);
+   return os;
+}
+
+MarkerBuilder *builderForType(const PreprocessDataType type)
 {
     switch (type)
     {
-    case DataType::Dense:
+    case PreprocessDataType::Dense:
         return new DenseMarkerBuilder;
 
-    case DataType::SparseEigen:
+    case PreprocessDataType::SparseEigen:
         return new EigenSparseMarkerBuilder;
 
-    case DataType::SparseRagged:
+    case PreprocessDataType::SparseRagged:
         return new RaggedSparseMarkerBuilder;
 
-    case DataType::None:
+    case PreprocessDataType::None:
         // Fall through
     default:
         std::cerr << "builderForType - unhandled DataType:" << type << std::endl;
@@ -50,18 +69,18 @@ std::string fileWithSuffix(const std::string &dataFile, const std::string &suffi
     return fileWithoutExtension(dataFile) + suffix;
 }
 
-std::string ppFileForType(DataType type, const std::string &dataFile)
+std::string ppFileForType(PreprocessDataType type, const std::string &dataFile)
 {
     const auto fileName = fileWithoutExtension(dataFile);
 
     switch (type) {
-    case DataType::Dense:
+    case PreprocessDataType::Dense:
         return fileName + ".ppbed";
 
-    case DataType::SparseEigen:
+    case PreprocessDataType::SparseEigen:
         return fileName +  ".eigen.sparsebed";
 
-    case DataType::SparseRagged:
+    case PreprocessDataType::SparseRagged:
         return fileName +  ".ragged.sparsebed";
 
     default:
@@ -73,18 +92,18 @@ std::string ppFileForType(DataType type, const std::string &dataFile)
     }
 }
 
-std::string ppIndexFileForType(DataType type, const std::string &dataFile)
+std::string ppIndexFileForType(PreprocessDataType type, const std::string &dataFile)
 {
     const auto fileName = fileWithoutExtension(dataFile);
 
     switch (type) {
-    case DataType::Dense:
+    case PreprocessDataType::Dense:
         return fileName +  ".ppbedindex";
 
-    case DataType::SparseEigen:
+    case PreprocessDataType::SparseEigen:
         return fileName +  ".eigen.sparsebedindex";
 
-    case DataType::SparseRagged:
+    case PreprocessDataType::SparseRagged:
         return fileName + ".ragged.sparsebedindex";
 
     default:

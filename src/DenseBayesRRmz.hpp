@@ -16,7 +16,7 @@ class DenseBayesRRmz : public BayesRBase
     friend class DenseParallelGraph;
 
 public:
-    explicit DenseBayesRRmz(const Data *m_data, Options &m_opt);
+    explicit DenseBayesRRmz(const Data *data, const Options &opt);
     ~DenseBayesRRmz() override;
 
     MarkerBuilder *markerBuilder() const override;

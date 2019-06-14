@@ -31,7 +31,7 @@ struct AsyncResult {
 class BayesRBase
 {
 public:
-    BayesRBase(const Data *m_data, Options &m_opt);
+    BayesRBase(const Data *data, const Options &opt);
     virtual ~BayesRBase();
 
     virtual MarkerBuilder* markerBuilder() const = 0;
@@ -54,7 +54,7 @@ public:
 
 protected:
     const Data          *m_data; // data matrices
-    Options             &m_opt;
+    const Options       &m_opt;
     const string        m_outputFile;
     const string        m_iterLogFile; //debug file for iteration quantities
     const unsigned int  m_seed;
@@ -68,7 +68,6 @@ protected:
     const double        m_s02G    = 0.0001;
     Eigen::VectorXd     m_cva;
     Distributions_boost m_dist;
-    bool m_usePreprocessedData;
     bool m_showDebug;
 
     bool m_colLog=false;       //log for columns

@@ -9,3 +9,13 @@ brr
 *~
 *.optrpt
 /MR_ADV/
+
+# Flow graph tracing output
+*.graphml
+*.traceml
+
+# Preprocessed data file types
+*.ppbed
+*.ppbedindex
+*.sparsebed
+*.sparsebedindex

@@ -2,27 +2,41 @@
 #define COMMON_H
 
 #include <string>
+#include <iostream>
 
-enum InputType : unsigned int {
+enum class AnalysisType : unsigned int {
+    Unknown = 0,
+    Preprocess,
+    PpBayes,
+    AsyncPpBayes
+};
+
+std::ostream &operator<<(std::ostream &os, const AnalysisType &obj);
+
+enum class InputType : unsigned int {
     Unknown = 0,
     BED,
     CSV
 };
 
-enum DataType : unsigned int {
+std::ostream &operator<<(std::ostream &os, const InputType &obj);
+
+enum class PreprocessDataType : unsigned int {
     None = 0,
     Dense,
     SparseEigen,
     SparseRagged
 };
 
+std::ostream &operator<<(std::ostream &os, const PreprocessDataType &obj);
+
 class MarkerBuilder;
-MarkerBuilder* builderForType(const DataType type);
+MarkerBuilder* builderForType(const PreprocessDataType type);
 
 std::string fileWithSuffix(const std::string &dataFile, const std::string &suffix);
 
-std::string ppFileForType(DataType type, const std::string &dataFile);
-std::string ppIndexFileForType(DataType type, const std::string &dataFile);
+std::string ppFileForType(PreprocessDataType type, const std::string &dataFile);
+std::string ppIndexFileForType(PreprocessDataType type, const std::string &dataFile);
 
 InputType getInputType(const std::string &dataFile);
 

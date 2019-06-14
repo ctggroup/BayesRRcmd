@@ -38,15 +38,14 @@ public:
     string groupFile;
    
     string title;
-    string analysisType;
-    string bayesType;
+    AnalysisType analysisType = AnalysisType::Unknown;
     string phenotypeFile;
     string dataFile;
     InputType inputType = InputType::Unknown;
     string mcmcSampleFile;
     string optionFile;
     bool compress = false;
-    DataType dataType = DataType::Dense;
+    PreprocessDataType preprocessDataType = PreprocessDataType::Dense;
     string iterLogFile;
     bool iterLog = false;
     string colLogFile;
@@ -71,15 +70,14 @@ public:
         S[2]                    = 0.0001;
 
         title                   = "brr";
-        analysisType            = "Bayes";
-        bayesType               = "C";
+        analysisType            = AnalysisType::Unknown;
         dataFile                = "";
         inputType               = InputType::Unknown;
         phenotypeFile           = "";
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;
-        dataType                = DataType::Dense;
+        preprocessDataType      = PreprocessDataType::Dense;
     }
 
     void inputOptions(const int argc, const char* argv[]);

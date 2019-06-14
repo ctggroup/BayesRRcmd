@@ -9,8 +9,8 @@
 #include "densemarker.h"
 #include "common.h"
 
-DenseBayesRRmz::DenseBayesRRmz(const Data *data, Options &opt)
-    : BayesRBase (data, opt)
+DenseBayesRRmz::DenseBayesRRmz(const Data *data, const Options &opt)
+    : BayesRBase(data, opt)
 {
 
 }
@@ -21,7 +21,7 @@ DenseBayesRRmz::~DenseBayesRRmz()
 
 MarkerBuilder *DenseBayesRRmz::markerBuilder() const
 {
-    return builderForType(DataType::Dense);
+    return builderForType(PreprocessDataType::Dense);
 }
 
 void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps)

@@ -10,7 +10,7 @@ class SparseBayesRRG : public BayesRBase
     friend class SparseParallelGraph;
 
 public:
-    explicit SparseBayesRRG(const Data *m_data, Options &m_opt);
+    explicit SparseBayesRRG(const Data *data, const Options &opt);
     ~SparseBayesRRG() override;
 
     MarkerBuilder *markerBuilder() const override;

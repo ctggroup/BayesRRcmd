@@ -145,7 +145,7 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
 }
 
 void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
-                                        const DataType type,
+                                        const PreprocessDataType type,
                                         const bool compress,
                                         const Data *data,
                                         const size_t chunkSize)
@@ -190,7 +190,7 @@ void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
     char header[3];
     inStream.read(header, 3);
     if (!inStream || header[0] != 0x6c || header[1] != 0x1b || header[2] != 0x01) {
-        cerr << "Error: Incorrect first three bytes of bed file: " + type << endl;
+        cerr << "Error: Incorrect first three bytes of bed file: " << type << endl;
         return;
     }
 
