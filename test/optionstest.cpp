@@ -36,7 +36,7 @@ TEST(OptionsTest, VarianceFromCommandLine) {
     }
 
     {
-        // Frome file - 2 groups, 2 components
+        // From file - 2 groups, 2 components
         MatrixXd expected(2, 2);
         expected << 0.001, 0.01, 0.001, 0.01;
 
@@ -45,6 +45,24 @@ TEST(OptionsTest, VarianceFromCommandLine) {
         {
             ifstream check(testFile);
             ASSERT_TRUE(check.is_open()) << "Failed to open: " << testFile;
+        }
+
+        const char *argv[] = {"test", "--S", testFile.c_str()};
+
+        options.inputOptions(3, argv);
+        ASSERT_EQ(expected, options.S);
+    }
+
+    {
+        // File does not exist
+        // Default constructed MatrixXd is the expected value for an error
+        MatrixXd expected;
+
+        std::string testFile {GROUPS_TEST_DATA};
+        testFile += "non-existant.cva";
+        {
+            ifstream check(testFile);
+            ASSERT_FALSE(check.is_open()) << "File should not exist: " << testFile;
         }
 
         const char *argv[] = {"test", "--S", testFile.c_str()};

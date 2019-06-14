@@ -37,7 +37,7 @@ set_property(TARGET bayes PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET bayes PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(bayes ${ZLIB_LIBRARIES} ${TBB_IMPORTED_TARGETS}
-    ${CMAKE_THREAD_LIBS_INIT})
+    ${CMAKE_THREAD_LIBS_INIT} stdc++fs)
 
 add_executable(${PROJECT_NAME}
     main.cpp
