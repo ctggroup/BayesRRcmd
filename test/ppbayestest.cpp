@@ -52,15 +52,15 @@ INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                                                   PreprocessDataType::SparseRagged}),
                              ::testing::Bool()));
 
-class DISABLED_PreprocessCsvDense : public ::testing::TestWithParam<bool> {};
+class PreprocessCsvDense : public ::testing::TestWithParam<bool> {};
 
-TEST_P(DISABLED_PreprocessCsvDense, WithAndWithoutCompression) {
+TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
     const std::string testDataDir(TEST_DATA);
     Options options;
     options.analysisType = AnalysisType::Preprocess;
-    options.dataFile = testDataDir + "uk10k_chr1_1mb_transpose.csv";
+    options.dataFile = testDataDir + "small_test.csv";
     options.inputType = InputType::CSV;
-    options.phenotypeFile = testDataDir + "test.csvphen";
+    options.phenotypeFile = testDataDir + "small_test.phencsv";
 
     // Set the test specific values
     options.compress = GetParam();
@@ -87,7 +87,7 @@ TEST_P(DISABLED_PreprocessCsvDense, WithAndWithoutCompression) {
 }
 
 INSTANTIATE_TEST_SUITE_P(PreprocessTests,
-                         DISABLED_PreprocessCsvDense,
+                         PreprocessCsvDense,
                          ::testing::Bool());
 
 class PreprocessCsvSparse : public ::testing::TestWithParam<PreprocessDataType> {};
@@ -234,7 +234,7 @@ INSTANTIATE_TEST_SUITE_P(PpBayesBedGroups,
                              ::testing::Bool()));
 
 
-class DISABLED_PpBayesCsv :
+class PpBayesCsv :
         public PpBayesBase,
         public ::testing::WithParamInterface<std::tuple<AnalysisType, bool>> {
 protected:
@@ -242,13 +242,13 @@ protected:
         PpBayesBase::SetUp();
 
         const std::string testDataDir(TEST_DATA);
-        options.dataFile = testDataDir + "uk10k_chr1_1mb_transpose.csv";
+        options.dataFile = testDataDir + "small_test.csv";
         options.inputType = InputType::CSV;
-        options.phenotypeFile = testDataDir + "test.csvphen";
+        options.phenotypeFile = testDataDir + "small_test.phencsv";
     }
 };
 
-TEST_P(DISABLED_PpBayesCsv, SmokeTests) {
+TEST_P(PpBayesCsv, SmokeTests) {
 
     const auto params = GetParam();
     options.compress = std::get<1>(params);
@@ -265,7 +265,7 @@ TEST_P(DISABLED_PpBayesCsv, SmokeTests) {
 }
 
 INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
-                         DISABLED_PpBayesCsv,
+                         PpBayesCsv,
                          ::testing::Combine(
                              ::testing::ValuesIn({AnalysisType::PpBayes,
                                                   AnalysisType::AsyncPpBayes}),
