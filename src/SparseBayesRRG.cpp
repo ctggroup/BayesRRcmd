@@ -78,12 +78,11 @@ void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
 
 void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps)
 {
-    // No mutex required here whilst m_globalComputeNode uses the serial policy
+    BayesRBase::updateGlobal(marker, beta_old, beta, deltaEps);
+
     auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
     assert(sparseMarker);
-    m_epsilon+= deltaEps ;     //now epsilon=epsilon + 0 + update of epsilon. If vectorised this operation should not be expensive
     m_epsilonSum+=sparseMarker->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
-    m_betasqn+=beta*beta-beta_old*beta_old; // we move the squared norm computation to the global node, to avoid locking
 }
 
 

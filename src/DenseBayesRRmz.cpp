@@ -24,16 +24,6 @@ MarkerBuilder *DenseBayesRRmz::markerBuilder() const
     return builderForType(PreprocessDataType::Dense);
 }
 
-void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps)
-{
-    // No mutex required here whilst m_globalComputeNode uses the serial policy
-    auto* denseMarker = dynamic_cast<DenseMarker*>(marker);
-    assert(denseMarker);
-
-    m_epsilon += deltaEps;
-    m_betasqn+=beta*beta-beta_old*beta_old;
-}
-
 void DenseBayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCount)
 {
     BayesRBase::init(K, markerCount, individualCount);

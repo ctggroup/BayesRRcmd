@@ -127,6 +127,7 @@ void Data::readBimFile(const string &bimFile) {
     }
     in.close();
     numSnps = (unsigned) snpInfoVec.size();
+    G = vector<int>(numSnps, 0);
 
     cout << numSnps << " SNPs to be included from [" + bimFile + "]." << endl;
 }
@@ -250,20 +251,37 @@ void Data::readPhenotypeFile(const string &phenFile) {
 
     in.close();
 }
-//TODO Finish function to read the group file
-void Data::readGroupFile(const string &groupFile) {
-    // NA: missing phenotype
-    ifstream in(groupFile.c_str());
-    if (!in) throw ("Error: can not open the group file [" + groupFile + "] to read.");
 
-    cout << "Reading groups from [" + groupFile + "]." << endl;
 
-    std::istream_iterator<double> start(in), end;
-    std::vector<int> numbers(start, end);
-    int* ptr =(int*)&numbers[0];
-    G=(Eigen::Map<Eigen::VectorXi>(ptr,numbers.size()));
+void Data::readGroupFile(const string& groupFile) {
+    G.clear();
+    numGroups = 1;
 
-    cout << "Groups read from file" << endl;
+    ifstream input(groupFile);
+	if(!input.is_open()){
+		cout<<"Error opening the file"<< endl;
+		return;
+	}
+
+    // Read the groups
+    G.reserve(numSnps);
+
+    string col1;
+    int col2;
+	while(true){
+		input >> col1 >> col2;
+		if(input.eof()) break;
+        G.emplace_back(col2);
+	}
+
+    // Calculate the number of groups
+    auto temp{G};
+    std::sort(temp.begin(), temp.end());
+    auto last = std::unique(temp.begin(), temp.end());
+    temp.erase(last, temp.end());
+    numGroups = temp.size();
+
+    cout << "Groups read from file: " << numGroups << endl;
 }
 
 void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVFile, const string &preprocessedCSVIndexFile, bool compress)
@@ -349,6 +367,7 @@ void Data::readCSVFile( const string &csvFile)
     }
    numInds = cols;
    numSnps = rows;
+   G = vector<int>(numSnps, 0);
     indata.clear();
     indata.close();
    cout << numInds << " individuals to be included from [" + csvFile + "]." << endl;

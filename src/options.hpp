@@ -31,12 +31,11 @@ public:
     size_t analysisTokens = 20;
     unsigned preprocessChunks = 1;
     unsigned thin;  // save every this th sampled value in MCMC
-    vector<float> S;    //variance components
+    Eigen::MatrixXd S;    //variance components
 
     unsigned int numGroups;
-    Eigen::MatrixXd mS;
     string groupFile;
-   
+
     string title;
     AnalysisType analysisType = AnalysisType::Unknown;
     string phenotypeFile;
@@ -64,10 +63,10 @@ public:
         preprocessChunks        = 1;
         thin                    = 5;
 
-        S.resize(3);
-        S[0]                    = 0.01;
-        S[1]                    = 0.001;
-        S[2]                    = 0.0001;
+        S.resize(1, 3);
+        S(0,0)                  = 0.01;
+        S(0,1)                  = 0.001;
+        S(0,2)                  = 0.0001;
 
         title                   = "brr";
         analysisType            = AnalysisType::Unknown;
