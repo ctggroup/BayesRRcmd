@@ -94,7 +94,7 @@ inline double alpha_dens(double x, void *norm_data)
 };
 
 /* Sparse version for function for the log density of beta: uses mixture component from the structure norm_data */
-inline double beta_dens_ver2(double x, void *norm_data)
+inline double beta_dens(double x, void *norm_data)
 /* We are sampling beta (denoted by x here) */
 {
 	double y;
@@ -107,16 +107,6 @@ inline double beta_dens_ver2(double x, void *norm_data)
 	return y;
 };
 
-
-inline double beta_dens(double x, void *norm_data)
-{
-	double y;
-	pars p = *(static_cast<pars *>(norm_data));
-
-	y = -p.alpha * x * p.sum_failure - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
-			x * x / (2 * p.mixture_classes(p.used_mixture) * p.sigma_b) ;
-	return y;
-}
 
 
 
@@ -560,7 +550,7 @@ void BayesW::sampleBeta(int marker){
 				double xr = beta(marker) + safe_limit;
 
 				// Sample using ARS
-				err = arms(xinit,ninit,&xl,&xr,beta_dens_ver2,&used_data_beta,&convex,
+				err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data_beta,&convex,
 						npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 
@@ -711,7 +701,7 @@ int BayesW::runGibbs_Gauss()
 		}
 
 		//Print results
-		cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data_beta.sigma_b << endl;
+		//cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data_beta.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();

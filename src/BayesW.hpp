@@ -24,17 +24,18 @@ struct pars{
 	int used_mixture; //Write the index of the mixture we decide to use
 
 	/* Store the current variables */
-	double alpha, sigma_b;
+	double alpha;
 
 	/* Beta_j - specific variables */
 	VectorXd X_j;
+
+	/*  of sum(X_j*failure) */
+	double sum_failure;
+
 	/* Mu-specific variables */
 	double sigma_mu;
 	/* sigma_b-specific variables */
 	double alpha_sigma, beta_sigma;
-
-	/*  of sum(X_j*failure) */
-	double sum_failure;
 
 	/* Number of events (sum of failure indicators) */
 	double d;
@@ -60,19 +61,11 @@ struct pars_beta_sparse{
 	// Mean, std dev and their ratio for snp j
 	double mean, sd, mean_sd_ratio;
 
-	/* Mu-specific variables */
-	double sigma_mu;
-	/* sigma_b-specific variables */
-	double alpha_sigma, beta_sigma;
-
 	/*  of sum(X_j*failure) */
 	double sum_failure;
 
 	/* Number of events (sum of failure indicators) */
 	double d;
-
-	/* Help variable for storing sqrt(2sigma_b)	 */
-	double sqrt_2sigmab;
 
 };
 
