@@ -129,6 +129,7 @@ class BayesW
 	VectorXd sum_failure;
 	VectorXd sum_failure_fix;
 
+	VectorXd epsilon; //Vector for residuals
 	//Sampled variables (not kept in struct)
 	double mu;
 
