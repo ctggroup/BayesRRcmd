@@ -93,32 +93,50 @@ inline double alpha_dens(double x, void *norm_data)
 	return y;
 };
 
-/* Function for the log density of beta: uses mixture component from the structure norm_data */
-inline double beta_dens(double x, void *norm_data)
+/* Sparse version for function for the log density of beta: uses mixture component from the structure norm_data */
+inline double beta_dens_ver2(double x, void *norm_data)
 /* We are sampling beta (denoted by x here) */
 {
 	double y;
-
 	/* In C++ we need to do a static cast for the void data */
+	pars_beta_sparse p = *(static_cast<pars_beta_sparse *>(norm_data));
+
+	y = -p.alpha * x * p.sum_failure -
+			exp(p.alpha*x*p.mean_sd_ratio)* (p.vi_0 + p.vi_1 * exp(-p.alpha*x/p.sd) + p.vi_2 * exp(-2*p.alpha*x/p.sd))
+			-x * x / (2 * p.mixture_classes(p.used_mixture) * p.sigma_b) ;
+	return y;
+};
+
+
+inline double beta_dens(double x, void *norm_data)
+{
+	double y;
 	pars p = *(static_cast<pars *>(norm_data));
 
 	y = -p.alpha * x * p.sum_failure - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
 			x * x / (2 * p.mixture_classes(p.used_mixture) * p.sigma_b) ;
 	return y;
-};
+}
+
+
 
 //The function for integration
-inline double gh_integrand_adaptive(double s,double alpha, double dj, double sqrt_2Ck_sigmab, VectorXd vi, VectorXd Xj){
+inline double gh_integrand_adaptive(double s,double alpha, double dj, double sqrt_2Ck_sigmab,
+		double vi_sum, double vi_2, double vi_1, double vi_0, double mean, double sd, double mean_sd_ratio){
 	//vi is a vector of exp(vi)
-	double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
+	double temp = -alpha *s*dj*sqrt_2Ck_sigmab +
+			vi_sum - exp(alpha*mean_sd_ratio*s*sqrt_2Ck_sigmab) *
+			(vi_0 + vi_1 * exp(-alpha * s*sqrt_2Ck_sigmab/sd) + vi_2* exp(-2 * alpha * s*sqrt_2Ck_sigmab/sd))
+			-pow(s,2);
 	return exp(temp);
 }
 
 
 //Calculate the value of the integral using Adaptive Gauss-Hermite quadrature
 //Let's assume that mu is always 0 for speed
-double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma, string n){
-//	pars p = *(static_cast<pars *>(norm_data));
+double BayesW::gauss_hermite_adaptive_integral(int k, double sigma, string n, double vi_sum, double vi_2, double vi_1, double vi_0,
+		double mean, double sd, double mean_sd_ratio){
+	//	pars p = *(static_cast<pars *>(norm_data));
 
 	double temp = 0;
 	double sqrt_2ck_sigma = sqrt(2*used_data.mixture_classes(k)*used_data.sigma_b);
@@ -138,9 +156,11 @@ double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma,
 		x1 = sigma*x1;
 		x2 = sigma*x2;
 
-		temp = 	w1 * gh_integrand_adaptive(x1,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w2 * gh_integrand_adaptive(x2,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w3;
+		temp = 	w1 * gh_integrand_adaptive(x1,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+				vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+						w2 * gh_integrand_adaptive(x2,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+								vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+								w3;
 	}
 	// n=5
 	else if(n == "5"){
@@ -166,11 +186,15 @@ double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma,
 		x4 = sigma*x4;
 		//x5 = sigma*x5;
 
-		temp = 	w1 * gh_integrand_adaptive(x1,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w2 * gh_integrand_adaptive(x2,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w3 * gh_integrand_adaptive(x3,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w4 * gh_integrand_adaptive(x4,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w5 ;//* gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j); // This part is just 1
+		temp = 	w1 * gh_integrand_adaptive(x1,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+				vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+						w2 * gh_integrand_adaptive(x2,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+								vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+								w3 * gh_integrand_adaptive(x3,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+										vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+										w4 * gh_integrand_adaptive(x4,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+												vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+												w5 ;//* gh_integrand_adaptive(x5,p.alpha,p.sum_failure,sqrt_2ck_sigma,vi,p.X_j); // This part is just 1
 	}else if(n == "7"){
 		double x1,x2,x3,x4,x5,x6;
 		double w1,w2,w3,w4,w5,w6,w7; //These are adjusted weights
@@ -199,13 +223,19 @@ double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma,
 		x5 = sigma*x5;
 		x6 = sigma*x6;
 
-		temp = 	w1 * gh_integrand_adaptive(x1,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w2 * gh_integrand_adaptive(x2,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w3 * gh_integrand_adaptive(x3,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w4 * gh_integrand_adaptive(x4,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w5 * gh_integrand_adaptive(x5,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w6 * gh_integrand_adaptive(x6,used_data.alpha,used_data.sum_failure,sqrt_2ck_sigma,vi,used_data.X_j)+
-				w7;
+		temp = 	w1 * gh_integrand_adaptive(x1,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+				vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+						w2 * gh_integrand_adaptive(x2,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+								vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+								w3 * gh_integrand_adaptive(x3,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+										vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+										w4 * gh_integrand_adaptive(x4,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+												vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+												w5 * gh_integrand_adaptive(x5,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+														vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+														w6 * gh_integrand_adaptive(x6,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma,
+																vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
+																w7;
 	}/*else if(n == "11"){
 		double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
 		double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11; //These are adjusted weights
@@ -271,13 +301,15 @@ double BayesW::gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma,
 
 
 //Pass the vector post_marginals of marginal likelihoods by reference
-void BayesW::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, VectorXd vi, string n){
-	double exp_sum = (vi.array() * used_data.X_j.array() * used_data.X_j.array()).sum(); //For calculating sigma assume mu=0 and save time on computation
+void BayesW::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n,
+		double vi_sum, double vi_2, double vi_1, double vi_0, double mean, double sd, double mean_sd_ratio){
+	double exp_sum = (vi_1 * (1 - 2 * mean) + 4 * (1-mean) * vi_2 + vi_sum * mean * mean) /(sd*sd) ;
 
-	for(int i=0; i < used_data.mixture_classes.size(); i++){
+	for(int i=0; i < used_data_beta.mixture_classes.size(); i++){
 		//Calculate the sigma for the adaptive G-H
-		double sigma = 1.0/sqrt(1 + used_data.alpha * used_data.alpha * used_data.sigma_b * used_data.mixture_classes(i) * exp_sum);
-		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, vi, sigma, n);
+		double sigma = 1.0/sqrt(1 + used_data_beta.alpha * used_data_beta.alpha * used_data_beta.sigma_b * used_data_beta.mixture_classes(i) * exp_sum);
+		post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, sigma, n, vi_sum,  vi_2,  vi_1,  vi_0,
+				mean, sd, mean_sd_ratio);
 	}
 }
 
@@ -331,9 +363,12 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 	// Initialize the variables in structures
 	//Save variance classes
 	used_data.mixture_classes.resize(km1);
+	used_data_beta.mixture_classes.resize(km1);  //The future solution
+
 
 	for(int i=0;i<(km1);i++){
 		used_data.mixture_classes(i) = opt.S[i];   //Save the mixture data (C_k)
+		used_data_beta.mixture_classes(i) = opt.S[i];
 	}
 
 	//Store the vector of failures only in the structure used for sampling alpha
@@ -341,12 +376,16 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
 	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
+	used_data_beta.alpha = PI/sqrt(denominator);    // The shape parameter initial value
+
 
 	for(int i=0; i<(y.size()); ++i){
 		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
 	}
 
 	used_data.sigma_b = PI2/ (6 * pow(used_data.alpha,2) * markerCount ) ;
+	used_data_beta.sigma_b = PI2/ (6 * pow(used_data_beta.alpha,2) * markerCount ) ;
+
 
 	/* Prior value selection for the variables */
 	/* At the moment we set them to be weakly informative (in .hpp file) */
@@ -368,9 +407,24 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 	//for(int marker=0; marker<M; marker++){
 	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
+
+
+	// Reading the Xj*failure sum in sparse format:
 	for(int marker=0; marker < markerCount; marker++){
-		sum_failure(marker) = ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+		std::vector<int> oneIndices = data.Zones[marker]; //Take the vector of indices
+		std::vector<int> twoIndices = data.Ztwos[marker]; //Take the vector of indices
+
+		int temp_sum = 0;
+		for(int i=0; i < oneIndices.size(); i++){
+			temp_sum += used_data_alpha.failure_vector(oneIndices[i]);
+		}
+		for(int i=0; i < twoIndices.size(); i++){
+			temp_sum += 2*used_data_alpha.failure_vector(twoIndices[i]);
+		}
+
+		sum_failure(marker) = (temp_sum - data.means(marker) * used_data_alpha.failure_vector.array().sum()) / data.sds(marker);
 	}
+
 	//If there are fixed effects, find the same values for them
 	if(fixedCount > 0){
 		for(int fix_i=0; fix_i < fixedCount; fix_i++){
@@ -435,26 +489,31 @@ void BayesW::sampleTheta(int fix_i){
 
 // Function for sampling marker effect (beta_i)
 void BayesW::sampleBeta(int marker){
-	// Save the SNP effect column to a structure
-	used_data.X_j = data.Z.col(marker).cast<double>();
 
 	//Save sum(X_j*failure) to structure
-	used_data.sum_failure = sum_failure(marker);
+	used_data_beta.sum_failure = sum_failure(marker);
 
 	//Change the residual vector only if the previous beta was non-zero
 	if(beta(marker) != 0){
-		used_data.epsilon = used_data.epsilon.array() + (used_data.X_j * beta(marker)).array();
+		used_data.epsilon = used_data.epsilon.array() + (data.Z.col(marker).cast<double>() * beta(marker)).array();
 		//Also find the transformed residuals
 		vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 	}
+
+	// Calculate the sums of vi elements
+	double vi_sum = vi.sum();
+	double vi_2 = vi(data.Ztwos[marker]).sum();
+	double vi_1 = vi(data.Zones[marker]).sum();
+	double vi_0 = vi_sum - vi_1 - vi_2;
 
 	/* Calculate the mixture probability */
 	double p = dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
 
 	// Calculate the (ratios of) marginal likelihoods
-	marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, vi, quad_points);
+	marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, quad_points, vi_sum, vi_2, vi_1, vi_0, data.means(marker),data.sds(marker),data.mean_sd_ratio(marker));
 	// Calculate the probability that marker is 0
 	double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
+
 
 	//Loop through the possible mixture classes
 	for (int k = 0; k < K; k++) {
@@ -467,8 +526,18 @@ void BayesW::sampleBeta(int marker){
 			}
 			// If is not 0th component then sample using ARS
 			else {
-				used_data.used_mixture = k-1; // Save the mixture class before sampling (-1 because we count from 0)
-				double safe_limit = 2 * sqrt(used_data.sigma_b * used_data.mixture_classes(k-1));
+				used_data_beta.used_mixture = k-1;
+
+				used_data_beta.mean = data.means(marker);
+				used_data_beta.sd = data.sds(marker);
+				used_data_beta.mean_sd_ratio = data.mean_sd_ratio(marker);
+
+				used_data_beta.vi_0 = vi_0;
+				used_data_beta.vi_1 = vi_1;
+				used_data_beta.vi_2 = vi_2;
+
+
+				double safe_limit = 2 * sqrt(used_data_beta.sigma_b * used_data_beta.mixture_classes(k-1));
 
 				// ARS parameters
 				int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
@@ -484,12 +553,15 @@ void BayesW::sampleBeta(int marker){
 				double xr = beta(marker) + safe_limit;
 
 				// Sample using ARS
-				err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data,&convex,
+				err = arms(xinit,ninit,&xl,&xr,beta_dens_ver2,&used_data_beta,&convex,
 						npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 
 				beta(marker) = xsamp[0];  // Save the new result
-				used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+				//used_data.epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+				used_data.epsilon = used_data.epsilon - data.Z.col(marker).cast<double>() * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+
+
 				vi = (used_data.alpha*used_data.epsilon.array()-EuMasc).exp();
 
 				v[k] += 1.0;
@@ -530,6 +602,7 @@ void BayesW::sampleAlpha(){
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 	errorCheck(err);
 	used_data.alpha = xsamp[0];
+	used_data_beta.alpha = xsamp[0];
 }
 
 /* Adaptive Gauss-Hermite version. Currently RAM solution */
@@ -605,6 +678,7 @@ int BayesW::runGibbs_Gauss()
 		// 4. Sample sigma_b
 		used_data.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
 				(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+		used_data_beta.sigma_b = used_data.sigma_b ;
 
 		//Update the sqrt(2sigmab) variable
 		used_data.sqrt_2sigmab = sqrt(2*used_data.sigma_b);

@@ -93,6 +93,14 @@ public:
     VectorXi G; // groups
     VectorXd fail;			 // Failure indicator
 
+    // Vectors for the sparse format solution
+    std::vector<std::vector<int>> Zones; // Vector for each SNP: per SNP all the indices with 1 allele are written down
+    std::vector<std::vector<int>> Ztwos; // Vector for each SNP: per SNP all the indices with 2 alleles are written down
+    VectorXd means; //Mean for each SNP
+    VectorXd sds;
+    VectorXd mean_sd_ratio;
+
+
     MatrixXf XPX;            // X'X the MME lhs
     MatrixXf ZPX;            // Z'X the covariance matrix of SNPs and fixed effects
     VectorXf XPXdiag;        // X'X diagonal
@@ -138,6 +146,8 @@ public:
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);
     void readBedFile_noMPI(const string &bedFile);
+    void readBedFile_noMPI_unstandardised(const string &bedFile);
+
     void readPhenotypeFile(const string &phenFile);
     void readGroupFile(const string &groupFile);
     //BayesW variables

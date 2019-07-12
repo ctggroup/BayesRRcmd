@@ -36,6 +36,7 @@ void processDenseData(Options opt) {
         // Read phenotype file and bed file for the option specified
         data.readPhenotypeFile(opt.phenotypeFile);
         data.readBedFile_noMPI(opt.bedFile+".bed");
+        data.readBedFile_noMPI_unstandardised(opt.bedFile+".bed"); // This part to read the non-standardised data
 
         // If there is a file for fixed effects (model matrix), then read the data
         if(opt.fixedFile != ""){

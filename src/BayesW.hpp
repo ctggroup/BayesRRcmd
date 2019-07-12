@@ -44,6 +44,38 @@ struct pars{
 
 };
 
+struct pars_beta_sparse{
+	/* Common parameters for the densities */
+
+	VectorXd mixture_classes; // Vector to store mixture component C_k values
+
+	int used_mixture; //Write the index of the mixture we decide to use
+
+	/* Store the current variables */
+	double alpha, sigma_b;
+
+	/* Beta_j - specific variables */
+	double vi_0, vi_1, vi_2; // Sums of vi elements
+
+	// Mean, std dev and their ratio for snp j
+	double mean, sd, mean_sd_ratio;
+
+	/* Mu-specific variables */
+	double sigma_mu;
+	/* sigma_b-specific variables */
+	double alpha_sigma, beta_sigma;
+
+	/*  of sum(X_j*failure) */
+	double sum_failure;
+
+	/* Number of events (sum of failure indicators) */
+	double d;
+
+	/* Help variable for storing sqrt(2sigma_b)	 */
+	double sqrt_2sigmab;
+
+};
+
 struct pars_alpha{
 	VectorXd failure_vector;
 	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
@@ -79,6 +111,7 @@ class BayesW
 
 	// The ARS variables
 	struct pars used_data;
+	struct pars_beta_sparse used_data_beta;
 	struct pars_alpha used_data_alpha;
 
 	// Component variables
@@ -114,8 +147,8 @@ private:
 	void sampleBeta(int marker);
 	void sampleAlpha();
 
-	void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, VectorXd vi, string n);
-	double gauss_hermite_adaptive_integral(int k, VectorXd vi, double sigma, string n);
+	void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, double vi_sum, double vi_2,double vi_1, double vi_0,double mean, double sd, double mean_sd_ratio);
+	double gauss_hermite_adaptive_integral(int k, double sigma, string n, double vi_sum, double vi_2, double vi_1, double vi_0, double mean, double sd, double mean_sd_ratio);
 };
 
 
