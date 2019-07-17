@@ -9,8 +9,8 @@
 #include "densemarker.h"
 #include "common.h"
 
-DenseBayesRRmz::DenseBayesRRmz(const Data *data, Options &opt)
-    : BayesRBase (data, opt)
+DenseBayesRRmz::DenseBayesRRmz(const Data *data, const Options &opt)
+    : BayesRBase(data, opt)
 {
 
 }
@@ -21,17 +21,7 @@ DenseBayesRRmz::~DenseBayesRRmz()
 
 MarkerBuilder *DenseBayesRRmz::markerBuilder() const
 {
-    return builderForType(DataType::Dense);
-}
-
-void DenseBayesRRmz::updateGlobal(Marker *marker, const double beta_old, const double beta,VectorXd& deltaEps )
-{
-    // No mutex required here whilst m_globalComputeNode uses the serial policy
-    auto* denseMarker = dynamic_cast<DenseMarker*>(marker);
-    assert(denseMarker);
-
-    m_epsilon += deltaEps;
-    m_betasqn+=beta*beta-beta_old*beta_old;
+    return builderForType(PreprocessDataType::Dense);
 }
 
 void DenseBayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCount)

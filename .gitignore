@@ -1,3 +1,7 @@
+*.csv
+!test/data/*
+
+
 /Debug/
 *.o
 CMakeLists.txt.user
@@ -5,7 +9,16 @@ gctb
 brr
 *.ppbed
 *.sqnorm
-*.csv
 *~
 *.optrpt
 /MR_ADV/
+
+# Flow graph tracing output
+*.graphml
+*.traceml
+
+# Preprocessed data file types
+*.ppbed
+*.ppbedindex
+*.sparsebed
+*.sparsebedindex

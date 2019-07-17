@@ -10,9 +10,8 @@ struct EigenSparseMarker : public SparseMarker
 
     const VectorXd *ones = nullptr;
 
-    void updateEpsilon(VectorXd &epsilon,
-                       const double beta_old,
-                       const double beta) override;
+    VectorXdPtr calculateEpsilonChange(const double beta_old,
+                                       const double beta) override;
 
     std::streamsize size() const override;
     void read(std::istream *inStream) override;

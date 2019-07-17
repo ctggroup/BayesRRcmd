@@ -6,6 +6,7 @@
 #include <iterator>
 #include "compression.h"
 
+
 #define handle_error(msg)                               \
 		do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
@@ -15,130 +16,6 @@ Data::Data()
 , mappedZ(nullptr, 1, 1)
 , ppbedIndex()
 {
-}
-void Data::preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress)
-{
-	cout << "Preprocessing bed file: " << bedFile << ", Compress data = " << (compress ? "yes" : "no") << endl;
-	if (numSnps == 0)
-		throw ("Error: No SNP is retained for analysis.");
-	if (numInds == 0)
-		throw ("Error: No individual is retained for analysis.");
-
-	ifstream BIT(bedFile.c_str(), ios::binary);
-	if (!BIT)
-		throw ("Error: can not open the file [" + bedFile + "] to read.");
-
-	ofstream ppBedOutput(preprocessedBedFile.c_str(), ios::binary);
-	if (!ppBedOutput)
-		throw("Error: Unable to open the preprocessed bed file [" + preprocessedBedFile + "] for writing.");
-	ofstream ppBedIndexOutput(preprocessedBedIndexFile.c_str(), ios::binary);
-	if (!ppBedIndexOutput)
-		throw("Error: Unable to open the preprocessed bed index file [" + preprocessedBedIndexFile + "] for writing.");
-
-	cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
-	char header[3];
-	BIT.read(header, 3);
-	if (!BIT || header[0] != 0x6c || header[1] != 0x1b || header[2] != 0x01)
-		throw ("Error: Incorrect first three bytes of bed file: " + bedFile);
-
-	// How much space do we need to compress the data (if requested)
-	const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(numInds) : 0;
-	unsigned char *compressedBuffer = nullptr;
-	unsigned long pos = 0;
-	if (compress)
-		compressedBuffer = new unsigned char[maxCompressedOutputSize];
-
-	// Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
-	for (unsigned int j = 0, snp = 0; j < numSnps; j++) {
-		SnpInfo *snpInfo = snpInfoVec[j];
-		double sum = 0.0;
-		unsigned int nmiss = 0;
-
-		// Create some scratch space to preprocess the raw data
-		VectorXd snpData(numInds);
-
-		// Make a note of which individuals have a missing genotype
-		vector<long> missingIndices;
-
-		const unsigned int size = (numInds + 3) >> 2;
-		if (!snpInfo->included) {
-			BIT.ignore(size);
-			continue;
-		}
-
-		for (unsigned int i = 0, ind = 0; i < numInds;) {
-			char ch;
-			BIT.read(&ch, 1);
-			if (!BIT)
-				throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
-
-			bitset<8> b = ch;
-			unsigned int k = 0;
-
-			while (k < 7 && i < numInds) {
-				if (!indInfoVec[i]->kept) {
-					k += 2;
-				} else {
-					const unsigned int allele1 = (!b[k++]);
-					const unsigned int allele2 = (!b[k++]);
-
-					if (allele1 == 0 && allele2 == 1) {  // missing genotype
-						// Don't store a marker value like this as it requires floating point comparisons later
-						// which are not done properly. Instead, store the index of the individual in a vector and simply
-						// iterate over the collected indices. Also means iterating over far fewer elements which may
-						// make a noticeable difference as this scales up.
-						missingIndices.push_back(ind++);
-						++nmiss;
-					} else {
-						const auto value = allele1 + allele2;
-						snpData[ind++] = value;
-						sum += value;
-					}
-				}
-				i++;
-			}
-		}
-
-		// Fill missing values with the mean
-		const double mean = sum / double(numInds - nmiss);
-		if (j % 100 == 0) {
-			printf("MARKER %6d mean = %12.7f computed on %6.0f with %6d elements (%d - %d)\n",
-					j, mean, sum, numInds-nmiss, numInds, nmiss);
-			fflush(stdout);
-		}
-		if (nmiss) {
-			for (const auto index : missingIndices)
-				snpData[index] = mean;
-		}
-
-		// Standardize genotypes
-		snpData.array() -= snpData.mean();
-		const auto sqn = snpData.squaredNorm();
-		const auto sigma = 1.0 / (sqrt(sqn / (double(numInds - 1))));
-		snpData.array() *= sigma;
-
-		// Write out the preprocessed data
-		if (!compress) {
-			ppBedOutput.write(reinterpret_cast<char *>(&snpData[0]), numInds * sizeof(double));
-		} else {
-			compressAndWriteWithIndex(snpData, ppBedOutput, ppBedIndexOutput, pos, compressedBuffer, maxCompressedOutputSize);
-		}
-
-		// Compute allele frequency and any other required data and write out to file
-		//snpInfo->af = 0.5f * float(mean);
-		//snp2pq[snp] = 2.0f * snpInfo->af * (1.0f - snpInfo->af);
-
-		if (++snp == numSnps)
-			break;
-	}
-
-	if (compress)
-		delete[] compressedBuffer;
-
-	BIT.clear();
-	BIT.close();
-
-	cout << "Genotype data for " << numInds << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
 }
 
 void Data::mapPreprocessBedFile(const string &preprocessedBedFile)
@@ -230,28 +107,29 @@ void Data::readFamFile(const string &famFile){
 }
 
 void Data::readBimFile(const string &bimFile) {
-	// Read bim file: recombination rate is defined between SNP i and SNP i-1
-	ifstream in(bimFile.c_str());
-	if (!in) throw ("Error: can not open the file [" + bimFile + "] to read.");
+    // Read bim file: recombination rate is defined between SNP i and SNP i-1
+    ifstream in(bimFile.c_str());
+    if (!in) throw ("Error: can not open the file [" + bimFile + "] to read.");
 
-	cout << "Reading PLINK BIM file from [" + bimFile + "]." << endl;
-	snpInfoVec.clear();
-	snpInfoMap.clear();
-	string id, allele1, allele2;
-	unsigned chr, physPos;
-	float genPos;
-	unsigned idx = 0;
-	while (in >> chr >> id >> genPos >> physPos >> allele1 >> allele2) {
-		SnpInfo *snp = new SnpInfo(idx++, id, allele1, allele2, chr, genPos, physPos);
-		snpInfoVec.push_back(snp);
-		if (snpInfoMap.insert(pair<string, SnpInfo*>(id, snp)).second == false) {
-			throw ("Error: Duplicate SNP ID found: \"" + id + "\".");
-		}
-	}
-	in.close();
-	numSnps = (unsigned) snpInfoVec.size();
+    cout << "Reading PLINK BIM file from [" + bimFile + "]." << endl;
+    snpInfoVec.clear();
+    snpInfoMap.clear();
+    string id, allele1, allele2;
+    unsigned chr, physPos;
+    float genPos;
+    unsigned idx = 0;
+    while (in >> chr >> id >> genPos >> physPos >> allele1 >> allele2) {
+        SnpInfo *snp = new SnpInfo(idx++, id, allele1, allele2, chr, genPos, physPos);
+        snpInfoVec.push_back(snp);
+        if (snpInfoMap.insert(pair<string, SnpInfo*>(id, snp)).second == false) {
+            throw ("Error: Duplicate SNP ID found: \"" + id + "\".");
+        }
+    }
+    in.close();
+    numSnps = (unsigned) snpInfoVec.size();
+    G = vector<int>(numSnps, 0);
 
-	cout << numSnps << " SNPs to be included from [" + bimFile + "]." << endl;
+    cout << numSnps << " SNPs to be included from [" + bimFile + "]." << endl;
 }
 
 
@@ -454,36 +332,36 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
 
 
 void Data::readPhenotypeFile(const string &phenFile) {
-	// NA: missing phenotype
-	ifstream in(phenFile.c_str());
-	if (!in) throw ("Error: can not open the phenotype file [" + phenFile + "] to read.");
+    // NA: missing phenotype
+    ifstream in(phenFile.c_str());
+    if (!in) throw ("Error: can not open the phenotype file [" + phenFile + "] to read.");
 
-	cout << "Reading phenotypes from [" + phenFile + "]." << endl;
-	map<string, IndInfo*>::iterator it, end=indInfoMap.end();
-	IndInfo *ind = NULL;
-	Gadget::Tokenizer colData;
-	string inputStr;
-	string sep(" \t");
-	string id;
-	unsigned line=0;
-	//correct loop to go through numInds
-	y.setZero(numInds);
+    cout << "Reading phenotypes from [" + phenFile + "]." << endl;
+    map<string, IndInfo*>::iterator it, end=indInfoMap.end();
+    IndInfo *ind = NULL;
+    Gadget::Tokenizer colData;
+    string inputStr;
+    string sep(" \t");
+    string id;
+    unsigned line=0;
+    //correct loop to go through numInds
+    y = VectorXf::Zero(numInds);
 
-	while (getline(in,inputStr)) {
-		colData.getTokens(inputStr, sep);
-		id = colData[0] + ":" + colData[1];
-		it = indInfoMap.find(id);
-		// First one corresponded to mphen variable (1+1)
-		if (it != end && colData[1+1] != "NA") {
-			ind = it->second;
-			ind->phenotype = atof(colData[1+1].c_str());
-			//fill in phenotype y vector
-			y[line] = ind->phenotype;
-			++line;
-		}
-	}
+    while (getline(in,inputStr)) {
+        colData.getTokens(inputStr, sep);
+        id = colData[0] + ":" + colData[1];
+        it = indInfoMap.find(id);
+        // First one corresponded to mphen variable (1+1)
+        if (it != end && colData[1+1] != "NA") {
+            ind = it->second;
+            ind->phenotype = atof(colData[1+1].c_str());
+            //fill in phenotype y vector
+            y[line] = ind->phenotype;
+            ++line;
+        }
+    }
 
-	in.close();
+    in.close();
 }
 
 //Copied from
@@ -544,19 +422,154 @@ void Data::readFailureFile(const string &failureFile){
 	fail = Eigen::VectorXd::Map(tmp.data(), tmp.size());
 }
 
+void Data::readGroupFile(const string& groupFile) {
+    G.clear();
+    numGroups = 1;
 
-//TODO Finish function to read the group file
-void Data::readGroupFile(const string &groupFile) {
-	// NA: missing phenotype
-	ifstream in(groupFile.c_str());
-	if (!in) throw ("Error: can not open the group file [" + groupFile + "] to read.");
+    ifstream input(groupFile);
+	if(!input.is_open()){
+		cout<<"Error opening the file"<< endl;
+		return;
+	}
 
-	cout << "Reading groups from [" + groupFile + "]." << endl;
+    // Read the groups
+    G.reserve(numSnps);
 
-	std::istream_iterator<double> start(in), end;
-	std::vector<int> numbers(start, end);
-	int* ptr =(int*)&numbers[0];
-	G=(Eigen::Map<Eigen::VectorXi>(ptr,numbers.size()));
+    string col1;
+    int col2;
+	while(true){
+		input >> col1 >> col2;
+		if(input.eof()) break;
+        G.emplace_back(col2);
+	}
 
-	cout << "Groups read from file" << endl;
+    // Calculate the number of groups
+    auto temp{G};
+    std::sort(temp.begin(), temp.end());
+    auto last = std::unique(temp.begin(), temp.end());
+    temp.erase(last, temp.end());
+    numGroups = temp.size();
+
+    cout << "Groups read from file: " << numGroups << endl;
+}
+
+void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVFile, const string &preprocessedCSVIndexFile, bool compress)
+{
+  cout << "Preprocessing csv file:" << csvFile << ", Compress data =" << (compress ? "yes" : "no") << endl;
+
+  VectorXd snpData(numInds);
+  snpData.setZero();
+  
+  std::ifstream indata;
+  indata.open(csvFile);
+  std::string line;
+  std::vector<double> values;
+  uint rows = 0;
+  uint cols =0;
+  ofstream ppCSVOutput(preprocessedCSVFile.c_str(), ios::binary);
+    if (!ppCSVOutput)
+        throw("Error: Unable to open the preprocessed bed file [" + preprocessedCSVFile + "] for writing.");
+  ofstream ppCSVIndexOutput(preprocessedCSVIndexFile.c_str(), ios::binary);
+    if (!ppCSVIndexOutput)
+        throw("Error: Unable to open the preprocessed bed index file [" + preprocessedCSVIndexFile + "] for writing.");
+
+  // How much space do we need to compress the data (if requested)
+  const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(numInds) : 0;
+  unsigned char *compressedBuffer = nullptr;
+  unsigned long pos = 0;
+  if (compress)
+    compressedBuffer = new unsigned char[maxCompressedOutputSize];
+  while (std::getline(indata, line))
+    {
+      std::stringstream lineStream(line);
+      std::string cell;
+      cols=0;
+      
+      while (std::getline(lineStream, cell, ','))
+	{
+	  if (!cell.empty())
+	    snpData[++cols]=std::stod(cell);
+	  else
+	    throw("Error, there are missing values in the file");
+	}
+      
+      if (!compress)
+    {
+      writeUncompressedDataWithIndex(reinterpret_cast<unsigned char *>(&snpData[0]), numInds * sizeof(double), ppCSVOutput, ppCSVIndexOutput, pos);
+	}
+      else
+	{
+	  compressAndWriteWithIndex(snpData, ppCSVOutput, ppCSVIndexOutput, pos, compressedBuffer, maxCompressedOutputSize);
+	}
+      ++rows;
+    }
+  if (compress)
+    delete[] compressedBuffer;
+  indata.clear();
+  indata.close();
+
+  cout << "csv file for" << numInds << " individuals and " << numSnps << " Variables are included from [" +  csvFile + "]." << endl;
+}
+
+//We asume the csv is well formed and individuals are columns and  markers are rows
+void Data::readCSVFile( const string &csvFile)
+{
+   std::ifstream indata;
+   indata.open(csvFile);
+   if (!indata)
+       throw("Error: Unable to open the CSV data file [" + csvFile + "] for reading.");
+   std::string line;
+   uint rows = 0;
+   uint cols = 0; 
+   while (std::getline(indata, line))
+    {
+      if(rows == 0){
+        std::stringstream lineStream(line);
+        std::string cell;
+      
+        while (std::getline(lineStream, cell, ','))
+	{
+	  ++cols;
+	}
+      }
+      ++rows;
+    }
+   numInds = cols;
+   numSnps = rows;
+   G = vector<int>(numSnps, 0);
+    indata.clear();
+    indata.close();
+   cout << numInds << " individuals to be included from [" + csvFile + "]." << endl;
+   cout << numSnps << " markers to be included from [" + csvFile + "]." << endl;
+}
+
+void Data::readCSVPhenFile( const string &csvFile)
+{
+   std::ifstream indata;
+   indata.open(csvFile);
+   if (!indata)
+       throw("Error: Unable to open the CSV phenotype file [" + csvFile + "] for reading.");
+   std::string line;
+   std::vector<double> values;
+   uint rows = 0;
+   uint cols = 0;
+   y.resize(numInds);
+   std::getline(indata, line);
+    
+   std::stringstream lineStream(line);
+   std::string cell;
+  
+   while (std::getline(lineStream, cell, ',') && cols<numInds)
+   {
+       if (!cell.empty())
+           y[++cols]= std::stof(cell);
+       else
+           throw("Error, there are missing values in the file");
+
+   }
+      
+    indata.clear();
+    indata.close();
+
+   cout << cols << " phenotype measures to be included from [" + csvFile + "]." << endl;
 }

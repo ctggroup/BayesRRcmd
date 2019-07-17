@@ -33,7 +33,7 @@ BayesW::BayesW(Data &data, Options &opt, const long memPageSize)
 , thinning(opt.thin)
 , burn_in(opt.burnin)
 , outputFile(opt.mcmcSampleFile)
-, bedFile(opt.bedFile + ".bed")
+, bedFile(opt.dataFile)
 , dist(opt.seed)
 {
 
@@ -359,8 +359,8 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 
 
 	for(int i=0;i<(km1);i++){
-		used_data.mixture_classes(i) = opt.S[i];   //Save the mixture data (C_k)
-		used_data_beta.mixture_classes(i) = opt.S[i];
+		used_data.mixture_classes(i) = opt.S.row(0)[i];   //Save the mixture data (C_k)
+		used_data_beta.mixture_classes(i) = opt.S.row(0)[i];
 	}
 
 	//Store the vector of failures only in the structure used for sampling alpha

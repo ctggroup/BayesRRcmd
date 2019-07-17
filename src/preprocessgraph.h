@@ -4,6 +4,7 @@
 #include "common.h"
 #include "compression.h"
 #include "data.hpp"
+#include "marker.h"
 
 #include "tbb/flow_graph.h"
 #include <Eigen/Eigen>
@@ -13,26 +14,20 @@
 
 using namespace tbb::flow;
 
-class Data;
-class IndInfo;
-
-struct CompressedMarker;
-struct Marker;
-
 class PreprocessGraph
 {
 public:
     PreprocessGraph(size_t maxParallel);
 
-    void preprocessBedFile(const std::string &bedFile,
-                           const DataType type,
+    void preprocessBedFile(const std::string &dataFile,
+                           const PreprocessDataType type,
                            const bool compress,
                            const Data *data,
                            const size_t chunkSize);
 
 protected:
     struct Message {
-        DataType type = DataType::None;
+        PreprocessDataType type = PreprocessDataType::None;
         size_t id = 0;
         std::streamsize startSnp = 0;
         size_t chunkSize = 0;

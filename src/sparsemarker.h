@@ -12,11 +12,10 @@ struct SparseMarker : public Marker
 
     double epsilonSum = 0;
 
-    double computeNum(VectorXd &epsilon, const double beta_old) override;
+    double computeNum(const VectorXd &epsilon, const double beta_old) override;
 
-    void updateEpsilon(VectorXd &epsilon,
-                       const double beta_old,
-                       const double beta) override;
+    VectorXdPtr calculateEpsilonChange(const double beta_old,
+                                       const double beta) override;
 
     virtual void updateStatistics(unsigned int allele1, unsigned int allele2);
 
@@ -25,7 +24,7 @@ struct SparseMarker : public Marker
     void write(std::ostream *outStream) const override;
 
 protected:
-    virtual double computeNum(VectorXd &epsilon,
+    virtual double computeNum(const VectorXd &epsilon,
                               const double beta_old,
                               const double epsilonSum);
 

@@ -90,7 +90,7 @@ public:
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
-    VectorXi G; // groups
+    vector<int> G; 			 // groups
     VectorXd fail;			 // Failure indicator
 
     // Vectors for the sparse format solution
@@ -134,7 +134,9 @@ public:
     unsigned numSnps;
     unsigned numInds;
 
-    void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress);
+    unsigned numGroups = 1; // number of groups
+
+    void preprocessCSVFile(const string &csvFile, const string &preprocessedCSVFile, const string &preprovessedCSVIndexFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile);
     void unmapPreprocessedBedFile();
 
@@ -150,6 +152,9 @@ public:
 
     void readPhenotypeFile(const string &phenFile);
     void readGroupFile(const string &groupFile);
+    void readCSVFile(const string &csvFile);
+    void readCSVPhenFile( const string &csvFile);
+    void readmSFile(const string& mSfile);
     //BayesW variables
     void readFailureFile(const string &failureFile);
 };
