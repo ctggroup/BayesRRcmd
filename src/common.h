@@ -8,7 +8,8 @@ enum class AnalysisType : unsigned int {
     Unknown = 0,
     Preprocess,
     PpBayes,
-    AsyncPpBayes
+    AsyncPpBayes,
+    Gauss
 };
 
 std::ostream &operator<<(std::ostream &os, const AnalysisType &obj);

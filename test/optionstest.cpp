@@ -136,6 +136,14 @@ TEST(OptionsTest, AnalysisType) {
         options.inputOptions(3, argv);
         ASSERT_EQ(AnalysisType::AsyncPpBayes, options.analysisType);
     }
+
+    {
+        // --analysis-type gauss
+        const char *argv[] = {"test", "--analysis-type", "gauss"};
+
+        options.inputOptions(3, argv);
+        ASSERT_EQ(AnalysisType::Gauss, options.analysisType);
+    }
 }
 
 TEST(OptionsTest, PreprocessDataType) {
