@@ -2,6 +2,7 @@
 
 #include "tbb/task_scheduler_init.h"
 
+#include "BayesW.hpp"
 #include "common.h"
 #include "data.hpp"
 #include "DenseBayesRRmz.hpp"
@@ -179,6 +180,29 @@ bool runPpBayesAnalysis(const Options &options) {
     return true;
 }
 
+bool runGaussAnalysis(const Options &options) {
+    assert(options.analysisType == AnalysisType::Gauss);
+
+    // Make a copy as BayesW takes a non-const reference
+    Options gaussOptions = options;
+
+    Data data;
+    data.readFamFile(fileWithSuffix(options.dataFile, ".fam"));
+    data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
+    data.readPhenotypeFile(gaussOptions.phenotypeFile);
+    data.readBedFile_noMPI_unstandardised(gaussOptions.dataFile); // This part to read the non-standardised data
+
+    // If there is a file for fixed effects (model matrix), then read the data
+    if(!options.fixedFile.empty()) {
+        data.readCSV(options.fixedFile, options.fixedEffectNumber);
+    }
+
+    BayesW analysis(data, gaussOptions, sysconf(_SC_PAGE_SIZE));
+    const auto result = analysis.runGibbs_Gauss();
+
+    return result == 0;
+}
+
 bool AnalysisRunner::run(const Options &options)
 {
     if (options.inputType == InputType::Unknown) {
@@ -200,20 +224,8 @@ bool AnalysisRunner::run(const Options &options)
 
         return runPpBayesAnalysis(options);
 
-    // case AnalysisType::Gauss:
-    /*
-            // If there is a file for fixed effects (model matrix), then read the data
-        if(opt.fixedFile != ""){
-        	data.readCSV(opt.fixedFile,opt.fixedEffectNumber);
-        }
-
-            BayesW analysis(data, opt, sysconf(_SC_PAGE_SIZE));
-            if(opt.bayesW_version == "gauss"){
-            	analysis.runGibbs_Gauss();
-            }else{
-            	cout << "Choose either bayesW_version = gauss" << endl;
-            }
-     */
+     case AnalysisType::Gauss:
+        return runGaussAnalysis(options);
 
     default:
         cerr << "Unknown --analyis-type" << endl;

@@ -366,7 +366,7 @@ void Data::readPhenotypeFile(const string &phenFile) {
 
 //Copied from
 //https://gist.github.com/infusion/43bd2aa421790d5b4582
-void Data::readCSV(string &filename, int cols) {
+void Data::readCSV(const string &filename, int cols) {
 
 	std::ifstream in(filename);
 
