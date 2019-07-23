@@ -63,10 +63,6 @@ struct pars_beta_sparse{
 
 	/*  of sum(X_j*failure) */
 	double sum_failure;
-
-	/* Number of events (sum of failure indicators) */
-	double d;
-
 };
 
 struct pars_alpha{
