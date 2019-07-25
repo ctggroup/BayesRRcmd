@@ -4,8 +4,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_library(bayes
     BayesRRm.cpp
-    BayesW.cpp
     BayesW_arms.cpp
+    bayeswcommon.h
     data.cpp
     distributions_boost.cpp
     gadgets.cpp
@@ -17,7 +17,9 @@ add_library(bayes
     analysisgraph.cpp
     BayesRBase.cpp
     DenseBayesRRmz.cpp
+    densebayesw.cpp
     SparseBayesRRG.cpp
+    sparsebayesw.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp

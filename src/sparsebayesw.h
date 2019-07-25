@@ -5,15 +5,17 @@
  *      Author: admin
  */
 
-#ifndef BAYESW_HPP_
-#define BAYESW_HPP_
+#ifndef SPARSEBAYESW_HPP_
+#define SPARSEBAYESW_HPP_
 
+#include "bayeswcommon.h"
 #include "data.hpp"
 #include "options.hpp"
 #include "distributions_boost.hpp"
 
 #include <Eigen/Eigen>
 
+#if 0
 // Two structures for ARS
 struct pars{
 	/* Common parameters for the densities */
@@ -49,20 +51,30 @@ struct pars_beta_sparse{
 	/* Common parameters for the densities */
 
 	VectorXd mixture_classes; // Vector to store mixture component C_k values
+    // assigned in init
 
 	int used_mixture; //Write the index of the mixture we decide to use
+    // assigned in sampleBeta, then used within the same scope
 
 	/* Store the current variables */
 	double alpha, sigma_b;
+    // alpha - initialised in init, updated in sampleAlpha - in the markov chain, after sampleBeta
+    // sigma_b - initialised in init, updated in the markov chain after sampleBeta
 
 	/* Beta_j - specific variables */
 	double vi_0, vi_1, vi_2; // Sums of vi elements
+    // assigned in sampleBeta, then used within the same scope
 
 	// Mean, std dev and their ratio for snp j
 	double mean, sd, mean_sd_ratio;
+    // mean - assined in sampleBeta but not used
+    // sd - assigned in sampleBeta, used in sampleBeta and beta_dens
+    // mean_sd_ratio - assigned in sampleBeta, used in sampleBeta and beta_dens
+
 
 	/*  of sum(X_j*failure) */
 	double sum_failure;
+    // assigned in sampleBeta, used in gauss_hermite_adaptive_integral and alpha_dens
 };
 
 struct pars_alpha{
@@ -76,8 +88,9 @@ struct pars_alpha{
 	double d;
 };
 
+#endif
 
-class BayesW
+class SparseBayesW
 {
 	Data            &data; // data matrices
 	Options         &opt;
@@ -125,8 +138,8 @@ class BayesW
 
 
 public:
-	BayesW(Data &data, Options &opt, const long memPageSize);
-	virtual ~BayesW();
+        SparseBayesW(Data &data, Options &opt, const long memPageSize);
+        virtual ~SparseBayesW();
 	int runGibbs_Gauss(); // where we run Gibbs sampling over the parametrised model
 
 
@@ -142,4 +155,4 @@ private:
 };
 
 
-#endif /* BAYESW_HPP_ */
+#endif /* SPARSEBAYESW_HPP_ */

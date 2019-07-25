@@ -1,5 +1,4 @@
 #include <iostream>
-#include "BayesW.hpp"
 
 #include "analysisrunner.h"
 #include "gadgets.hpp"

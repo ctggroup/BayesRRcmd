@@ -2,15 +2,16 @@
 
 #include "tbb/task_scheduler_init.h"
 
-#include "BayesW.hpp"
 #include "common.h"
 #include "data.hpp"
 #include "DenseBayesRRmz.hpp"
+#include "densebayesw.h"
 #include "limitsequencegraph.hpp"
 #include "options.hpp"
 #include "parallelgraph.h"
 #include "preprocessgraph.h"
 #include "SparseBayesRRG.hpp"
+#include "sparsebayesw.h"
 
 using namespace std;
 
@@ -182,23 +183,36 @@ bool runPpBayesAnalysis(const Options &options) {
 
 bool runGaussAnalysis(const Options &options) {
     assert(options.analysisType == AnalysisType::Gauss);
+    assert(options.preprocessDataType == PreprocessDataType::Dense ||
+           options.preprocessDataType == PreprocessDataType::SparseRagged);
 
     // Make a copy as BayesW takes a non-const reference
     Options gaussOptions = options;
+
+    const bool useSparseData = gaussOptions.preprocessDataType == PreprocessDataType::SparseRagged;
 
     Data data;
     data.readFamFile(fileWithSuffix(options.dataFile, ".fam"));
     data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
     data.readPhenotypeFile(gaussOptions.phenotypeFile);
-    data.readBedFile_noMPI_unstandardised(gaussOptions.dataFile); // This part to read the non-standardised data
+    if (useSparseData)
+        data.readBedFile_noMPI_unstandardised(gaussOptions.dataFile); // This part to read the non-standardised data
+    else
+        data.readBedFile_noMPI(gaussOptions.dataFile);
 
     // If there is a file for fixed effects (model matrix), then read the data
     if(!options.fixedFile.empty()) {
         data.readCSV(options.fixedFile, options.fixedEffectNumber);
     }
 
-    BayesW analysis(data, gaussOptions, sysconf(_SC_PAGE_SIZE));
-    const auto result = analysis.runGibbs_Gauss();
+    int result = 0;
+    if (useSparseData) {
+        SparseBayesW analysis(data, gaussOptions, sysconf(_SC_PAGE_SIZE));
+        result = analysis.runGibbs_Gauss();
+    } else {
+        DenseBayesW analysis(data, gaussOptions, sysconf(_SC_PAGE_SIZE));
+        result = analysis.runGibbs_Gauss();
+    }
 
     return result == 0;
 }
