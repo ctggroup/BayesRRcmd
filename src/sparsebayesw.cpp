@@ -44,6 +44,8 @@ SparseBayesW::~SparseBayesW()
 {
 }
 
+namespace  {
+
 /* Function to check if ARS resulted with error*/
 inline void errorCheck(int err){
 	if(err>0){
@@ -121,6 +123,7 @@ inline double gh_integrand_adaptive(double s,double alpha, double dj, double sqr
 	return exp(temp);
 }
 
+}
 
 //Calculate the value of the integral using Adaptive Gauss-Hermite quadrature
 //Let's assume that mu is always 0 for speed
@@ -648,10 +651,7 @@ int SparseBayesW::runGibbs_Gauss()
 	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
 	srand(2);
 	for (int iteration = 0; iteration < max_iterations; iteration++) {
-		if (iteration > 0) {
-			if (iteration % (int)std::ceil(max_iterations / 10) == 0)
-				std::cout << "iteration: "<<iteration <<"\n";
-		}
+
 		/* 1. Intercept (mu) */
 		sampleMu();
 
@@ -691,7 +691,7 @@ int SparseBayesW::runGibbs_Gauss()
 		pi_L = dist.dirichilet_rng(v.array());
 
 		// Write the result to file
-		if ((iteration >= burn_in) and (iteration % thinning == 0)) {
+        if (iteration >= burn_in && iteration % thinning == 0) {
 			if(numFixedEffects > 0){
 				sample << iteration, used_data.alpha, mu, theta, beta,components.cast<double>(), used_data_beta.sigma_b ;
 			}else{
@@ -701,7 +701,7 @@ int SparseBayesW::runGibbs_Gauss()
 		}
 
 		//Print results
-		//cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data_beta.sigma_b << endl;
+        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data_beta.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();

@@ -28,10 +28,12 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
 add_executable(tests
     optionstest.cpp
     ppbayestest.cpp
+    bayeswtest.cpp
 )
 
 target_compile_definitions(tests PRIVATE TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test/data/")
 target_compile_definitions(tests PRIVATE GROUPS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test.groups/")
+target_compile_definitions(tests PRIVATE GAUSS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test.gauss/")
 target_compile_definitions(tests PRIVATE TEST_RESULTS="${CMAKE_CURRENT_BINARY_DIR}/results/")
 
 set_property(TARGET tests PROPERTY CXX_STANDARD_REQUIRED ON)

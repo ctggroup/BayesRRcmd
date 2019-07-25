@@ -44,6 +44,8 @@ DenseBayesW::~DenseBayesW()
 {
 }
 
+namespace  {
+
 /* Function to check if ARS resulted with error*/
 inline void errorCheck(int err){
 	if(err>0){
@@ -114,6 +116,7 @@ inline double gh_integrand_adaptive(double s,double alpha, double dj, double sqr
 	return exp(temp);
 }
 
+}
 
 //Calculate the value of the integral using Adaptive Gauss-Hermite quadrature
 //Let's assume that mu is always 0 for speed
@@ -570,10 +573,7 @@ int DenseBayesW::runGibbs_Gauss()
 	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
 	srand(2);
 	for (int iteration = 0; iteration < max_iterations; iteration++) {
-		if (iteration > 0) {
-			if (iteration % (int)std::ceil(max_iterations / 10) == 0)
-				std::cout << "iteration: "<<iteration <<"\n";
-		}
+
 		/* 1. Intercept (mu) */
 		sampleMu();
 
