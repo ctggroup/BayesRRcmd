@@ -5,6 +5,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_library(bayes
     BayesRRm.cpp
     BayesW_arms.cpp
+    bayeswbase.cpp
     bayeswcommon.h
     data.cpp
     distributions_boost.cpp
