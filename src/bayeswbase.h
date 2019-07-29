@@ -95,6 +95,10 @@ struct gh_params {
     virtual double integrand_adaptive(double s,double alpha, double dj, double sqrt_2Ck_sigmab) const = 0;
 };
 
+struct beta_params {
+    double used_mixture = 0;
+};
+
 class BayesWBase
 {
 protected:
@@ -118,12 +122,13 @@ protected:
 	Distributions_boost dist;
 
     VectorXd failure_vector;
+    double d = 0; // The number of events
 
-	// The ARS variables
-	struct pars used_data;
+    // The ARS variables
 	struct pars_beta_sparse used_data_beta;
 
 	// Component variables
+    VectorXd mixture_classes; // Vector to store mixture component C_k values
 	VectorXd pi_L;        // mixture probabilities
 	VectorXd marginal_likelihoods;      // likelihood for each mixture component
 	VectorXd v;         // variable storing the component assignment
@@ -138,9 +143,9 @@ protected:
 	VectorXd sum_failure;
 	VectorXd sum_failure_fix;
 
-	VectorXd epsilon; //Vector for residuals
-	//Sampled variables (not kept in struct)
-	double mu;
+    VectorXd epsilon; //Vector for residuals
+    double alpha = 0;
+    double mu = 0;
 
 
 
@@ -166,7 +171,7 @@ protected:
 
     virtual std::unique_ptr<gh_params> gaussHermiteParameters(int marker) = 0;
 
-    virtual int estimateBeta (double *xinit, int ninit, double *xl, double *xr,
+    virtual int estimateBeta (int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;

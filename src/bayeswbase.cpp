@@ -124,7 +124,7 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
     assert(params);
 
     double temp = 0;
-    double sqrt_2ck_sigma = sqrt(2*used_data.mixture_classes(k)*used_data_beta.sigma_b);
+    double sqrt_2ck_sigma = sqrt(2*mixture_classes(k)*used_data_beta.sigma_b);
 
     if(n == "3"){
         double x1,x2;
@@ -307,10 +307,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	//residual vector
 	epsilon = VectorXd();
 
-	// Resize the vectors in the structure
-	used_data.X_j = VectorXd(individualCount);
-	used_data.epsilon.resize(individualCount);
-
 	// Init the working variables
 	const int km1 = K - 1;
 
@@ -335,40 +331,30 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 
 	// Initialize the variables in structures
 	//Save variance classes
-	used_data.mixture_classes.resize(km1);
+    mixture_classes.resize(km1);
 	used_data_beta.mixture_classes.resize(km1);  //The future solution
 
 
 	for(int i=0;i<(km1);i++){
-		used_data.mixture_classes(i) = opt.S.row(0)[i];   //Save the mixture data (C_k)
+        mixture_classes(i) = opt.S.row(0)[i];   //Save the mixture data (C_k)
 		used_data_beta.mixture_classes(i) = opt.S.row(0)[i];
 	}
 
     //Store the vector of failures
     failure_vector = data.fail.cast<double>();
     // Save the number of events
-    used_data.d = failure_vector.array().sum();
+    d = failure_vector.array().sum();
 
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
-	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
+    alpha = PI/sqrt(denominator);    // The shape parameter initial value
 	used_data_beta.alpha = PI/sqrt(denominator);    // The shape parameter initial value
 
 
-	for(int i=0; i<(y.size()); ++i){
-		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
-		epsilon[i] = y[i] - mu;
+    for(int i=0; i<(y.size()); ++i){
+        epsilon[i] = y[i] - mu; // Initially, all the BETA elements are set to 0, XBeta = 0
 	}
 
 	used_data_beta.sigma_b = PI2/ (6 * pow(used_data_beta.alpha,2) * markerCount ) ;
-
-
-	/* Prior value selection for the variables */
-	/* At the moment we set them to be weakly informative (in .hpp file) */
-	/* mu */
-	used_data.sigma_mu = sigma_mu;
-	/* sigma_b */
-	used_data.alpha_sigma = alpha_sigma;
-	used_data.beta_sigma = beta_sigma;
 
 	// Save the sum(X_j*failure) for each j
 	//Previous preprocessed version for reading columns
@@ -405,10 +391,10 @@ void BayesWBase::sampleMu(){
 	double xr = 5;   //xl and xr and the maximum and minimum values between which we sample
 
     mu_params params;
-    params.alpha = used_data.alpha;
-    params.d = used_data.d;
+    params.alpha = alpha;
+    params.d = d;
     params.epsilon = epsilon.array() + mu; // we add to epsilon =Y+mu-X*beta
-    params.sigma_mu = used_data.sigma_mu;
+    params.sigma_mu = sigma_mu;
 
 	// Use ARS to sample mu (with density mu_dens, using parameters from used_data)
     err = arms(xinit,ninit,&xl,&xr,mu_dens,&params,&convex,
@@ -435,11 +421,11 @@ void BayesWBase::sampleTheta(int fix_i){
 	double xr = 2;			  // Initial left and right (pseudo) extremes
 
     theta_params params;
-    params.alpha = used_data.alpha;
+    params.alpha = alpha;
     params.sum_failure = sum_failure_fix(fix_i);
     params.X_j = data.X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
     params.epsilon = epsilon.array() + (params.X_j * theta(fix_i)).array(); // Adjust residual
-    params.sigma_mu = used_data.sigma_mu;
+    params.sigma_mu = sigma_mu;
 
 
 	// Sample using ARS
@@ -454,11 +440,14 @@ void BayesWBase::sampleTheta(int fix_i){
 // Function for sampling marker effect (beta_i)
 void BayesWBase::sampleBeta(int marker){
 
+    //Save sum(X_j*failure) to structure
+    used_data_beta.sum_failure = sum_failure(marker);
+
 	//Change the residual vector only if the previous beta was non-zero
 	if(beta(marker) != 0){
         preEstimateResidualUpdate(marker);
         //Also find the transformed residuals
-        vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
+        vi = (alpha*epsilon.array()-EuMasc).exp();
 	}
 
 	/* Calculate the mixture probability */
@@ -481,8 +470,10 @@ void BayesWBase::sampleBeta(int marker){
 			}
 			// If is not 0th component then sample using ARS
 			else {
-                used_data.used_mixture = k-1;
                 used_data_beta.used_mixture = k-1;
+
+                beta_params params;
+                params.used_mixture = used_data_beta.mixture_classes(k-1);
 
 				double safe_limit = 2 * sqrt(used_data_beta.sigma_b * used_data_beta.mixture_classes(k-1));
 
@@ -500,7 +491,7 @@ void BayesWBase::sampleBeta(int marker){
                 double xr = beta(marker) + safe_limit;
 
                 // Sample using ARS
-                err = estimateBeta(xinit,ninit,&xl,&xr,&convex,
+                err = estimateBeta(marker,xinit,ninit,&xl,&xr, params, &convex,
                         npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 
@@ -508,7 +499,7 @@ void BayesWBase::sampleBeta(int marker){
 
 				//Re-update the residual vector
                 postEstimateResidualUpdate(marker);
-                vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
+                vi = (alpha*epsilon.array()-EuMasc).exp();
 
 				v[k] += 1.0;
 				components[marker] = k;
@@ -533,7 +524,7 @@ void BayesWBase::sampleAlpha(){
 	double convex = 1.0;
 	int dometrop = 0;
 	double xprev = 0.0;
-	double xinit[4] = {(used_data.alpha)*0.5, used_data.alpha,  (used_data.alpha)*1.5, (used_data.alpha)*3};     // Initial abscissae
+    double xinit[4] = {(alpha)*0.5, alpha,  (alpha)*1.5, (alpha)*3};     // Initial abscissae
 	double *p_xinit = xinit;
 
 	// Initial left and right (pseudo) extremes
@@ -542,7 +533,7 @@ void BayesWBase::sampleAlpha(){
 
     alpha_params params;
     params.alpha_0 = alpha_0;
-    params.d = used_data.d;
+    params.d = d;
     params.epsilon = epsilon;
     params.failure_vector = failure_vector;
     params.kappa_0 = kappa_0;
@@ -551,7 +542,7 @@ void BayesWBase::sampleAlpha(){
     err = arms(xinit,ninit,&xl,&xr,alpha_dens,&params,&convex,
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 	errorCheck(err);
-	used_data.alpha = xsamp[0];
+    alpha = xsamp[0];
 	used_data_beta.alpha = xsamp[0];
 }
 
@@ -604,7 +595,7 @@ int BayesWBase::runGibbs_Gauss()
 			}
 		}
 		// Calculate the vector of exponent of the adjusted residuals
-		vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
+        vi = (alpha*epsilon.array()-EuMasc).exp();
 
 		std::random_shuffle(markerI.begin(), markerI.end());
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
@@ -623,11 +614,8 @@ int BayesWBase::runGibbs_Gauss()
 		sampleAlpha();
 
 		// 4. Sample sigma_b
-		used_data_beta.sigma_b = dist.inv_gamma_rng((double) (used_data.alpha_sigma + 0.5 * (M - v[0]+1)),
-				(double)(used_data.beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
-
-		//Update the sqrt(2sigmab) variable
-		used_data.sqrt_2sigmab = sqrt(2*used_data_beta.sigma_b);
+        used_data_beta.sigma_b = dist.inv_gamma_rng((double) (alpha_sigma + 0.5 * (M - v[0]+1)),
+                (double)(beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 
 		// 5. Sample prior mixture component probability from Dirichlet distribution
 		pi_L = dist.dirichilet_rng(v.array());
@@ -635,15 +623,15 @@ int BayesWBase::runGibbs_Gauss()
 		// Write the result to file
         if (iteration >= burn_in && iteration % thinning == 0) {
 			if(numFixedEffects > 0){
-				sample << iteration, used_data.alpha, mu, theta, beta,components.cast<double>(), used_data_beta.sigma_b ;
+                sample << iteration, alpha, mu, theta, beta,components.cast<double>(), used_data_beta.sigma_b ;
 			}else{
-				sample << iteration, used_data.alpha, mu, beta,components.cast<double>(), used_data_beta.sigma_b ;
+                sample << iteration, alpha, mu, beta,components.cast<double>(), used_data_beta.sigma_b ;
 			}
 			writer.write(sample);
 		}
 
 		//Print results
-        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << used_data.alpha << "; " << used_data_beta.sigma_b << endl;
+        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << alpha << "; " << used_data_beta.sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();

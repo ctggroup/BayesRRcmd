@@ -40,7 +40,8 @@ inline void errorCheck(int err){
 	}
 }
 
-struct beta_params {
+struct sparse_beta_params : beta_params {
+    sparse_beta_params(const beta_params &params) : beta_params(params) {}
     double alpha = 0;
     double mean_sd_ratio = 0;
     double sd = 0;
@@ -50,9 +51,6 @@ struct beta_params {
     double vi_0 = 0;
     double vi_1 = 0;
     double vi_2 = 0;
-
-    VectorXd mixture_classes;
-    int used_mixture = 0;
 };
 
 /* Sparse version for function for the log density of beta: uses mixture component from the structure norm_data */
@@ -61,11 +59,11 @@ inline double beta_dens(double x, void *norm_data)
 {
 	double y;
 	/* In C++ we need to do a static cast for the void data */
-    beta_params p = *(static_cast<beta_params *>(norm_data));
+    sparse_beta_params p = *(static_cast<sparse_beta_params *>(norm_data));
 
 	y = -p.alpha * x * p.sum_failure -
 			exp(p.alpha*x*p.mean_sd_ratio)* (p.vi_0 + p.vi_1 * exp(-p.alpha*x/p.sd) + p.vi_2 * exp(-2*p.alpha*x/p.sd))
-			-x * x / (2 * p.mixture_classes(p.used_mixture) * p.sigma_b) ;
+            -x * x / (2 * p.used_mixture * p.sigma_b) ;
 	return y;
 };
 
@@ -73,9 +71,6 @@ inline double beta_dens(double x, void *norm_data)
 
 void SparseBayesW::sampleBeta(int marker)
 {
-    //Save sum(X_j*failure) to structure
-    used_data_beta.sum_failure = sum_failure(marker);
-
     used_data_beta.mean = data.means(marker);
     used_data_beta.sd = data.sds(marker);
     used_data_beta.mean_sd_ratio = data.mean_sd_ratio(marker);
@@ -122,24 +117,24 @@ std::unique_ptr<gh_params> SparseBayesW::gaussHermiteParameters(int marker)
                                               used_data_beta.vi_0, data.means(marker),data.sds(marker),data.mean_sd_ratio(marker));
 }
 
-int SparseBayesW::estimateBeta(double *xinit, int ninit, double *xl, double *xr, double *convex, int npoint,
+int SparseBayesW::estimateBeta(int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
                                int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                                double *xcent, int ncent, int *neval)
  {
-    beta_params params;
+    (void) marker; // Unused
 
-    params.alpha = used_data_beta.alpha;
-    params.mean_sd_ratio = used_data_beta.mean_sd_ratio;
-    params.sd = used_data_beta.sd;
-    params.sigma_b = used_data_beta.sigma_b;
-    params.sum_failure = used_data_beta.sum_failure;
-    params.vi_0 = used_data_beta.vi_0;
-    params.vi_1 = used_data_beta.vi_1;
-    params.vi_2 = used_data_beta.vi_2;
-    params.mixture_classes = used_data_beta.mixture_classes;
-    params.used_mixture = used_data_beta.used_mixture;
+    sparse_beta_params sparse_params {params};
 
-     return arms(xinit, ninit, xl, xr, beta_dens, &params, convex,
+    sparse_params.alpha = used_data_beta.alpha;
+    sparse_params.mean_sd_ratio = used_data_beta.mean_sd_ratio;
+    sparse_params.sd = used_data_beta.sd;
+    sparse_params.sigma_b = used_data_beta.sigma_b;
+    sparse_params.sum_failure = used_data_beta.sum_failure;
+    sparse_params.vi_0 = used_data_beta.vi_0;
+    sparse_params.vi_1 = used_data_beta.vi_1;
+    sparse_params.vi_2 = used_data_beta.vi_2;
+
+     return arms(xinit, ninit, xl, xr, beta_dens, &sparse_params, convex,
                  npoint, dometrop, xprev, xsamp, nsamp, qcent, xcent, ncent, neval);
 }
 

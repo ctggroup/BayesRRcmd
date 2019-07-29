@@ -40,15 +40,13 @@ inline void errorCheck(int err){
     }
 }
 
-struct beta_params {
+struct dense_beta_params : public beta_params {
+    dense_beta_params(const beta_params &params) : beta_params(params) {}
     double alpha = 0;
     VectorXd epsilon;
     double sigma_b = 0;
     double sum_failure = 0;
-    VectorXd X_j;
-
-    VectorXd mixture_classes;
-    int used_mixture = 0;
+    VectorXd Z_j;
 };
 
 /* Function for the log density of beta: uses mixture component from the structure norm_data */
@@ -58,10 +56,10 @@ inline double beta_dens(double x, void *norm_data)
 	double y;
 
 	/* In C++ we need to do a static cast for the void data */
-    beta_params p = *(static_cast<beta_params *>(norm_data));
+    dense_beta_params p = *(static_cast<dense_beta_params *>(norm_data));
 
-	y = -p.alpha * x * p.sum_failure - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
-			x * x / (2 * p.mixture_classes(p.used_mixture) * p.sigma_b) ;
+    y = -p.alpha * x * p.sum_failure - (((p.epsilon - p.Z_j * x) * p.alpha).array() - EuMasc).exp().sum() -
+            x * x / (2 * p.used_mixture * p.sigma_b) ;
 	return y;
 };
 
@@ -71,10 +69,7 @@ inline double beta_dens(double x, void *norm_data)
 void DenseBayesW::sampleBeta(int marker)
 {
     // Save the SNP effect column to a structure
-    used_data.X_j = data.Z.col(marker).cast<double>();
-
-    // Save sum(X_j*failure) to structure
-    used_data_beta.sum_failure = sum_failure(marker);
+    Z_j = data.Z.col(marker).cast<double>();
 
     BayesWBase::sampleBeta(marker);
 }
@@ -86,44 +81,42 @@ double DenseBayesW::calculateSumFailure(int marker)
 
 void DenseBayesW::preEstimateResidualUpdate(int marker)
 {
-    epsilon = epsilon.array() + (used_data.X_j * beta(marker)).array();
+    epsilon = epsilon.array() + (Z_j * beta(marker)).array();
 }
 
 std::unique_ptr<gh_params> DenseBayesW::gaussHermiteParameters(int marker)
 {
-    return std::make_unique<dense_gh_params>(vi,used_data.X_j);
+    return std::make_unique<dense_gh_params>(vi,Z_j);
 }
 
-int DenseBayesW::estimateBeta(double *xinit, int ninit, double *xl, double *xr, double *convex, int npoint,
+int DenseBayesW::estimateBeta(int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
                               int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                               double *xcent, int ncent, int *neval)
 {
-    beta_params params;
-    params.alpha = used_data.alpha;
-    params.epsilon = epsilon;
-    params.sigma_b = used_data_beta.sigma_b;
-    params.sum_failure = used_data.sum_failure;
-    params.X_j = used_data.X_j;
-    params.mixture_classes = used_data.mixture_classes;
-    params.used_mixture = used_data.used_mixture;
+    dense_beta_params dense_params {params};
+    dense_params.alpha = alpha;
+    dense_params.epsilon = epsilon;
+    dense_params.sigma_b = used_data_beta.sigma_b;
+    dense_params.sum_failure = sum_failure(marker);
+    dense_params.Z_j = Z_j;
 
-    return arms(xinit, ninit, xl, xr, beta_dens, &params, convex,
+    return arms(xinit, ninit, xl, xr, beta_dens, &dense_params, convex,
                 npoint, dometrop, xprev, xsamp, nsamp, qcent, xcent, ncent, neval);
 }
 
 void DenseBayesW::postEstimateResidualUpdate(int marker)
 {
-    epsilon = epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+    epsilon = epsilon - Z_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
 }
 
 double dense_gh_params::exponent_sum() const
 {
-    return (vi.array() * Xj.array() * Xj.array()).sum();
+    return (vi.array() * Zj.array() * Zj.array()).sum();
 }
 
 double dense_gh_params::integrand_adaptive(double s, double alpha, double dj, double sqrt_2Ck_sigmab) const
 {
     //vi is a vector of exp(vi)
-    double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Xj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
+    double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Zj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
     return exp(temp);
 }

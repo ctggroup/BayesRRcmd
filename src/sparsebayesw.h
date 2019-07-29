@@ -43,7 +43,7 @@ protected:
 
     std::unique_ptr<gh_params> gaussHermiteParameters(int marker) override;
 
-    int estimateBeta (double *xinit, int ninit, double *xl, double *xr,
+    int estimateBeta(int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                       double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                       int nsamp, double *qcent, double *xcent,
                       int ncent, int *neval) override;
