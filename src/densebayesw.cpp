@@ -95,7 +95,7 @@ int DenseBayesW::estimateBeta(double *xinit, int ninit, double *xl, double *xr, 
 
 void DenseBayesW::postEstimateResidualUpdate(int marker)
 {
-    epsilon = used_data.epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+    epsilon = epsilon - used_data.X_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
 }
 
 double dense_gh_params::exponent_sum() const
