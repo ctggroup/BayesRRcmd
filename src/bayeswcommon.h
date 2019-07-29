@@ -55,15 +55,4 @@ struct pars_beta_sparse{
         double sum_failure;
 };
 
-struct pars_alpha{
-        VectorXd failure_vector;
-        VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
-
-        /* Alpha-specific variables */
-        double alpha_0, kappa_0;  /*  Prior parameters */
-
-        /* Number of events (sum of failure indicators) */
-        double d;
-};
-
 #endif /* BAYESWCOMMON_H_ */

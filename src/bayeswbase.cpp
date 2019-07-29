@@ -310,7 +310,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	// Resize the vectors in the structure
 	used_data.X_j = VectorXd(individualCount);
 	used_data.epsilon.resize(individualCount);
-	used_data_alpha.epsilon.resize(individualCount);
 
 	// Init the working variables
 	const int km1 = K - 1;
@@ -345,8 +344,10 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 		used_data_beta.mixture_classes(i) = opt.S.row(0)[i];
 	}
 
-	//Store the vector of failures only in the structure used for sampling alpha
-	used_data_alpha.failure_vector = data.fail.cast<double>();
+    //Store the vector of failures
+    failure_vector = data.fail.cast<double>();
+    // Save the number of events
+    used_data.d = failure_vector.array().sum();
 
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
 	used_data.alpha = PI/sqrt(denominator);    // The shape parameter initial value
@@ -363,18 +364,11 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 
 	/* Prior value selection for the variables */
 	/* At the moment we set them to be weakly informative (in .hpp file) */
-	/* alpha */
-	used_data_alpha.alpha_0 = alpha_0;
-	used_data_alpha.kappa_0 = kappa_0;
 	/* mu */
 	used_data.sigma_mu = sigma_mu;
 	/* sigma_b */
 	used_data.alpha_sigma = alpha_sigma;
 	used_data.beta_sigma = beta_sigma;
-
-	// Save the number of events
-	used_data.d = used_data_alpha.failure_vector.array().sum();
-	used_data_alpha.d = used_data.d;
 
 	// Save the sum(X_j*failure) for each j
 	//Previous preprocessed version for reading columns
@@ -391,7 +385,7 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	//If there are fixed effects, find the same values for them
 	if(fixedCount > 0){
 		for(int fix_i=0; fix_i < fixedCount; fix_i++){
-			sum_failure_fix(fix_i) = ((data.X.col(fix_i).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+            sum_failure_fix(fix_i) = ((data.X.col(fix_i).cast<double>()).array() * failure_vector.array()).sum();
 		}
 	}
 }
@@ -547,11 +541,11 @@ void BayesWBase::sampleAlpha(){
 	double xr = 400.0;
 
     alpha_params params;
-    params.alpha_0 = used_data_alpha.alpha_0;
-    params.d = used_data_alpha.d;
+    params.alpha_0 = alpha_0;
+    params.d = used_data.d;
     params.epsilon = epsilon;
-    params.failure_vector = used_data_alpha.failure_vector;
-    params.kappa_0 = used_data_alpha.kappa_0;
+    params.failure_vector = failure_vector;
+    params.kappa_0 = kappa_0;
 
 	//Sample using ARS
     err = arms(xinit,ninit,&xl,&xr,alpha_dens,&params,&convex,

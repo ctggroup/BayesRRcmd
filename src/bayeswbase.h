@@ -117,10 +117,11 @@ protected:
 
 	Distributions_boost dist;
 
+    VectorXd failure_vector;
+
 	// The ARS variables
 	struct pars used_data;
 	struct pars_beta_sparse used_data_beta;
-	struct pars_alpha used_data_alpha;
 
 	// Component variables
 	VectorXd pi_L;        // mixture probabilities

@@ -90,13 +90,13 @@ double SparseBayesW::calculateSumFailure(int marker)
 
     int temp_sum = 0;
     for(int i=0; i < oneIndices.size(); i++){
-        temp_sum += used_data_alpha.failure_vector(oneIndices[i]);
+        temp_sum += failure_vector(oneIndices[i]);
     }
     for(int i=0; i < twoIndices.size(); i++){
-        temp_sum += 2*used_data_alpha.failure_vector(twoIndices[i]);
+        temp_sum += 2*failure_vector(twoIndices[i]);
     }
 
-    return (temp_sum - data.means(marker) * used_data_alpha.failure_vector.array().sum()) / data.sds(marker);
+    return (temp_sum - data.means(marker) * failure_vector.array().sum()) / data.sds(marker);
 }
 
 void SparseBayesW::preEstimateResidualUpdate(int marker)

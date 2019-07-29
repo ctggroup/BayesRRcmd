@@ -81,7 +81,7 @@ void DenseBayesW::sampleBeta(int marker)
 
 double DenseBayesW::calculateSumFailure(int marker)
 {
-    return ((data.Z.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+    return ((data.Z.col(marker).cast<double>()).array() * failure_vector.array()).sum();
 }
 
 void DenseBayesW::preEstimateResidualUpdate(int marker)
