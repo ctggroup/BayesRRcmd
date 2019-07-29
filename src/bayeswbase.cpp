@@ -52,6 +52,12 @@ inline void errorCheck(int err){
 	}
 }
 
+struct mu_params {
+    double alpha = 0;
+    double d = 0;
+    VectorXd epsilon;
+    double sigma_mu = 0;
+};
 
 /* Function for the log density of mu */
 inline double mu_dens(double x, void *norm_data)
@@ -60,11 +66,19 @@ inline double mu_dens(double x, void *norm_data)
 	double y;
 
 	/* In C++ we need to do a static cast for the void data */
-	pars p = *(static_cast<pars *>(norm_data));
+    mu_params p = *(static_cast<mu_params *>(norm_data));
 
 	/* cast voided pointer into pointer to struct norm_parm */
-	y = - p.alpha * x * p.d - (( (p.epsilon).array()  - x) * p.alpha - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
+    y = - p.alpha * x * p.d - (( p.epsilon.array()  - x) * p.alpha - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
 	return y;
+};
+
+struct theta_params {
+    double alpha = 0;
+    double sum_failure = 0;
+    VectorXd epsilon;
+    VectorXd X_j;
+    double sigma_mu = 0;
 };
 
 /* Function for the log density of some "fixed" covariate effect */
@@ -73,11 +87,19 @@ inline double theta_dens(double x, void *norm_data)
 {
 	double y;
 	/* In C++ we need to do a static cast for the void data */
-	pars p = *(static_cast<pars *>(norm_data));
+    theta_params p = *(static_cast<theta_params *>(norm_data));
 
 	/* cast voided pointer into pointer to struct norm_parm */
 	y = - p.alpha * x * p.sum_failure - (((p.epsilon -  p.X_j * x)* p.alpha).array() - EuMasc).exp().sum() - x*x/(2*p.sigma_mu); // Prior is the same currently for intercepts and fixed effects
 	return y;
+};
+
+struct alpha_params {
+    double alpha_0 = 0;
+    double d = 0;
+    VectorXd epsilon;
+    VectorXd failure_vector;
+    double kappa_0 = 0;
 };
 
 /* Function for the log density of alpha */
@@ -87,7 +109,7 @@ inline double alpha_dens(double x, void *norm_data)
 	double y;
 
 	/* In C++ we need to do a static cast for the void data */
-	pars_alpha p = *(static_cast<pars_alpha *>(norm_data));
+    alpha_params p = *(static_cast<alpha_params *>(norm_data));
 	y = (p.alpha_0 + p.d - 1) * log(x) + x * ((p.epsilon.array() * p.failure_vector.array()).sum() - p.kappa_0) -
 			((p.epsilon * x).array() - EuMasc).exp().sum() ;
 	return y;
@@ -388,15 +410,19 @@ void BayesWBase::sampleMu(){
 	double xl = 2;
 	double xr = 5;   //xl and xr and the maximum and minimum values between which we sample
 
-	used_data.epsilon = epsilon.array() + mu;// we add to epsilon =Y+mu-X*beta
+    mu_params params;
+    params.alpha = used_data.alpha;
+    params.d = used_data.d;
+    params.epsilon = epsilon.array() + mu; // we add to epsilon =Y+mu-X*beta
+    params.sigma_mu = used_data.sigma_mu;
 
 	// Use ARS to sample mu (with density mu_dens, using parameters from used_data)
-	err = arms(xinit,ninit,&xl,&xr,mu_dens,&used_data,&convex,
+    err = arms(xinit,ninit,&xl,&xr,mu_dens,&params,&convex,
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 
 	errorCheck(err); // If there is error, stop the program
 	mu = xsamp[0];   // Save the sampled value
-	epsilon = used_data.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+    epsilon = params.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
 }
 
 // Function for sampling fixed effect (theta_i)
@@ -414,18 +440,21 @@ void BayesWBase::sampleTheta(int fix_i){
 	double xl = -2;
 	double xr = 2;			  // Initial left and right (pseudo) extremes
 
-	used_data.X_j = data.X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
-	used_data.sum_failure = sum_failure_fix(fix_i);
+    theta_params params;
+    params.alpha = used_data.alpha;
+    params.sum_failure = sum_failure_fix(fix_i);
+    params.X_j = data.X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
+    params.epsilon = epsilon.array() + (params.X_j * theta(fix_i)).array(); // Adjust residual
+    params.sigma_mu = used_data.sigma_mu;
 
-	used_data.epsilon = epsilon.array() + (used_data.X_j * theta(fix_i)).array(); // Adjust residual
 
 	// Sample using ARS
-	err = arms(xinit,ninit,&xl,&xr,theta_dens,&used_data,&convex,
+    err = arms(xinit,ninit,&xl,&xr,theta_dens,&params,&convex,
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 	errorCheck(err);
 
 	theta(fix_i) = xsamp[0];  // Save the new result
-	epsilon = used_data.epsilon - used_data.X_j * theta(fix_i); // Adjust residual
+    epsilon = params.epsilon - params.X_j * theta(fix_i); // Adjust residual
 }
 
 // Function for sampling marker effect (beta_i)
@@ -517,11 +546,15 @@ void BayesWBase::sampleAlpha(){
 	double xl = 0.0;
 	double xr = 400.0;
 
-	//Give the residual to alpha structure
-	used_data_alpha.epsilon = epsilon;
+    alpha_params params;
+    params.alpha_0 = used_data_alpha.alpha_0;
+    params.d = used_data_alpha.d;
+    params.epsilon = epsilon;
+    params.failure_vector = used_data_alpha.failure_vector;
+    params.kappa_0 = used_data_alpha.kappa_0;
 
 	//Sample using ARS
-	err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data_alpha,&convex,
+    err = arms(xinit,ninit,&xl,&xr,alpha_dens,&params,&convex,
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 	errorCheck(err);
 	used_data.alpha = xsamp[0];

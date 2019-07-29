@@ -40,13 +40,28 @@ inline void errorCheck(int err){
 	}
 }
 
+struct beta_params {
+    double alpha = 0;
+    double mean_sd_ratio = 0;
+    double sd = 0;
+    double sigma_b = 0;
+    double sum_failure = 0;
+
+    double vi_0 = 0;
+    double vi_1 = 0;
+    double vi_2 = 0;
+
+    VectorXd mixture_classes;
+    int used_mixture = 0;
+};
+
 /* Sparse version for function for the log density of beta: uses mixture component from the structure norm_data */
 inline double beta_dens(double x, void *norm_data)
 /* We are sampling beta (denoted by x here) */
 {
 	double y;
 	/* In C++ we need to do a static cast for the void data */
-	pars_beta_sparse p = *(static_cast<pars_beta_sparse *>(norm_data));
+    beta_params p = *(static_cast<beta_params *>(norm_data));
 
 	y = -p.alpha * x * p.sum_failure -
 			exp(p.alpha*x*p.mean_sd_ratio)* (p.vi_0 + p.vi_1 * exp(-p.alpha*x/p.sd) + p.vi_2 * exp(-2*p.alpha*x/p.sd))
@@ -111,7 +126,20 @@ int SparseBayesW::estimateBeta(double *xinit, int ninit, double *xl, double *xr,
                                int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                                double *xcent, int ncent, int *neval)
  {
-     return arms(xinit, ninit, xl, xr, beta_dens, &used_data_beta, convex,
+    beta_params params;
+
+    params.alpha = used_data_beta.alpha;
+    params.mean_sd_ratio = used_data_beta.mean_sd_ratio;
+    params.sd = used_data_beta.sd;
+    params.sigma_b = used_data_beta.sigma_b;
+    params.sum_failure = used_data_beta.sum_failure;
+    params.vi_0 = used_data_beta.vi_0;
+    params.vi_1 = used_data_beta.vi_1;
+    params.vi_2 = used_data_beta.vi_2;
+    params.mixture_classes = used_data_beta.mixture_classes;
+    params.used_mixture = used_data_beta.used_mixture;
+
+     return arms(xinit, ninit, xl, xr, beta_dens, &params, convex,
                  npoint, dometrop, xprev, xsamp, nsamp, qcent, xcent, ncent, neval);
 }
 

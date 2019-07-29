@@ -40,6 +40,17 @@ inline void errorCheck(int err){
     }
 }
 
+struct beta_params {
+    double alpha = 0;
+    VectorXd epsilon;
+    double sigma_b = 0;
+    double sum_failure = 0;
+    VectorXd X_j;
+
+    VectorXd mixture_classes;
+    int used_mixture = 0;
+};
+
 /* Function for the log density of beta: uses mixture component from the structure norm_data */
 inline double beta_dens(double x, void *norm_data)
 /* We are sampling beta (denoted by x here) */
@@ -47,7 +58,7 @@ inline double beta_dens(double x, void *norm_data)
 	double y;
 
 	/* In C++ we need to do a static cast for the void data */
-	pars p = *(static_cast<pars *>(norm_data));
+    beta_params p = *(static_cast<beta_params *>(norm_data));
 
 	y = -p.alpha * x * p.sum_failure - (((p.epsilon - p.X_j * x) * p.alpha).array() - EuMasc).exp().sum() -
 			x * x / (2 * p.mixture_classes(p.used_mixture) * p.sigma_b) ;
@@ -87,9 +98,16 @@ int DenseBayesW::estimateBeta(double *xinit, int ninit, double *xl, double *xr, 
                               int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                               double *xcent, int ncent, int *neval)
 {
-    used_data.epsilon = epsilon;
-    used_data.sigma_b = used_data_beta.sigma_b;
-    return arms(xinit, ninit, xl, xr, beta_dens, &used_data, convex,
+    beta_params params;
+    params.alpha = used_data.alpha;
+    params.epsilon = epsilon;
+    params.sigma_b = used_data_beta.sigma_b;
+    params.sum_failure = used_data.sum_failure;
+    params.X_j = used_data.X_j;
+    params.mixture_classes = used_data.mixture_classes;
+    params.used_mixture = used_data.used_mixture;
+
+    return arms(xinit, ninit, xl, xr, beta_dens, &params, convex,
                 npoint, dometrop, xprev, xsamp, nsamp, qcent, xcent, ncent, neval);
 }
 
