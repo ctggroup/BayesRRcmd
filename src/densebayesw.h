@@ -13,13 +13,15 @@
 #include "options.hpp"
 #include "distributions_boost.hpp"
 
-struct dense_gh_params : public gh_params {
-    dense_gh_params(const VectorXd &vi, const VectorXd &Zj) : vi(vi), Zj(Zj) {}
+struct DenseGaussMarker : public GaussMarker {
+    DenseGaussMarker(const VectorXd &vi, const VectorXd &Zj, int i)
+        : GaussMarker(i), vi(vi), Zj(Zj) {}
+
     const VectorXd &vi;
     const VectorXd &Zj;
 
     double exponent_sum() const override;
-    double integrand_adaptive(double s, double alpha, double dj, double sqrt_2Ck_sigmab) const override;
+    double integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const override;
 };
 
 class DenseBayesW : public BayesWBase
@@ -35,16 +37,17 @@ protected:
 
     double calculateSumFailure(int marker) override;
 
-    void preEstimateResidualUpdate(int marker) override;
+    std::unique_ptr<GaussMarker> buildMarker(int i) override;
+    void prepare(GaussMarker *marker) override;
 
-    std::unique_ptr<gh_params> gaussHermiteParameters(int marker) override;
+    void preEstimateResidualUpdate(const GaussMarker *marker) override;
 
-    int estimateBeta (int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
+    int estimateBeta(const GaussMarker *marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                       double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                       int nsamp, double *qcent, double *xcent,
                       int ncent, int *neval) override;
 
-    void postEstimateResidualUpdate(int marker) override;
+    void postEstimateResidualUpdate(const GaussMarker *marker) override;
 
 };
 

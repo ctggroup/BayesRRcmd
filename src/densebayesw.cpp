@@ -76,17 +76,29 @@ double DenseBayesW::calculateSumFailure(int marker)
     return ((data.Z.col(marker).cast<double>()).array() * failure_vector.array()).sum();
 }
 
-void DenseBayesW::preEstimateResidualUpdate(int marker)
+std::unique_ptr<GaussMarker> DenseBayesW::buildMarker(int i)
 {
-    epsilon = epsilon.array() + (Z_j * beta(marker)).array();
+    return std::make_unique<DenseGaussMarker>(vi, Z_j, i);
 }
 
-std::unique_ptr<gh_params> DenseBayesW::gaussHermiteParameters(int marker)
+void DenseBayesW::prepare(GaussMarker *marker)
 {
-    return std::make_unique<dense_gh_params>(vi,Z_j);
+    BayesWBase::prepare(marker);
+
+    if (auto* denseMarker = dynamic_cast<DenseGaussMarker*>(marker)) {
+
+    }
 }
 
-int DenseBayesW::estimateBeta(int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
+void DenseBayesW::preEstimateResidualUpdate(const GaussMarker *marker)
+{
+    const auto* denseMarker = dynamic_cast<const DenseGaussMarker*>(marker);
+    assert(denseMarker);
+
+    epsilon = epsilon.array() + (Z_j * beta(denseMarker->i)).array();
+}
+
+int DenseBayesW::estimateBeta(const GaussMarker *marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
                               int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                               double *xcent, int ncent, int *neval)
 {
@@ -94,25 +106,29 @@ int DenseBayesW::estimateBeta(int marker, double *xinit, int ninit, double *xl, 
 
     dense_beta_params dense_params {params};
     dense_params.epsilon = epsilon;
+    dense_params.sum_failure = marker->sum_failure;
     dense_params.Z_j = Z_j;
 
     return arms(xinit, ninit, xl, xr, beta_dens, &dense_params, convex,
                 npoint, dometrop, xprev, xsamp, nsamp, qcent, xcent, ncent, neval);
 }
 
-void DenseBayesW::postEstimateResidualUpdate(int marker)
+void DenseBayesW::postEstimateResidualUpdate(const GaussMarker *marker)
 {
-    epsilon = epsilon - Z_j * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
+    const auto* denseMarker = dynamic_cast<const DenseGaussMarker*>(marker);
+    assert(denseMarker);
+
+    epsilon = epsilon - Z_j * beta(denseMarker->i); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
 }
 
-double dense_gh_params::exponent_sum() const
+double DenseGaussMarker::exponent_sum() const
 {
     return (vi.array() * Zj.array() * Zj.array()).sum();
 }
 
-double dense_gh_params::integrand_adaptive(double s, double alpha, double dj, double sqrt_2Ck_sigmab) const
+double DenseGaussMarker::integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const
 {
     //vi is a vector of exp(vi)
-    double temp = -alpha *s*dj*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Zj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
+    double temp = -alpha *s*sum_failure*sqrt_2Ck_sigmab + (vi.array()* (1 - (-Zj.array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
     return exp(temp);
 }

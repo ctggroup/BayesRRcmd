@@ -8,7 +8,6 @@
 #ifndef BAYESWBASE_H_
 #define BAYESWBASE_H_
 
-#include "bayeswcommon.h"
 #include "data.hpp"
 #include "options.hpp"
 #include "distributions_boost.hpp"
@@ -22,20 +21,15 @@ struct beta_params {
     double used_mixture = 0;
 };
 
-struct pars_alpha{
-	VectorXd failure_vector;
-	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
+struct GaussMarker {
+    GaussMarker(int i) : i(i) {}
+    virtual ~GaussMarker();
+    int i = 0;
 
-	/* Alpha-specific variables */
-	double alpha_0, kappa_0;  /*  Prior parameters */
+    double sum_failure = 0;
 
-	/* Number of events (sum of failure indicators) */
-	double d;
-};
-
-struct gh_params {
     virtual double exponent_sum() const = 0;
-    virtual double integrand_adaptive(double s,double alpha, double dj, double sqrt_2Ck_sigmab) const = 0;
+    virtual double integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const = 0;
 };
 
 class BayesWBase
@@ -62,9 +56,6 @@ protected:
 
     VectorXd failure_vector;
     double d = 0; // The number of events
-
-    // The ARS variables
-	struct pars_beta_sparse used_data_beta;
 
 	// Component variables
     VectorXd mixture_classes; // Vector to store mixture component C_k values
@@ -104,19 +95,20 @@ protected:
 
     virtual double calculateSumFailure(int marker) = 0;
 
-    void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const gh_params *params);
-    double gauss_hermite_adaptive_integral(int k, double sigma, string n, const gh_params *params);
+    void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const GaussMarker *params);
+    double gauss_hermite_adaptive_integral(int k, double sigma, string n, const GaussMarker *marker);
 
-    virtual void preEstimateResidualUpdate(int marker) = 0;
+    virtual std::unique_ptr<GaussMarker> buildMarker(int i) = 0;
+    virtual void prepare(GaussMarker *marker);
 
-    virtual std::unique_ptr<gh_params> gaussHermiteParameters(int marker) = 0;
+    virtual void preEstimateResidualUpdate(const GaussMarker *marker) = 0;
 
-    virtual int estimateBeta (int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
+    virtual int estimateBeta (const GaussMarker *marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;
 
-    virtual void postEstimateResidualUpdate(int marker) = 0;
+    virtual void postEstimateResidualUpdate(const GaussMarker *marker) = 0;
 };
 
 

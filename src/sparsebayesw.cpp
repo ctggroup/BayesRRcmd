@@ -66,15 +66,6 @@ inline double beta_dens(double x, void *norm_data)
 
 }
 
-void SparseBayesW::sampleBeta(int marker)
-{
-    used_data_beta.mean = data.means(marker);
-    used_data_beta.sd = data.sds(marker);
-    used_data_beta.mean_sd_ratio = data.mean_sd_ratio(marker);
-
-    BayesWBase::sampleBeta(marker);
-}
-
 double SparseBayesW::calculateSumFailure(int marker)
 {
     std::vector<int> oneIndices = data.Zones[marker]; //Take the vector of indices
@@ -91,68 +82,88 @@ double SparseBayesW::calculateSumFailure(int marker)
     return (temp_sum - data.means(marker) * failure_vector.array().sum()) / data.sds(marker);
 }
 
-void SparseBayesW::preEstimateResidualUpdate(int marker)
+std::unique_ptr<GaussMarker> SparseBayesW::buildMarker(int i)
 {
-    epsilon = epsilon.array() - used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+    auto marker = std::make_unique<SparseGaussMarker>(i);
+
+    marker->vi_sum = vi.sum();
+    marker->vi_2 = vi(data.Ztwos[i]).sum();
+    marker->vi_1 = vi(data.Zones[i]).sum();
+    marker->vi_0 = marker->vi_sum - marker->vi_1 - marker->vi_2;
+    marker->mean = data.means(i);
+    marker->sd = data.sds(i);
+    marker->mean_sd_ratio = data.mean_sd_ratio(i);
+
+    return std::move(marker);
+}
+
+void SparseBayesW::prepare(GaussMarker *marker)
+{
+    BayesWBase::prepare(marker);
+
+    if (auto* sparseMarker = dynamic_cast<SparseGaussMarker*>(marker)) {
+
+    }
+}
+
+void SparseBayesW::preEstimateResidualUpdate(const GaussMarker *marker)
+{
+    const auto* sparseMarker = dynamic_cast<const SparseGaussMarker*>(marker);
+    assert(sparseMarker);
+
+    epsilon = epsilon.array() - sparseMarker->mean_sd_ratio * beta(sparseMarker->i);  //Adjust for every memeber
     //And adjust even further for specific 1 and 2 allele values
-    for(int i=0; i < data.Zones[marker].size(); i++){
-        epsilon[data.Zones[marker][i]] += beta(marker)/used_data_beta.sd;
+    for(int i=0; i < data.Zones[sparseMarker->i].size(); i++){
+        epsilon[data.Zones[sparseMarker->i][i]] += beta(sparseMarker->i)/sparseMarker->sd;
     }
-    for(int i=0; i < data.Ztwos[marker].size(); i++){
-        epsilon[data.Ztwos[marker][i]] += 2*beta(marker)/used_data_beta.sd;
+    for(int i=0; i < data.Ztwos[sparseMarker->i].size(); i++){
+        epsilon[data.Ztwos[sparseMarker->i][i]] += 2*beta(sparseMarker->i)/sparseMarker->sd;
     }
 }
 
-std::unique_ptr<gh_params> SparseBayesW::gaussHermiteParameters(int marker)
-{
-    double vi_sum = vi.sum();
-    used_data_beta.vi_2 = vi(data.Ztwos[marker]).sum();
-    used_data_beta.vi_1 = vi(data.Zones[marker]).sum();
-    used_data_beta.vi_0 = vi_sum - used_data_beta.vi_1 - used_data_beta.vi_2;
-
-    return std::make_unique<sparse_gh_params>(vi_sum, used_data_beta.vi_2, used_data_beta.vi_1,
-                                              used_data_beta.vi_0, data.means(marker),data.sds(marker),data.mean_sd_ratio(marker));
-}
-
-int SparseBayesW::estimateBeta(int marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
+int SparseBayesW::estimateBeta(const GaussMarker *marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
                                int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                                double *xcent, int ncent, int *neval)
  {
-    (void) marker; // Unused
+    const auto* sparseMarker = dynamic_cast<const SparseGaussMarker*>(marker);
+    assert(sparseMarker);
 
     sparse_beta_params sparse_params {params};
-
-    sparse_params.mean_sd_ratio = used_data_beta.mean_sd_ratio;
-    sparse_params.sd = used_data_beta.sd;
-    sparse_params.vi_0 = used_data_beta.vi_0;
-    sparse_params.vi_1 = used_data_beta.vi_1;
-    sparse_params.vi_2 = used_data_beta.vi_2;
+    sparse_params.mean_sd_ratio = sparseMarker->mean_sd_ratio;
+    sparse_params.sd = sparseMarker->sd;
+    sparse_params.sum_failure = sparseMarker->sum_failure;
+    sparse_params.vi_0 = sparseMarker->vi_0;
+    sparse_params.vi_1 = sparseMarker->vi_1;
+    sparse_params.vi_2 = sparseMarker->vi_2;
 
      return arms(xinit, ninit, xl, xr, beta_dens, &sparse_params, convex,
                  npoint, dometrop, xprev, xsamp, nsamp, qcent, xcent, ncent, neval);
 }
 
-void SparseBayesW::postEstimateResidualUpdate(int marker)
+void SparseBayesW::postEstimateResidualUpdate(const GaussMarker *marker)
 {
-    epsilon = epsilon.array() + used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+    const auto* sparseMarker = dynamic_cast<const SparseGaussMarker*>(marker);
+    assert(sparseMarker);
+
+    epsilon = epsilon.array() + sparseMarker->mean_sd_ratio * beta(sparseMarker->i);  //Adjust for every memeber
     //And adjust even further for specific 1 and 2 allele values
-    for(int i=0; i < data.Zones[marker].size(); i++){
-        epsilon[data.Zones[marker][i]] -= beta(marker)/used_data_beta.sd;
+    for(int i=0; i < data.Zones[sparseMarker->i].size(); i++){
+        epsilon[data.Zones[sparseMarker->i][i]] -= beta(sparseMarker->i)/sparseMarker->sd;
     }
-    for(int i=0; i < data.Ztwos[marker].size(); i++){
-        epsilon[data.Ztwos[marker][i]] -= 2*beta(marker)/used_data_beta.sd;
+    for(int i=0; i < data.Ztwos[sparseMarker->i].size(); i++){
+        epsilon[data.Ztwos[sparseMarker->i][i]] -= 2*beta(sparseMarker->i)/sparseMarker->sd;
     }
 }
 
-double sparse_gh_params::exponent_sum() const
+double SparseGaussMarker::exponent_sum() const
 {
     return (vi_1 * (1 - 2 * mean) + 4 * (1-mean) * vi_2 + vi_sum * mean * mean) /(sd*sd);
 }
 
-double sparse_gh_params::integrand_adaptive(double s, double alpha, double dj, double sqrt_2Ck_sigmab) const
+double SparseGaussMarker::integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const
 {
     //vi is a vector of exp(vi)
-    double temp = -alpha *s*dj*sqrt_2Ck_sigmab +
+    double temp = -alpha *s*sum_failure*sqrt_2Ck_sigmab +
             vi_sum - exp(alpha*mean_sd_ratio*s*sqrt_2Ck_sigmab) *
             (vi_0 + vi_1 * exp(-alpha * s*sqrt_2Ck_sigmab/sd) + vi_2* exp(-2 * alpha * s*sqrt_2Ck_sigmab/sd))
             -pow(s,2);
