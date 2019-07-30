@@ -63,7 +63,7 @@ void DenseBayesW::sampleBeta(int marker)
     used_data.X_j = data.Z.col(marker).cast<double>();
 
     // Save sum(X_j*failure) to structure
-    used_data.sum_failure = sum_failure(marker);
+    used_data_beta.sum_failure = sum_failure(marker);
 
     BayesWBase::sampleBeta(marker);
 }
