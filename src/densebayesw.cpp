@@ -42,10 +42,7 @@ inline void errorCheck(int err){
 
 struct dense_beta_params : public beta_params {
     dense_beta_params(const beta_params &params) : beta_params(params) {}
-    double alpha = 0;
     VectorXd epsilon;
-    double sigma_b = 0;
-    double sum_failure = 0;
     VectorXd Z_j;
 };
 
@@ -93,11 +90,10 @@ int DenseBayesW::estimateBeta(int marker, double *xinit, int ninit, double *xl, 
                               int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                               double *xcent, int ncent, int *neval)
 {
+    (void) marker; // Unused
+
     dense_beta_params dense_params {params};
-    dense_params.alpha = alpha;
     dense_params.epsilon = epsilon;
-    dense_params.sigma_b = used_data_beta.sigma_b;
-    dense_params.sum_failure = sum_failure(marker);
     dense_params.Z_j = Z_j;
 
     return arms(xinit, ninit, xl, xr, beta_dens, &dense_params, convex,

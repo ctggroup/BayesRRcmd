@@ -15,66 +15,11 @@
 
 #include <Eigen/Eigen>
 
-#if 0
-// Two structures for ARS
-struct pars{
-	/* Common parameters for the densities */
-	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
-
-	VectorXd mixture_classes; // Vector to store mixture component C_k values
-
-	int used_mixture; //Write the index of the mixture we decide to use
-
-	/* Store the current variables */
-	double alpha;
-
-	/* Beta_j - specific variables */
-	VectorXd X_j;
-
-	/*  of sum(X_j*failure) */
-	double sum_failure;
-
-	/* Mu-specific variables */
-	double sigma_mu;
-	/* sigma_b-specific variables */
-	double alpha_sigma, beta_sigma;
-
-	/* Number of events (sum of failure indicators) */
-	double d;
-
-	/* Help variable for storing sqrt(2sigma_b)	 */
-	double sqrt_2sigmab;
-
-};
-
-struct pars_beta_sparse{
-	/* Common parameters for the densities */
-
-	VectorXd mixture_classes; // Vector to store mixture component C_k values
-    // assigned in init
-
-	int used_mixture; //Write the index of the mixture we decide to use
-    // assigned in sampleBeta, then used within the same scope
-
-	/* Store the current variables */
-	double alpha, sigma_b;
-    // alpha - initialised in init, updated in sampleAlpha - in the markov chain, after sampleBeta
-    // sigma_b - initialised in init, updated in the markov chain after sampleBeta
-
-	/* Beta_j - specific variables */
-	double vi_0, vi_1, vi_2; // Sums of vi elements
-    // assigned in sampleBeta, then used within the same scope
-
-	// Mean, std dev and their ratio for snp j
-	double mean, sd, mean_sd_ratio;
-    // mean - assined in sampleBeta but not used
-    // sd - assigned in sampleBeta, used in sampleBeta and beta_dens
-    // mean_sd_ratio - assigned in sampleBeta, used in sampleBeta and beta_dens
-
-
-	/*  of sum(X_j*failure) */
-	double sum_failure;
-    // assigned in sampleBeta, used in gauss_hermite_adaptive_integral and alpha_dens
+struct beta_params {
+    double alpha = 0;
+    double sigma_b = 0;
+    double sum_failure = 0;
+    double used_mixture = 0;
 };
 
 struct pars_alpha{
@@ -88,15 +33,9 @@ struct pars_alpha{
 	double d;
 };
 
-#endif
-
 struct gh_params {
     virtual double exponent_sum() const = 0;
     virtual double integrand_adaptive(double s,double alpha, double dj, double sqrt_2Ck_sigmab) const = 0;
-};
-
-struct beta_params {
-    double used_mixture = 0;
 };
 
 class BayesWBase
@@ -146,6 +85,7 @@ protected:
     VectorXd epsilon; //Vector for residuals
     double alpha = 0;
     double mu = 0;
+    double sigma_b = 0;
 
 
 

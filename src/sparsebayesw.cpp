@@ -42,11 +42,8 @@ inline void errorCheck(int err){
 
 struct sparse_beta_params : beta_params {
     sparse_beta_params(const beta_params &params) : beta_params(params) {}
-    double alpha = 0;
     double mean_sd_ratio = 0;
     double sd = 0;
-    double sigma_b = 0;
-    double sum_failure = 0;
 
     double vi_0 = 0;
     double vi_1 = 0;
@@ -125,11 +122,8 @@ int SparseBayesW::estimateBeta(int marker, double *xinit, int ninit, double *xl,
 
     sparse_beta_params sparse_params {params};
 
-    sparse_params.alpha = used_data_beta.alpha;
     sparse_params.mean_sd_ratio = used_data_beta.mean_sd_ratio;
     sparse_params.sd = used_data_beta.sd;
-    sparse_params.sigma_b = used_data_beta.sigma_b;
-    sparse_params.sum_failure = used_data_beta.sum_failure;
     sparse_params.vi_0 = used_data_beta.vi_0;
     sparse_params.vi_1 = used_data_beta.vi_1;
     sparse_params.vi_2 = used_data_beta.vi_2;

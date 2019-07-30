@@ -6,14 +6,6 @@
 using namespace Eigen;
 
 struct pars_beta_sparse{
-        /* Common parameters for the densities */
-        VectorXd mixture_classes; // Vector to store mixture component C_k values
-
-        int used_mixture; //Write the index of the mixture we decide to use
-
-        /* Store the current variables */
-        double alpha, sigma_b;
-
         /* Beta_j - specific variables */
         double vi_0, vi_1, vi_2; // Sums of vi elements
 

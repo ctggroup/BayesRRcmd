@@ -124,7 +124,7 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
     assert(params);
 
     double temp = 0;
-    double sqrt_2ck_sigma = sqrt(2*mixture_classes(k)*used_data_beta.sigma_b);
+    double sqrt_2ck_sigma = sqrt(2*mixture_classes(k)*sigma_b);
 
     if(n == "3"){
         double x1,x2;
@@ -141,8 +141,8 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x1 = sigma*x1;
         x2 = sigma*x2;
 
-        temp = w1 * params->integrand_adaptive(x1,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w2 * params->integrand_adaptive(x2,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+        temp = w1 * params->integrand_adaptive(x1,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w2 * params->integrand_adaptive(x2,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
                 w3;
     }
     // n=5
@@ -169,10 +169,10 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x4 = sigma*x4;
         //x5 = sigma*x5;
 
-        temp = w1 * params->integrand_adaptive(x1,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w2 * params->integrand_adaptive(x2,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w3 * params->integrand_adaptive(x3,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w4 * params->integrand_adaptive(x4,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+        temp = w1 * params->integrand_adaptive(x1,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w2 * params->integrand_adaptive(x2,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w3 * params->integrand_adaptive(x3,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w4 * params->integrand_adaptive(x4,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
                 w5;
     }else if(n == "7"){
         double x1,x2,x3,x4,x5,x6;
@@ -202,12 +202,12 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x5 = sigma*x5;
         x6 = sigma*x6;
 
-        temp = w1 * params->integrand_adaptive(x1,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w2 * params->integrand_adaptive(x2,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w3 * params->integrand_adaptive(x3,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w4 * params->integrand_adaptive(x4,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w5 * params->integrand_adaptive(x5,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w6 * params->integrand_adaptive(x6,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+        temp = w1 * params->integrand_adaptive(x1,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w2 * params->integrand_adaptive(x2,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w3 * params->integrand_adaptive(x3,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w4 * params->integrand_adaptive(x4,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w5 * params->integrand_adaptive(x5,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w6 * params->integrand_adaptive(x6,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
                 w7;
     }else if(n == "11"){
         double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
@@ -253,16 +253,16 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x10 = sigma*x10;
         //	x11 = sigma*x11;
 
-        temp = w1 * params->integrand_adaptive(x1,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w2 * params->integrand_adaptive(x2,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w3 * params->integrand_adaptive(x3,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w4 * params->integrand_adaptive(x4,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w5 * params->integrand_adaptive(x5,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w6 * params->integrand_adaptive(x6,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w7 * params->integrand_adaptive(x7,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w8 * params->integrand_adaptive(x8,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w9 * params->integrand_adaptive(x9,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
-                w10 * params->integrand_adaptive(x10,used_data_beta.alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+        temp = w1 * params->integrand_adaptive(x1,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w2 * params->integrand_adaptive(x2,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w3 * params->integrand_adaptive(x3,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w4 * params->integrand_adaptive(x4,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w5 * params->integrand_adaptive(x5,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w6 * params->integrand_adaptive(x6,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w7 * params->integrand_adaptive(x7,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w8 * params->integrand_adaptive(x8,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w9 * params->integrand_adaptive(x9,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
+                w10 * params->integrand_adaptive(x10,alpha,used_data_beta.sum_failure,sqrt_2ck_sigma) +
                 w11;
     }else{
         cout << "Possible number of quad_points = 3,5,7,11" << endl;
@@ -278,9 +278,9 @@ void BayesWBase::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &pos
     assert(params);
     double exp_sum = params->exponent_sum();
 
-    for(int i=0; i < used_data_beta.mixture_classes.size(); i++){
+    for(int i=0; i < mixture_classes.size(); i++){
         //Calculate the sigma for the adaptive G-H
-        double sigma = 1.0/sqrt(1 + used_data_beta.alpha * used_data_beta.alpha * used_data_beta.sigma_b * used_data_beta.mixture_classes(i) * exp_sum);
+        double sigma = 1.0/sqrt(1 + alpha * alpha * sigma_b * mixture_classes(i) * exp_sum);
         post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, sigma, n, params);
     }
 }
@@ -331,13 +331,11 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 
 	// Initialize the variables in structures
 	//Save variance classes
-    mixture_classes.resize(km1);
-	used_data_beta.mixture_classes.resize(km1);  //The future solution
+    mixture_classes.resize(km1); //The future solution
 
 
 	for(int i=0;i<(km1);i++){
         mixture_classes(i) = opt.S.row(0)[i];   //Save the mixture data (C_k)
-		used_data_beta.mixture_classes(i) = opt.S.row(0)[i];
 	}
 
     //Store the vector of failures
@@ -347,14 +345,13 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 
 	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
     alpha = PI/sqrt(denominator);    // The shape parameter initial value
-	used_data_beta.alpha = PI/sqrt(denominator);    // The shape parameter initial value
 
 
     for(int i=0; i<(y.size()); ++i){
         epsilon[i] = y[i] - mu; // Initially, all the BETA elements are set to 0, XBeta = 0
 	}
 
-	used_data_beta.sigma_b = PI2/ (6 * pow(used_data_beta.alpha,2) * markerCount ) ;
+    sigma_b = PI2/ (6 * pow(alpha,2) * markerCount ) ;
 
 	// Save the sum(X_j*failure) for each j
 	//Previous preprocessed version for reading columns
@@ -470,12 +467,13 @@ void BayesWBase::sampleBeta(int marker){
 			}
 			// If is not 0th component then sample using ARS
 			else {
-                used_data_beta.used_mixture = k-1;
-
                 beta_params params;
-                params.used_mixture = used_data_beta.mixture_classes(k-1);
+                params.alpha = alpha;
+                params.sigma_b = sigma_b;
+                params.sum_failure = sum_failure(marker);
+                params.used_mixture = mixture_classes(k-1);
 
-				double safe_limit = 2 * sqrt(used_data_beta.sigma_b * used_data_beta.mixture_classes(k-1));
+                double safe_limit = 2 * sqrt(sigma_b * mixture_classes(k-1));
 
 				// ARS parameters
                 int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
@@ -543,7 +541,6 @@ void BayesWBase::sampleAlpha(){
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 	errorCheck(err);
     alpha = xsamp[0];
-	used_data_beta.alpha = xsamp[0];
 }
 
 /* Adaptive Gauss-Hermite version. Currently RAM solution */
@@ -614,7 +611,7 @@ int BayesWBase::runGibbs_Gauss()
 		sampleAlpha();
 
 		// 4. Sample sigma_b
-        used_data_beta.sigma_b = dist.inv_gamma_rng((double) (alpha_sigma + 0.5 * (M - v[0]+1)),
+        sigma_b = dist.inv_gamma_rng((double) (alpha_sigma + 0.5 * (M - v[0]+1)),
                 (double)(beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
 
 		// 5. Sample prior mixture component probability from Dirichlet distribution
@@ -623,15 +620,15 @@ int BayesWBase::runGibbs_Gauss()
 		// Write the result to file
         if (iteration >= burn_in && iteration % thinning == 0) {
 			if(numFixedEffects > 0){
-                sample << iteration, alpha, mu, theta, beta,components.cast<double>(), used_data_beta.sigma_b ;
+                sample << iteration, alpha, mu, theta, beta,components.cast<double>(), sigma_b ;
 			}else{
-                sample << iteration, alpha, mu, beta,components.cast<double>(), used_data_beta.sigma_b ;
+                sample << iteration, alpha, mu, beta,components.cast<double>(), sigma_b ;
 			}
 			writer.write(sample);
 		}
 
 		//Print results
-        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << alpha << "; " << used_data_beta.sigma_b << endl;
+        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << alpha << "; " << sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
@@ -640,5 +637,3 @@ int BayesWBase::runGibbs_Gauss()
 
 	return 0;
 }
-
-
