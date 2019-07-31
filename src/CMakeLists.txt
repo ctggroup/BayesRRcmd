@@ -5,10 +5,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_library(bayes
     BayesRRm.cpp
     BayesW_arms.cpp
+    bayesrkernel.cpp
     bayeswbase.cpp
     data.cpp
+    densebayesrkernel.cpp
     distributions_boost.cpp
+    eigenbayesrkernel.cpp
     gadgets.cpp
+    kernel.cpp
     options.cpp
     samplewriter.cpp
     compression.cpp
@@ -19,10 +23,12 @@ add_library(bayes
     DenseBayesRRmz.cpp
     densebayesw.cpp
     SparseBayesRRG.cpp
+    sparsebayesrkernel.cpp
     sparsebayesw.cpp
     marker.cpp
     densemarker.cpp
     sparsemarker.cpp
+    raggedbayesrkernel.cpp
     raggedsparsemarker.cpp
     eigensparsemarker.cpp
     common.cpp

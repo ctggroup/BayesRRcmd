@@ -2,7 +2,7 @@
 
 #include "BayesRBase.hpp"
 #include "compression.h"
-#include "marker.h"
+#include "kernel.h"
 #include "markerbuilder.h"
 
 #include <iostream>
@@ -21,7 +21,7 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
         } else {
             builder->read(m_bayes->preprocessedFile(), index);
         }
-        msg.marker.reset(builder->build());
+        msg.kernel = m_bayes->kernelForMarker(builder->build());
         return msg;
     };
     // Do the decompression work on up to maxParallel threads at once
@@ -45,7 +45,7 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
 
     auto g = [this] (Message msg) -> continue_msg {
         // Delegate the processing of this column to the algorithm class
-        m_bayes->processColumn(msg.marker.get());
+        m_bayes->processColumn(msg.kernel.get());
 
         // Signal for next decompression task to continue
         return continue_msg();

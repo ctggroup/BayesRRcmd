@@ -2,7 +2,7 @@
 
 #include "compression.h"
 #include "BayesRBase.hpp"
-#include "marker.h"
+#include "kernel.h"
 #include "markerbuilder.h"
 
 #include <iostream>
@@ -27,7 +27,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
         } else {
             builder->read(m_bayes->preprocessedFile(), index);
         }
-        msg.marker.reset(builder->build());
+        msg.kernel = m_bayes->kernelForMarker(builder->build());
         return tuple;
     };
 
@@ -40,7 +40,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     // Sampling of the column to the async algorithm class
     auto g = [this] (AnalysisTuple tuple) -> AnalysisTuple {
         auto &msg = std::get<1>(std::get<1>(tuple));
-        msg.result = m_bayes->processColumnAsync(msg.marker.get());
+        msg.result = m_bayes->processColumnAsync(msg.kernel.get());
         return tuple;
     };
 
@@ -72,7 +72,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
         auto &decompressionTuple = std::get<1>(input);
         auto &msg = std::get<1>(decompressionTuple);
 
-        m_bayes->updateGlobal(msg.marker.get(),
+        m_bayes->updateGlobal(msg.kernel.get(),
                               msg.result->betaOld,
                               msg.result->beta,
                               *msg.result->deltaEpsilon);

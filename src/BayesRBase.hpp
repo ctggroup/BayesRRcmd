@@ -19,6 +19,9 @@
 
 class AnalysisGraph;
 
+struct Kernel;
+struct BayesRKernel;
+
 struct Marker;
 class MarkerBuilder;
 
@@ -34,6 +37,8 @@ public:
     BayesRBase(const Data *data, const Options &opt);
     virtual ~BayesRBase();
 
+    virtual std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const = 0;
+
     virtual MarkerBuilder* markerBuilder() const = 0;
     virtual IndexEntry indexEntry(unsigned int i) const;
     virtual bool compressed() const;
@@ -42,11 +47,11 @@ public:
 
     int runGibbs(AnalysisGraph* analysis); // where we run Gibbs sampling over the parametrised model
 
-    virtual void processColumn(Marker *marker);
+    virtual void processColumn(Kernel *kernel);
 
-    virtual std::unique_ptr<AsyncResult> processColumnAsync(Marker *marker);
+    virtual std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel);
 
-    virtual void updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps);
+    virtual void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd& deltaEps);
     virtual void updateMu(double old_mu, double N)=0;
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
@@ -111,9 +116,9 @@ protected:
 
     virtual void prepareForAnylsis();
 
-    virtual void prepare(Marker *marker);
-    virtual void readWithSharedLock(Marker *marker);
-    virtual void writeWithUniqueLock(Marker *marker);
+    virtual void prepare(BayesRKernel *kernel);
+    virtual void readWithSharedLock(BayesRKernel *kernel);
+    virtual void writeWithUniqueLock(BayesRKernel *kernel);
 
     void printDebugInfo() const;
 };

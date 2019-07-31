@@ -10,28 +10,11 @@ struct SparseMarker : public Marker
     double sqrdZ= 0;
     double Zsum = 0;
 
-    double epsilonSum = 0;
-
-    double computeNum(const VectorXd &epsilon, const double beta_old) override;
-
-    VectorXdPtr calculateEpsilonChange(const double beta_old,
-                                       const double beta) override;
-
     virtual void updateStatistics(unsigned int allele1, unsigned int allele2);
 
     std::streamsize size() const override;
     void read(std::istream *inStream) override;
     void write(std::ostream *outStream) const override;
-
-protected:
-    virtual double computeNum(const VectorXd &epsilon,
-                              const double beta_old,
-                              const double epsilonSum);
-
-    virtual double dot(const VectorXd &epsilon) const = 0;
-
-    virtual double computeEpsilonSumUpdate(const double beta_old,
-                                           const double beta) const;
 };
 
 #endif // SPARSEMARKER_H
