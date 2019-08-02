@@ -8,6 +8,7 @@
 #ifndef SRC_BAYESRBASE_H_
 #define SRC_BAYESRBASE_H_
 
+#include "analysis.h"
 #include "data.hpp"
 #include "options.hpp"
 #include "distributions_boost.hpp"
@@ -19,47 +20,25 @@
 
 class AnalysisGraph;
 
-struct Kernel;
 struct BayesRKernel;
 
-struct Marker;
-class MarkerBuilder;
-
-struct AsyncResult {
-    double betaOld = 0.0;
-    double beta = 0.0;
-    std::unique_ptr<VectorXd> deltaEpsilon;
-};
-
-class BayesRBase
+class BayesRBase : public Analysis
 {
 public:
-    BayesRBase(const Data *data, const Options &opt);
-    virtual ~BayesRBase();
+    explicit BayesRBase(const Data *data, const Options &opt);
 
-    virtual std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const = 0;
+    int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
 
-    virtual MarkerBuilder* markerBuilder() const = 0;
-    virtual IndexEntry indexEntry(unsigned int i) const;
-    virtual bool compressed() const;
-    virtual unsigned char* compressedData() const;
-    virtual std::string preprocessedFile() const;
+    void processColumn(Kernel *kernel) override;
+    std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) override;
+    void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd& deltaEps) override;
 
-    int runGibbs(AnalysisGraph* analysis); // where we run Gibbs sampling over the parametrised model
-
-    virtual void processColumn(Kernel *kernel);
-
-    virtual std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel);
-
-    virtual void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd& deltaEps);
     virtual void updateMu(double old_mu, double N)=0;
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
     bool isDebugEnabled() const { return m_showDebug; }
 
 protected:
-    const Data          *m_data; // data matrices
-    const Options       &m_opt;
     const string        m_outputFile;
     const string        m_iterLogFile; //debug file for iteration quantities
     const unsigned int  m_seed;

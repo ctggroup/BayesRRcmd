@@ -16,8 +16,7 @@
 #include <mutex>
 
 BayesRBase::BayesRBase(const Data *data, const Options &opt)
-    : m_data(data)
-    , m_opt(opt)
+    : Analysis(data, opt)
     , m_outputFile(opt.mcmcSampleFile)
     , m_iterLogFile(opt.iterLogFile)
     , m_seed(opt.seed)
@@ -31,36 +30,6 @@ BayesRBase::BayesRBase(const Data *data, const Options &opt)
     , m_colLogFile(opt.colLogFile)
 {
     assert(m_data);
-}
-
-BayesRBase::~BayesRBase()
-{
-}
-
-IndexEntry BayesRBase::indexEntry(unsigned int i) const
-{
-    if (!m_data)
-        return {};
-
-    return m_data->ppbedIndex[i];
-}
-
-bool BayesRBase::compressed() const
-{
-    return m_opt.compress;
-}
-
-unsigned char* BayesRBase::compressedData() const
-{
-    if (!m_data)
-        return nullptr;
-
-    return reinterpret_cast<unsigned char*>(m_data->ppBedMap);
-}
-
-std::string BayesRBase::preprocessedFile() const
-{
-    return ppFileForType(m_opt.preprocessDataType, m_opt.dataFile);
 }
 
 void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCount)

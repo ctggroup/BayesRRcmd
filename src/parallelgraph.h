@@ -25,7 +25,7 @@ public:
 
     bool isAsynchronous() const override { return true; }
 
-    void exec(BayesRBase* bayes,
+    void exec(Analysis* analysis,
               unsigned int numKeptInds,
               unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;

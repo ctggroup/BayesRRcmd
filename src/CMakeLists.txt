@@ -3,6 +3,9 @@ project(brr)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_library(bayes
+    analysis.cpp
+    analysisgraph.cpp
+    analysisrunner.cpp
     BayesRRm.cpp
     BayesW_arms.cpp
     bayesrkernel.cpp
@@ -20,7 +23,6 @@ add_library(bayes
     compression.cpp
     limitsequencegraph.cpp
     parallelgraph.cpp
-    analysisgraph.cpp
     BayesRBase.cpp
     DenseBayesRRmz.cpp
     densebayesw.cpp
@@ -43,7 +45,6 @@ add_library(bayes
     writer.cpp
     logwriter.cpp
     colwriter.cpp
-    analysisrunner.cpp
 )
 
 set_property(TARGET bayes PROPERTY CXX_STANDARD_REQUIRED ON)
