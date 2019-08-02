@@ -189,21 +189,26 @@ bool runGaussAnalysis(const Options &options) {
     // Make a copy as BayesW takes a non-const reference
     Options gaussOptions = options;
 
-    const bool useSparseData = gaussOptions.preprocessDataType == PreprocessDataType::SparseRagged;
 
     Data data;
-    data.readFamFile(fileWithSuffix(options.dataFile, ".fam"));
-    data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
-    data.readPhenotypeFile(gaussOptions.phenotypeFile);
-    if (useSparseData)
-        data.readBedFile_noMPI_unstandardised(gaussOptions.dataFile); // This part to read the non-standardised data
-    else
-        data.readBedFile_noMPI(gaussOptions.dataFile);
+    readMetaData(data, gaussOptions);
+
+    const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
+    const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
+
+    cout << "Start reading preprocessed bed file: " << ppFile << endl;
+    clock_t start_bed = clock();
+    data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+    clock_t end = clock();
+    printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+    cout << endl;
 
     // If there is a file for fixed effects (model matrix), then read the data
     if(!options.fixedFile.empty()) {
         data.readCSV(options.fixedFile, options.fixedEffectNumber);
     }
+
+    const bool useSparseData = gaussOptions.preprocessDataType == PreprocessDataType::SparseRagged;
 
     int result = 0;
     if (useSparseData) {

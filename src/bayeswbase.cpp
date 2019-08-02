@@ -11,7 +11,9 @@
 //#include "concurrentqueue.h"
 #include "options.hpp"
 #include "bayeswbase.h"
+#include "bayeswkernel.h"
 #include "BayesW_arms.h"
+#include "markerbuilder.h"
 #include "samplewriter.h"
 
 #include <chrono>
@@ -23,8 +25,6 @@
 #define PI2 6.283185
 #define sqrtPI 1.77245385090552
 #define EuMasc 0.577215664901532
-
-GaussMarker::~GaussMarker() = default;
 
 BayesWBase::BayesWBase(Data &data, Options &opt, const long memPageSize)
 : seed(opt.seed)
@@ -39,6 +39,26 @@ BayesWBase::BayesWBase(Data &data, Options &opt, const long memPageSize)
 , dist(opt.seed)
 {
 
+}
+
+IndexEntry BayesWBase::indexEntry(unsigned int i) const
+{
+    return data.ppbedIndex[i];
+}
+
+bool BayesWBase::compressed() const
+{
+    return opt.compress;
+}
+
+unsigned char *BayesWBase::compressedData() const
+{
+    return reinterpret_cast<unsigned char*>(data.ppBedMap);
+}
+
+std::string BayesWBase::preprocessedFile() const
+{
+    return ppFileForType(opt.preprocessDataType, opt.dataFile);
 }
 
 
@@ -122,8 +142,8 @@ inline double alpha_dens(double x, void *norm_data)
 
 //Calculate the value of the integral using Adaptive Gauss-Hermite quadrature
 //Let's assume that mu is always 0 for speed
-double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n, const GaussMarker *marker){
-    assert(marker);
+double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n, const BayesWKernel *kernel){
+    assert(kernel);
 
     double temp = 0;
     double sqrt_2ck_sigma = sqrt(2*mixture_classes(k)*sigma_b);
@@ -143,8 +163,8 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x1 = sigma*x1;
         x2 = sigma*x2;
 
-        temp = w1 * marker->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * marker->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
                 w3;
     }
     // n=5
@@ -171,10 +191,10 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x4 = sigma*x4;
         //x5 = sigma*x5;
 
-        temp = w1 * marker->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * marker->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
-                w3 * marker->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
-                w4 * marker->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
                 w5;
     }else if(n == "7"){
         double x1,x2,x3,x4,x5,x6;
@@ -204,12 +224,12 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x5 = sigma*x5;
         x6 = sigma*x6;
 
-        temp = w1 * marker->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * marker->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
-                w3 * marker->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
-                w4 * marker->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
-                w5 * marker->integrand_adaptive(x5,alpha,sqrt_2ck_sigma) +
-                w6 * marker->integrand_adaptive(x6,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
+                w5 * kernel->integrand_adaptive(x5,alpha,sqrt_2ck_sigma) +
+                w6 * kernel->integrand_adaptive(x6,alpha,sqrt_2ck_sigma) +
                 w7;
     }else if(n == "11"){
         double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
@@ -255,16 +275,16 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x10 = sigma*x10;
         //	x11 = sigma*x11;
 
-        temp = w1 * marker->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * marker->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
-                w3 * marker->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
-                w4 * marker->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
-                w5 * marker->integrand_adaptive(x5,alpha,sqrt_2ck_sigma) +
-                w6 * marker->integrand_adaptive(x6,alpha,sqrt_2ck_sigma) +
-                w7 * marker->integrand_adaptive(x7,alpha,sqrt_2ck_sigma) +
-                w8 * marker->integrand_adaptive(x8,alpha,sqrt_2ck_sigma) +
-                w9 * marker->integrand_adaptive(x9,alpha,sqrt_2ck_sigma) +
-                w10 * marker->integrand_adaptive(x10,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
+                w5 * kernel->integrand_adaptive(x5,alpha,sqrt_2ck_sigma) +
+                w6 * kernel->integrand_adaptive(x6,alpha,sqrt_2ck_sigma) +
+                w7 * kernel->integrand_adaptive(x7,alpha,sqrt_2ck_sigma) +
+                w8 * kernel->integrand_adaptive(x8,alpha,sqrt_2ck_sigma) +
+                w9 * kernel->integrand_adaptive(x9,alpha,sqrt_2ck_sigma) +
+                w10 * kernel->integrand_adaptive(x10,alpha,sqrt_2ck_sigma) +
                 w11;
     }else{
         cout << "Possible number of quad_points = 3,5,7,11" << endl;
@@ -274,23 +294,15 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
     return sigma*temp;
 }
 
-void BayesWBase::prepare(GaussMarker *marker)
-{
-    assert(marker);
-
-    marker->sum_failure = sum_failure(marker->i);
-}
-
-
 //Pass the vector post_marginals of marginal likelihoods by reference
-void BayesWBase::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const GaussMarker *params){
-    assert(params);
-    double exp_sum = params->exponent_sum();
+void BayesWBase::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const BayesWKernel *kernel){
+    assert(kernel);
+    double exp_sum = kernel->exponent_sum();
 
     for(int i=0; i < mixture_classes.size(); i++){
         //Calculate the sigma for the adaptive G-H
         double sigma = 1.0/sqrt(1 + alpha * alpha * sigma_b * mixture_classes(i) * exp_sum);
-        post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, sigma, n, params);
+        post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, sigma, n, kernel);
     }
 }
 
@@ -308,7 +320,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	beta = VectorXd(markerCount);           // effect sizes
 	theta = VectorXd(fixedCount);
 
-	sum_failure = VectorXd(markerCount);	// Vector to sum SNP data vector * failure vector per SNP
 	sum_failure_fix = VectorXd(fixedCount); // Vector to sum fixed vector * failure vector per fixed effect
 
 	//phenotype vector
@@ -367,12 +378,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	//for(int marker=0; marker<M; marker++){
 	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
-
-
-	// Reading the Xj*failure sum in sparse format:
-	for(int marker=0; marker < markerCount; marker++){
-        sum_failure(marker) = calculateSumFailure(marker);
-	}
 
 	//If there are fixed effects, find the same values for them
 	if(fixedCount > 0){
@@ -446,22 +451,36 @@ void BayesWBase::sampleTheta(int fix_i){
 // Function for sampling marker effect (beta_i)
 void BayesWBase::sampleBeta(int marker){
 
-    auto gaussMarker = buildMarker(marker);
-
-    prepare(gaussMarker.get());
+    std::unique_ptr<Kernel> kernel;
+    {
+        std::unique_ptr<MarkerBuilder> builder{markerBuilder()};
+        builder->initialise(marker, data.numInds);
+        const auto index = indexEntry(marker);
+        if (compressed()) {
+            builder->decompress(compressedData(), index);
+        } else {
+            builder->read(preprocessedFile(), index);
+        }
+        kernel = kernelForMarker(builder->build());
+    }
+    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel.get());
+    assert(gaussKernel);
 
 	//Change the residual vector only if the previous beta was non-zero
-	if(beta(marker) != 0){
-        preEstimateResidualUpdate(gaussMarker.get());
+    if(beta(gaussKernel->marker->i) != 0){
+        epsilon += *gaussKernel->calculateEpsilonChange(beta(gaussKernel->marker->i));
         //Also find the transformed residuals
         vi = (alpha*epsilon.array()-EuMasc).exp();
 	}
+
+    gaussKernel->setVi(vi);
+    gaussKernel->calculateSumFailure(failure_vector);
 
 	/* Calculate the mixture probability */
 	double p = dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
 
     // Calculate the (ratios of) marginal likelihoods
-    marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, quad_points, gaussMarker.get());
+    marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, quad_points, gaussKernel);
 	// Calculate the probability that marker is 0
 	double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
@@ -479,7 +498,7 @@ void BayesWBase::sampleBeta(int marker){
                 beta_params params;
                 params.alpha = alpha;
                 params.sigma_b = sigma_b;
-                params.sum_failure = sum_failure(marker);
+                params.sum_failure = gaussKernel->sum_failure;
                 params.used_mixture = mixture_classes(k-1);
 
                 double safe_limit = 2 * sqrt(sigma_b * mixture_classes(k-1));
@@ -498,14 +517,14 @@ void BayesWBase::sampleBeta(int marker){
                 double xr = beta(marker) + safe_limit;
 
                 // Sample using ARS
-                err = estimateBeta(gaussMarker.get(),xinit,ninit,&xl,&xr, params, &convex,
+                err = estimateBeta(gaussKernel,xinit,ninit,&xl,&xr, params, &convex,
                         npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 
 				beta(marker) = xsamp[0];  // Save the new result
 
-				//Re-update the residual vector
-                postEstimateResidualUpdate(gaussMarker.get());
+                //Re-update the residual vector
+                epsilon -= *gaussKernel->calculateEpsilonChange(beta(gaussKernel->marker->i));
                 vi = (alpha*epsilon.array()-EuMasc).exp();
 
 				v[k] += 1.0;

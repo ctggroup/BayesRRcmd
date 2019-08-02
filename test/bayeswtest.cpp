@@ -14,7 +14,8 @@ protected:
     void SetUp() override {
         const std::string testResults(TEST_RESULTS);
 
-        options.chainLength = 4; // BayesW is super slow - increase after performance improvements
+        options.analysisType = AnalysisType::Preprocess;
+        options.chainLength = 10;
         options.burnin = 0;
         options.thin = 1;
         options.mcmcSampleFile = testResults + "bayesw_output.csv";
@@ -45,13 +46,12 @@ protected:
 
 class BayesWTest :
         public BayesWBaseTest,
-        public ::testing::WithParamInterface<std::tuple<PreprocessDataType>> {
+        public ::testing::WithParamInterface<std::tuple<PreprocessDataType, bool>> {
 protected:
     void SetUp() {
         BayesWBaseTest::SetUp();
 
         const std::string testDataDir(GAUSS_TEST_DATA);
-        options.analysisType = AnalysisType::Gauss;
         options.dataFile = testDataDir + "data.bed";
         options.inputType = InputType::BED;
         options.failureFile = testDataDir + "data.fail";
@@ -66,8 +66,13 @@ TEST_P(BayesWTest, SmokeTests) {
 
     const auto params = GetParam();
     options.preprocessDataType = std::get<0>(params);
+    options.compress = std::get<1>(params);
+
+    // Preprocess
+    ASSERT_TRUE(AnalysisRunner::run(options));
 
     // Run analysis
+    options.analysisType = AnalysisType::Gauss;
     ASSERT_TRUE(AnalysisRunner::run(options));
 
     // Validate the output
@@ -78,4 +83,5 @@ INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
                          BayesWTest,
                          ::testing::Combine(
                              ::testing::ValuesIn({PreprocessDataType::Dense,
-                                                  PreprocessDataType::SparseRagged})));
+                                                  PreprocessDataType::SparseRagged}),
+                             ::testing::Bool()));

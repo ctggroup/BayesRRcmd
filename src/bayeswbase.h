@@ -14,22 +14,16 @@
 
 #include <Eigen/Eigen>
 
+struct BayesWKernel;
+struct Kernel;
+struct Marker;
+struct MarkerBuilder;
+
 struct beta_params {
     double alpha = 0;
     double sigma_b = 0;
     double sum_failure = 0;
     double used_mixture = 0;
-};
-
-struct GaussMarker {
-    GaussMarker(int i) : i(i) {}
-    virtual ~GaussMarker();
-    int i = 0;
-
-    double sum_failure = 0;
-
-    virtual double exponent_sum() const = 0;
-    virtual double integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const = 0;
 };
 
 class BayesWBase
@@ -69,8 +63,7 @@ protected:
 	VectorXd beta;       // effect sizes
 	VectorXd vi;		 // adjusted and exponented epsilon
 
-	VectorXd y;
-	VectorXd sum_failure;
+    VectorXd y;
 	VectorXd sum_failure_fix;
 
     VectorXd epsilon; //Vector for residuals
@@ -81,10 +74,18 @@ protected:
 
 
 public:
-        BayesWBase(Data &data, Options &opt, const long memPageSize);
-        virtual ~BayesWBase();
-	int runGibbs_Gauss(); // where we run Gibbs sampling over the parametrised model
+    BayesWBase(Data &data, Options &opt, const long memPageSize);
+    virtual ~BayesWBase();
 
+    virtual std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const = 0;
+
+    virtual MarkerBuilder *markerBuilder() const = 0;
+    virtual IndexEntry indexEntry(unsigned int i) const;
+    virtual bool compressed() const;
+    virtual unsigned char* compressedData() const;
+    virtual std::string preprocessedFile() const;
+
+	int runGibbs_Gauss(); // where we run Gibbs sampling over the parametrised model
 
 protected:
 	void init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount);
@@ -93,22 +94,13 @@ protected:
     virtual void sampleBeta(int marker);
 	void sampleAlpha();
 
-    virtual double calculateSumFailure(int marker) = 0;
+    void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const BayesWKernel *kernel);
+    double gauss_hermite_adaptive_integral(int k, double sigma, string n, const BayesWKernel *kernel);
 
-    void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const GaussMarker *params);
-    double gauss_hermite_adaptive_integral(int k, double sigma, string n, const GaussMarker *marker);
-
-    virtual std::unique_ptr<GaussMarker> buildMarker(int i) = 0;
-    virtual void prepare(GaussMarker *marker);
-
-    virtual void preEstimateResidualUpdate(const GaussMarker *marker) = 0;
-
-    virtual int estimateBeta (const GaussMarker *marker, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
+    virtual int estimateBeta (const BayesWKernel *kernel, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;
-
-    virtual void postEstimateResidualUpdate(const GaussMarker *marker) = 0;
 };
 
 
