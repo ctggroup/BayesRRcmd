@@ -208,15 +208,24 @@ bool runGaussAnalysis(const Options &options) {
         data.readCSV(options.fixedFile, options.fixedEffectNumber);
     }
 
+    // Read the failure indicator vector
+    data.readFailureFile(gaussOptions.failureFile);
+
+    std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+    if (options.numThreadSpawned > 0)
+        taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
+
     const bool useSparseData = gaussOptions.preprocessDataType == PreprocessDataType::SparseRagged;
+
+    auto graph = std::make_unique<LimitSequenceGraph>(options.numThread);
 
     int result = 0;
     if (useSparseData) {
-        SparseBayesW analysis(data, gaussOptions, sysconf(_SC_PAGE_SIZE));
-        result = analysis.runGibbs_Gauss();
+        SparseBayesW analysis(&data, &gaussOptions, sysconf(_SC_PAGE_SIZE));
+        result = analysis.runGibbs(graph.get());
     } else {
-        DenseBayesW analysis(data, gaussOptions, sysconf(_SC_PAGE_SIZE));
-        result = analysis.runGibbs_Gauss();
+        DenseBayesW analysis(&data, &gaussOptions, sysconf(_SC_PAGE_SIZE));
+        result = analysis.runGibbs(graph.get());
     }
 
     return result == 0;

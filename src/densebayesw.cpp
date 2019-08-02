@@ -34,7 +34,7 @@ inline double beta_dens(double x, void *norm_data)
 
 }
 
-DenseBayesW::DenseBayesW(Data &data, Options &opt, const long memPageSize)
+DenseBayesW::DenseBayesW(const Data *data, const Options *opt, const long memPageSize)
 : BayesWBase(data, opt, memPageSize)
 {
 

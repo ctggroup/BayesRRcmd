@@ -6,6 +6,7 @@
  *  Last changes: 22 Feb 2019
  */
 
+#include "analysisgraph.hpp"
 #include "data.hpp"
 #include "distributions_boost.hpp"
 //#include "concurrentqueue.h"
@@ -26,41 +27,21 @@
 #define sqrtPI 1.77245385090552
 #define EuMasc 0.577215664901532
 
-BayesWBase::BayesWBase(Data &data, Options &opt, const long memPageSize)
-: seed(opt.seed)
-, data(data)
-, opt(opt)
+BayesWBase::BayesWBase(const Data *data, const Options *opt, const long memPageSize)
+: Analysis(data, opt)
+, seed(opt->seed)
 , memPageSize(memPageSize)
-, max_iterations(opt.chainLength)
-, thinning(opt.thin)
-, burn_in(opt.burnin)
-, outputFile(opt.mcmcSampleFile)
-, bedFile(opt.dataFile)
-, dist(opt.seed)
+, max_iterations(opt->chainLength)
+, thinning(opt->thin)
+, burn_in(opt->burnin)
+, outputFile(opt->mcmcSampleFile)
+, bedFile(opt->dataFile)
+, dist(opt->seed)
+, quad_points(opt->quad_points)
+, K(opt->S.size() + 1)
 {
 
 }
-
-IndexEntry BayesWBase::indexEntry(unsigned int i) const
-{
-    return data.ppbedIndex[i];
-}
-
-bool BayesWBase::compressed() const
-{
-    return opt.compress;
-}
-
-unsigned char *BayesWBase::compressedData() const
-{
-    return reinterpret_cast<unsigned char*>(data.ppBedMap);
-}
-
-std::string BayesWBase::preprocessedFile() const
-{
-    return ppFileForType(opt.preprocessDataType, opt.dataFile);
-}
-
 
 BayesWBase::~BayesWBase() = default;
 
@@ -308,9 +289,6 @@ void BayesWBase::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &pos
 
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
-	// Read the failure indicator vector
-	data.readFailureFile(opt.failureFile);
-
 	// Component variables
 	pi_L = VectorXd(K);           		 // prior mixture probabilities
 	marginal_likelihoods = VectorXd(K);  // likelihood for each mixture component
@@ -345,7 +323,7 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	theta.setZero();
 
 	//initialize epsilon vector as the phenotype vector
-	y = data.y.cast<double>().array();
+    y = m_data->y.cast<double>().array();
 	epsilon = y;
 	mu = y.mean();       // mean or intercept
 
@@ -355,11 +333,11 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 
 
 	for(int i=0;i<(km1);i++){
-        mixture_classes(i) = opt.S.row(0)[i];   //Save the mixture data (C_k)
+        mixture_classes(i) = m_opt->S.row(0)[i];   //Save the mixture data (C_k)
 	}
 
     //Store the vector of failures
-    failure_vector = data.fail.cast<double>();
+    failure_vector = m_data->fail.cast<double>();
     // Save the number of events
     d = failure_vector.array().sum();
 
@@ -376,13 +354,13 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	// Save the sum(X_j*failure) for each j
 	//Previous preprocessed version for reading columns
 	//for(int marker=0; marker<M; marker++){
-	//	sum_failure(marker) = ((data.mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
+    //	sum_failure(marker) = ((m_data->mappedZ.col(marker).cast<double>()).array() * used_data_alpha.failure_vector.array()).sum();
 	//}
 
 	//If there are fixed effects, find the same values for them
 	if(fixedCount > 0){
 		for(int fix_i=0; fix_i < fixedCount; fix_i++){
-            sum_failure_fix(fix_i) = ((data.X.col(fix_i).cast<double>()).array() * failure_vector.array()).sum();
+            sum_failure_fix(fix_i) = ((m_data->X.col(fix_i).cast<double>()).array() * failure_vector.array()).sum();
 		}
 	}
 }
@@ -434,7 +412,7 @@ void BayesWBase::sampleTheta(int fix_i){
     theta_params params;
     params.alpha = alpha;
     params.sum_failure = sum_failure_fix(fix_i);
-    params.X_j = data.X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
+    params.X_j = m_data->X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
     params.epsilon = epsilon.array() + (params.X_j * theta(fix_i)).array(); // Adjust residual
     params.sigma_mu = sigma_mu;
 
@@ -449,21 +427,9 @@ void BayesWBase::sampleTheta(int fix_i){
 }
 
 // Function for sampling marker effect (beta_i)
-void BayesWBase::sampleBeta(int marker){
-
-    std::unique_ptr<Kernel> kernel;
-    {
-        std::unique_ptr<MarkerBuilder> builder{markerBuilder()};
-        builder->initialise(marker, data.numInds);
-        const auto index = indexEntry(marker);
-        if (compressed()) {
-            builder->decompress(compressedData(), index);
-        } else {
-            builder->read(preprocessedFile(), index);
-        }
-        kernel = kernelForMarker(builder->build());
-    }
-    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel.get());
+void BayesWBase::processColumn(Kernel *kernel)
+{
+    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
     assert(gaussKernel);
 
 	//Change the residual vector only if the previous beta was non-zero
@@ -489,9 +455,9 @@ void BayesWBase::sampleBeta(int marker){
 		if (p <= acum) {
 			//if zeroth component
 			if (k == 0) {
-				beta(marker) = 0;
+                beta(gaussKernel->marker->i) = 0;
 				v[k] += 1.0;
-				components[marker] = k;
+                components[gaussKernel->marker->i] = k;
 			}
 			// If is not 0th component then sample using ARS
 			else {
@@ -510,25 +476,25 @@ void BayesWBase::sampleBeta(int marker){
                 double convex = 1.0;
                 int dometrop = 0;
                 double xprev = 0.0;
-                double xinit[4] = {beta(marker) - safe_limit/10 , beta(marker),  beta(marker) + safe_limit/20, beta(marker) + safe_limit/10};     // Initial abscissae
+                double xinit[4] = {beta(gaussKernel->marker->i) - safe_limit/10 , beta(gaussKernel->marker->i),  beta(gaussKernel->marker->i) + safe_limit/20, beta(gaussKernel->marker->i) + safe_limit/10};     // Initial abscissae
                 double *p_xinit = xinit;
 
-                double xl = beta(marker) - safe_limit  ; //Construct the hull around previous beta value
-                double xr = beta(marker) + safe_limit;
+                double xl = beta(gaussKernel->marker->i) - safe_limit  ; //Construct the hull around previous beta value
+                double xr = beta(gaussKernel->marker->i) + safe_limit;
 
                 // Sample using ARS
                 err = estimateBeta(gaussKernel,xinit,ninit,&xl,&xr, params, &convex,
                         npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 
-				beta(marker) = xsamp[0];  // Save the new result
+                beta(gaussKernel->marker->i) = xsamp[0];  // Save the new result
 
                 //Re-update the residual vector
                 epsilon -= *gaussKernel->calculateEpsilonChange(beta(gaussKernel->marker->i));
                 vi = (alpha*epsilon.array()-EuMasc).exp();
 
 				v[k] += 1.0;
-				components[marker] = k;
+                components[gaussKernel->marker->i] = k;
 			}
 			break;
 		} else {
@@ -572,11 +538,16 @@ void BayesWBase::sampleAlpha(){
 }
 
 /* Adaptive Gauss-Hermite version. Currently RAM solution */
-int BayesWBase::runGibbs_Gauss()
+int BayesWBase::runGibbs(AnalysisGraph* analysis)
 {
-	const unsigned int M(data.numSnps);
-	const unsigned int N(data.numInds);
-	const unsigned int numFixedEffects(data.numFixedEffects);
+    if (!analysis) {
+        std::cout << "Cannot run BayesW analysis without a flow graph!" << std::endl;
+        return 1;
+    }
+
+    const unsigned int M(m_data->numSnps);
+    const unsigned int N(m_data->numInds);
+    const unsigned int numFixedEffects(m_data->numFixedEffects);
 	const int km1 = K - 1;
 
 	init(M, N, numFixedEffects);
@@ -631,10 +602,8 @@ int BayesWBase::runGibbs_Gauss()
 
 		// First element for the marginal likelihoods is always is pi_0 *sqrt(pi) for
 		marginal_likelihoods(0) = pi_L(0) * sqrtPI;
-		for (int j = 0; j < M; j++) {
-			marker = markerI[j];
-			sampleBeta(marker);
-		}
+        analysis->exec(this, N, M, markerI);
+
 		// 3. Sample alpha parameter
 		sampleAlpha();
 
@@ -663,5 +632,23 @@ int BayesWBase::runGibbs_Gauss()
 	auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
 	std::cout << "duration: "<<duration << "s\n";
 
-	return 0;
+    return 0;
+}
+
+std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
+{
+    (void) kernel; // Unused
+
+    assert(false); // Not implemented
+    return {};
+}
+
+void BayesWBase::updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps)
+{
+    (void) kernel; // Unused
+    (void) beta_old; // Unushed
+    (void) beta; // Unused
+    (void) deltaEps; // Unused
+
+    assert(false); // Not implemented
 }

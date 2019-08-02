@@ -13,7 +13,7 @@
 class SparseBayesW : public BayesWBase
 {
 public:
-    SparseBayesW(Data &data, Options &opt, const long memPageSize);
+    SparseBayesW(const Data *data, const Options *opt, const long memPageSize);
 
     std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const override;
     MarkerBuilder *markerBuilder() const override;

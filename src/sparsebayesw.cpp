@@ -38,7 +38,7 @@ inline double beta_dens(double x, void *norm_data)
 
 }
 
-SparseBayesW::SparseBayesW(Data &data, Options &opt, const long memPageSize)
+SparseBayesW::SparseBayesW(const Data *data, const Options *opt, const long memPageSize)
 : BayesWBase (data, opt, memPageSize)
 {
 
@@ -46,7 +46,7 @@ SparseBayesW::SparseBayesW(Data &data, Options &opt, const long memPageSize)
 
 std::unique_ptr<Kernel> SparseBayesW::kernelForMarker(const Marker *marker) const
 {
-    switch (opt.preprocessDataType) {
+    switch (m_opt->preprocessDataType) {
     case PreprocessDataType::SparseRagged:
     {
         const auto* raggedSparseMarker = dynamic_cast<const RaggedSparseMarker*>(marker);
@@ -56,7 +56,7 @@ std::unique_ptr<Kernel> SparseBayesW::kernelForMarker(const Marker *marker) cons
 
     default:
         std::cerr << "SparseBayesW::kernelForMarker - unsupported type: "
-                  << opt.preprocessDataType
+                  << m_opt->preprocessDataType
                   << std::endl;
     }
 
@@ -65,13 +65,13 @@ std::unique_ptr<Kernel> SparseBayesW::kernelForMarker(const Marker *marker) cons
 
 MarkerBuilder *SparseBayesW::markerBuilder() const
 {
-    switch (opt.preprocessDataType) {
+    switch (m_opt->preprocessDataType) {
     case PreprocessDataType::SparseRagged:
         return builderForType(PreprocessDataType::SparseRagged);
 
     default:
         std::cerr << "SparseBayesW::markerBuilder - unsupported type: "
-                  << opt.preprocessDataType
+                  << m_opt->preprocessDataType
                   << std::endl;
     }
 

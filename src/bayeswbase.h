@@ -8,8 +8,7 @@
 #ifndef BAYESWBASE_H_
 #define BAYESWBASE_H_
 
-#include "data.hpp"
-#include "options.hpp"
+#include "analysis.h"
 #include "distributions_boost.hpp"
 
 #include <Eigen/Eigen>
@@ -26,11 +25,9 @@ struct beta_params {
     double used_mixture = 0;
 };
 
-class BayesWBase
+class BayesWBase : public Analysis
 {
 protected:
-	Data            &data; // data matrices
-	Options         &opt;
 	const string    bedFile; // bed file
 	const long      memPageSize; // size of memory
 	const string    outputFile;
@@ -43,8 +40,8 @@ protected:
 	const double    sigma_mu    = 100;
 	const double    alpha_sigma  = 1;
 	const double    beta_sigma   = 0.0001;
-	const string 	quad_points = opt.quad_points;  // Number of Gaussian quadrature points
-	const int 		K = opt.S.size()+1;  //number of mixtures + 0 class
+    const string 	quad_points; // Number of Gaussian quadrature points
+    const int 		K; //number of mixtures + 0 class
 
 	Distributions_boost dist;
 
@@ -74,24 +71,20 @@ protected:
 
 
 public:
-    BayesWBase(Data &data, Options &opt, const long memPageSize);
+    BayesWBase(const Data *data, const Options *opt, const long memPageSize);
     virtual ~BayesWBase();
 
-    virtual std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const = 0;
+    int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
 
-    virtual MarkerBuilder *markerBuilder() const = 0;
-    virtual IndexEntry indexEntry(unsigned int i) const;
-    virtual bool compressed() const;
-    virtual unsigned char* compressedData() const;
-    virtual std::string preprocessedFile() const;
+    void processColumn(Kernel *kernel) override;
+    std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) override;
 
-	int runGibbs_Gauss(); // where we run Gibbs sampling over the parametrised model
+    void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps) override;
 
 protected:
 	void init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount);
 	void sampleMu();
-	void sampleTheta(int fix_i);
-    virtual void sampleBeta(int marker);
+    void sampleTheta(int fix_i);
 	void sampleAlpha();
 
     void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const BayesWKernel *kernel);
