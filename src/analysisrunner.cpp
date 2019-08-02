@@ -157,7 +157,7 @@ bool runPpBayesAnalysis(const Options &options) {
     switch (options.preprocessDataType) {
     case PreprocessDataType::Dense:
     {
-        DenseBayesRRmz analysis(&data, options);
+        DenseBayesRRmz analysis(&data, &options);
         analysis.runGibbs(graph.get());
         break;
     }
@@ -166,7 +166,7 @@ bool runPpBayesAnalysis(const Options &options) {
         // Fall through
     case PreprocessDataType::SparseRagged:
     {
-        SparseBayesRRG analysis(&data, options);
+        SparseBayesRRG analysis(&data, &options);
         analysis.runGibbs(graph.get());
         break;
     }

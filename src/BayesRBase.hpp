@@ -25,7 +25,7 @@ struct BayesRKernel;
 class BayesRBase : public Analysis
 {
 public:
-    explicit BayesRBase(const Data *data, const Options &opt);
+    explicit BayesRBase(const Data *data, const Options *opt);
 
     int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
 

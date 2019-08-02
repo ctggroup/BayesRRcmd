@@ -10,7 +10,7 @@ class SparseBayesRRG : public BayesRBase
     friend class SparseParallelGraph;
 
 public:
-    explicit SparseBayesRRG(const Data *data, const Options &opt);
+    explicit SparseBayesRRG(const Data *data, const Options *opt);
     ~SparseBayesRRG() override;
 
     std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const override;

@@ -24,7 +24,7 @@ struct AsyncResult {
 
 class Analysis {
 public:
-    explicit Analysis(const Data *data, const Options &opt);
+    explicit Analysis(const Data *data, const Options *opt);
     virtual ~Analysis();
 
     virtual std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const = 0;
@@ -44,7 +44,7 @@ public:
 
 protected:
     const Data *m_data = nullptr; // data matrices
-    const Options &m_opt;
+    const Options *m_opt;
 };
 
 #endif // ANALYSIS_H

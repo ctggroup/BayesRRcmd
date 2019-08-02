@@ -1,7 +1,7 @@
 #include "analysis.h"
 
 
-Analysis::Analysis(const Data *data, const Options &opt)
+Analysis::Analysis(const Data *data, const Options *opt)
     : m_data(data)
     , m_opt(opt)
 {
@@ -20,7 +20,7 @@ IndexEntry Analysis::indexEntry(unsigned int i) const
 
 bool Analysis::compressed() const
 {
-    return m_opt.compress;
+    return m_opt->compress;
 }
 
 unsigned char* Analysis::compressedData() const
@@ -33,5 +33,5 @@ unsigned char* Analysis::compressedData() const
 
 std::string Analysis::preprocessedFile() const
 {
-    return ppFileForType(m_opt.preprocessDataType, m_opt.dataFile);
+    return ppFileForType(m_opt->preprocessDataType, m_opt->dataFile);
 }

@@ -5,7 +5,7 @@
 #include "raggedbayesrkernel.h"
 #include "sparsemarker.h"
 
-SparseBayesRRG::SparseBayesRRG(const Data *data, const Options &opt)
+SparseBayesRRG::SparseBayesRRG(const Data *data, const Options *opt)
     : BayesRBase(data, opt)
 {
 }
@@ -17,7 +17,7 @@ SparseBayesRRG::~SparseBayesRRG()
 
 std::unique_ptr<Kernel> SparseBayesRRG::kernelForMarker(const Marker *marker) const
 {
-    switch (m_opt.preprocessDataType) {
+    switch (m_opt->preprocessDataType) {
     case PreprocessDataType::SparseEigen:
     {
         const auto* eigenSparseMarker = dynamic_cast<const EigenSparseMarker*>(marker);
@@ -34,7 +34,7 @@ std::unique_ptr<Kernel> SparseBayesRRG::kernelForMarker(const Marker *marker) co
 
     default:
         std::cerr << "SparseBayesRRG::kernelForMarker - unsupported type: "
-                  << m_opt.preprocessDataType
+                  << m_opt->preprocessDataType
                   << std::endl;
     }
 
@@ -43,15 +43,15 @@ std::unique_ptr<Kernel> SparseBayesRRG::kernelForMarker(const Marker *marker) co
 
 MarkerBuilder *SparseBayesRRG::markerBuilder() const
 {
-    switch (m_opt.preprocessDataType) {
+    switch (m_opt->preprocessDataType) {
     case PreprocessDataType::SparseEigen:
         // Fall through
     case PreprocessDataType::SparseRagged:
-        return builderForType(m_opt.preprocessDataType);
+        return builderForType(m_opt->preprocessDataType);
 
     default:
         std::cerr << "SparseBayesRRG::markerBuilder - unsupported type: "
-                  << m_opt.preprocessDataType
+                  << m_opt->preprocessDataType
                   << std::endl;
     }
 

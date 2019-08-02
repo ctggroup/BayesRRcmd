@@ -15,19 +15,19 @@
 #include <chrono>
 #include <mutex>
 
-BayesRBase::BayesRBase(const Data *data, const Options &opt)
+BayesRBase::BayesRBase(const Data *data, const Options *opt)
     : Analysis(data, opt)
-    , m_outputFile(opt.mcmcSampleFile)
-    , m_iterLogFile(opt.iterLogFile)
-    , m_seed(opt.seed)
-    , m_maxIterations(opt.chainLength)
-    , m_burnIn(opt.burnin)
-    , m_thinning(opt.thin)
-    , m_cva(opt.S)
-    , m_dist(opt.seed)
-    , m_showDebug(opt.iterLog)
-    , m_colLog(opt.colLog)
-    , m_colLogFile(opt.colLogFile)
+    , m_outputFile(opt->mcmcSampleFile)
+    , m_iterLogFile(opt->iterLogFile)
+    , m_seed(opt->seed)
+    , m_maxIterations(opt->chainLength)
+    , m_burnIn(opt->burnin)
+    , m_thinning(opt->thin)
+    , m_cva(opt->S)
+    , m_dist(opt->seed)
+    , m_showDebug(opt->iterLog)
+    , m_colLog(opt->colLog)
+    , m_colLogFile(opt->colLogFile)
 {
     assert(m_data);
 }
