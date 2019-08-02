@@ -7,8 +7,10 @@ add_library(bayes
     BayesW_arms.cpp
     bayesrkernel.cpp
     bayeswbase.cpp
+    bayeswkernel.cpp
     data.cpp
     densebayesrkernel.cpp
+    densebayeswkernel.cpp
     distributions_boost.cpp
     eigenbayesrkernel.cpp
     gadgets.cpp
@@ -29,6 +31,7 @@ add_library(bayes
     densemarker.cpp
     sparsemarker.cpp
     raggedbayesrkernel.cpp
+    raggedbayeswkernel.cpp
     raggedsparsemarker.cpp
     eigensparsemarker.cpp
     common.cpp
