@@ -432,9 +432,11 @@ void BayesWBase::processColumn(Kernel *kernel)
     auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
     assert(gaussKernel);
 
+    const double beta_old = beta(gaussKernel->marker->i);
+
 	//Change the residual vector only if the previous beta was non-zero
-    if(beta(gaussKernel->marker->i) != 0){
-        epsilon += *gaussKernel->calculateEpsilonChange(beta(gaussKernel->marker->i));
+    if(beta_old != 0.0){
+        epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
         //Also find the transformed residuals
         vi = (alpha*epsilon.array()-EuMasc).exp();
 	}
@@ -476,21 +478,22 @@ void BayesWBase::processColumn(Kernel *kernel)
                 double convex = 1.0;
                 int dometrop = 0;
                 double xprev = 0.0;
-                double xinit[4] = {beta(gaussKernel->marker->i) - safe_limit/10 , beta(gaussKernel->marker->i),  beta(gaussKernel->marker->i) + safe_limit/20, beta(gaussKernel->marker->i) + safe_limit/10};     // Initial abscissae
+                double xinit[4] = {beta_old - safe_limit/10 , beta_old,  beta_old + safe_limit/20, beta_old + safe_limit/10};     // Initial abscissae
                 double *p_xinit = xinit;
 
-                double xl = beta(gaussKernel->marker->i) - safe_limit  ; //Construct the hull around previous beta value
-                double xr = beta(gaussKernel->marker->i) + safe_limit;
+                double xl = beta_old - safe_limit  ; //Construct the hull around previous beta value
+                double xr = beta_old + safe_limit;
 
                 // Sample using ARS
                 err = estimateBeta(gaussKernel,xinit,ninit,&xl,&xr, params, &convex,
                         npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 
-                beta(gaussKernel->marker->i) = xsamp[0];  // Save the new result
+                const double beta_new = xsamp[0];
+                beta(gaussKernel->marker->i) = beta_new; // Save the new result
 
                 //Re-update the residual vector
-                epsilon -= *gaussKernel->calculateEpsilonChange(beta(gaussKernel->marker->i));
+                epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
                 vi = (alpha*epsilon.array()-EuMasc).exp();
 
 				v[k] += 1.0;
