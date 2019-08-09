@@ -452,14 +452,15 @@ void BayesWBase::processColumn(Kernel *kernel)
 	// Calculate the probability that marker is 0
 	double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
+    VectorXd localV = VectorXd::Zero(K);
+    int component = 0;
+    double beta_new = beta_old;
 	//Loop through the possible mixture classes
 	for (int k = 0; k < K; k++) {
 		if (p <= acum) {
 			//if zeroth component
 			if (k == 0) {
-                beta(gaussKernel->marker->i) = 0;
-				v[k] += 1.0;
-                components[gaussKernel->marker->i] = k;
+                beta_new = 0;
 			}
 			// If is not 0th component then sample using ARS
 			else {
@@ -489,16 +490,11 @@ void BayesWBase::processColumn(Kernel *kernel)
                         npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 
-                const double beta_new = xsamp[0];
-                beta(gaussKernel->marker->i) = beta_new; // Save the new result
-
-                //Re-update the residual vector
-                epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
-                vi = (alpha*epsilon.array()-EuMasc).exp();
-
-				v[k] += 1.0;
-                components[gaussKernel->marker->i] = k;
+                beta_new = xsamp[0]; // Save the new result
 			}
+
+            localV[k] += 1.0;
+            component = k;
 			break;
 		} else {
 			if((k+1) == (K-1)){
@@ -508,6 +504,18 @@ void BayesWBase::processColumn(Kernel *kernel)
 			}
 		}
 	}
+
+    // Only update m_epsilon if required
+    const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
+    if (!skipUpdate) {
+        //Re-update the residual vector
+        epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
+        vi = (alpha*epsilon.array()-EuMasc).exp();
+    }
+
+    v += localV;
+    components(gaussKernel->marker->i) = component;
+    beta(gaussKernel->marker->i) = beta_new;
 }
 
 // Function for sampling Weibull shape parameter (alpha)
