@@ -12,6 +12,7 @@
 #include "distributions_boost.hpp"
 
 #include <Eigen/Eigen>
+#include <shared_mutex>
 
 struct BayesWKernel;
 struct Kernel;
@@ -67,6 +68,8 @@ protected:
     double m_mu = 0;
     double m_sigma_b = 0;
 
+    mutable std::shared_mutex m_mutex;
+    mutable std::mutex m_rngMutex;
 
 
 public:

@@ -14,6 +14,8 @@ AnalysisType parseAnalysisType(const std::string &type)
         return AnalysisType::AsyncPpBayes;
     else if (type.compare("gauss") == 0)
         return AnalysisType::Gauss;
+    else if (type.compare("asyncgauss") == 0)
+        return AnalysisType::AsyncGauss;
     else
         return AnalysisType::Unknown;
 }

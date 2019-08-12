@@ -46,7 +46,7 @@ protected:
 
 class BayesWTest :
         public BayesWBaseTest,
-        public ::testing::WithParamInterface<std::tuple<PreprocessDataType, bool>> {
+        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool>> {
 protected:
     void SetUp() {
         BayesWBaseTest::SetUp();
@@ -65,14 +65,14 @@ protected:
 TEST_P(BayesWTest, SmokeTests) {
 
     const auto params = GetParam();
-    options.preprocessDataType = std::get<0>(params);
-    options.compress = std::get<1>(params);
+    options.preprocessDataType = std::get<1>(params);
+    options.compress = std::get<2>(params);
 
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
 
     // Run analysis
-    options.analysisType = AnalysisType::Gauss;
+    options.analysisType = std::get<0>(params);
     ASSERT_TRUE(AnalysisRunner::run(options));
 
     // Validate the output
@@ -82,6 +82,8 @@ TEST_P(BayesWTest, SmokeTests) {
 INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
                          BayesWTest,
                          ::testing::Combine(
+                             ::testing::ValuesIn({AnalysisType::Gauss,
+                                                  AnalysisType::AsyncGauss}),
                              ::testing::ValuesIn({PreprocessDataType::Dense,
                                                   PreprocessDataType::SparseRagged}),
                              ::testing::Bool()));

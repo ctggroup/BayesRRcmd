@@ -641,10 +641,126 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 
 std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
 {
-    (void) kernel; // Unused
+    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
+    assert(gaussKernel);
 
-    assert(false); // Not implemented
-    return {};
+    // Take copies - not ideal, could be refactored out?
+    auto epsilon {m_epsilon};
+    auto vi {m_vi};
+
+    // No shared mutex for reading because no other thread writes to the values
+    // specific to the marker this thread is working on
+
+    const double beta_old = m_beta(gaussKernel->marker->i);
+
+    auto result = std::make_unique<AsyncResult>();
+    result->betaOld = beta_old;
+    result->beta = beta_old;
+
+    //Change the residual vector only if the previous beta was non-zero
+    if(beta_old != 0.0){
+        epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
+        //Also find the transformed residuals
+        vi = (m_alpha*epsilon.array()-EuMasc).exp();
+    }
+
+    gaussKernel->setVi(vi);
+    gaussKernel->calculateSumFailure(m_failure_vector);
+
+    /* Calculate the mixture probability */
+    double p = 0;
+    {
+        // Use a unique lock to ensure only one thread can use the random number engine
+        // at a time.
+        std::unique_lock lock(m_rngMutex);
+        p = m_dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
+    }
+
+    // Calculate the (ratios of) marginal likelihoods
+    VectorXd marginal_likelihoods {m_K}; // likelihood for each mixture component
+    // First element for the marginal likelihoods is always is pi_0 *sqrt(pi) for
+    marginal_likelihoods(0) = m_pi_L(0) * sqrtPI;
+    {
+        const double exp_sum = gaussKernel->exponent_sum();
+
+        for(int i=0; i < m_mixture_classes.size(); i++){
+            //Calculate the sigma for the adaptive G-H
+            double sigma = 1.0/sqrt(1 + m_alpha * m_alpha * m_sigma_b * m_mixture_classes(i) * exp_sum);
+            marginal_likelihoods(i+1) = m_pi_L(i+1) * gauss_hermite_adaptive_integral(i, sigma, m_quad_points, gaussKernel);
+        }
+    }
+    // Calculate the probability that marker is 0
+    double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
+
+    VectorXd localV = VectorXd::Zero(m_K);
+    int component = 0;
+    //Loop through the possible mixture classes
+    for (int k = 0; k < m_K; k++) {
+        if (p <= acum) {
+            //if zeroth component
+            if (k == 0) {
+                result->beta = 0;
+            }
+            // If is not 0th component then sample using ARS
+            else {
+                beta_params params;
+                params.alpha = m_alpha;
+                params.sigma_b = m_sigma_b;
+                params.sum_failure = gaussKernel->sum_failure;
+                params.used_mixture = m_mixture_classes(k-1);
+
+                double safe_limit = 2 * sqrt(m_sigma_b * m_mixture_classes(k-1));
+
+                // ARS parameters
+                int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
+                int neval;
+                double xsamp[0], xcent[10], qcent[10] = {5., 30., 70., 95.};
+                double convex = 1.0;
+                int dometrop = 0;
+                double xprev = 0.0;
+                double xinit[4] = {beta_old - safe_limit/10 , beta_old,  beta_old + safe_limit/20, beta_old + safe_limit/10};     // Initial abscissae
+                double *p_xinit = xinit;
+
+                double xl = beta_old - safe_limit  ; //Construct the hull around previous beta value
+                double xr = beta_old + safe_limit;
+
+                // Sample using ARS
+                err = estimateBeta(gaussKernel,epsilon,xinit,ninit,&xl,&xr, params, &convex,
+                        npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
+                errorCheck(err);
+
+                result->beta = xsamp[0]; // Save the new result
+            }
+
+            localV[k] += 1.0;
+            component = k;
+            break;
+        } else {
+            if((k+1) == (m_K-1)){
+                acum = 1; // In the end probability will be 1
+            }else{
+                acum += marginal_likelihoods(k+1)/marginal_likelihoods.sum();
+            }
+        }
+    }
+
+    // Only update m_epsilon if required
+    const bool skipUpdate = result->betaOld == 0.0 && result->beta == 0.0;
+    if (!skipUpdate) {
+        //Re-update the residual vector
+        epsilon -= *gaussKernel->calculateEpsilonChange(result->beta);
+        result->deltaEpsilon = std::make_unique<VectorXd>(m_epsilon - epsilon);
+    }
+
+    {
+        std::unique_lock lock(m_mutex);
+        m_v += localV;
+    }
+
+    m_components(gaussKernel->marker->i) = component;
+    m_beta(gaussKernel->marker->i) = result->beta;
+
+    return result;
 }
 
 void BayesWBase::updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps)
@@ -652,7 +768,9 @@ void BayesWBase::updateGlobal(Kernel *kernel, const double beta_old, const doubl
     (void) kernel; // Unused
     (void) beta_old; // Unushed
     (void) beta; // Unused
-    (void) deltaEps; // Unused
+
+    m_epsilon += deltaEps;
+    m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
 
     assert(false); // Not implemented
 }
