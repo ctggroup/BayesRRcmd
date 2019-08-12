@@ -743,9 +743,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     // Only update m_epsilon if required
     const bool skipUpdate = result->betaOld == 0.0 && result->beta == 0.0;
     if (!skipUpdate) {
-        //Re-update the residual vector
-        *epsilon -= *gaussKernel->calculateResidualUpdate(result->beta);
-        result->deltaEpsilon = std::make_unique<VectorXd>(*m_epsilon - *epsilon);
+        result->deltaEpsilon = gaussKernel->calculateEpsilonChange(result->betaOld, result->beta);
     }
 
     {

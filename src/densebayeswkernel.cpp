@@ -22,6 +22,11 @@ VectorXdPtr DenseBayesWKernel::calculateResidualUpdate(const double beta)
     return std::make_unique<VectorXd>(*dm->Cx * beta);
 }
 
+VectorXdPtr DenseBayesWKernel::calculateEpsilonChange(const double beta_old, const double beta)
+{
+    return std::make_unique<VectorXd>((beta_old-beta) * *dm->Cx);
+}
+
 double DenseBayesWKernel::exponent_sum() const
 {
     assert(m_vi);

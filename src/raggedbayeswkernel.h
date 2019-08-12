@@ -17,6 +17,7 @@ struct RaggedBayesWKernel : public BayesWKernel
     void calculateSumFailure(const VectorXd &failure_vector);
 
     VectorXdPtr calculateResidualUpdate(const double beta) override;
+    VectorXdPtr calculateEpsilonChange(const double beta_old, const double beta) override;
 
     double exponent_sum() const override;
     double integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const override;
