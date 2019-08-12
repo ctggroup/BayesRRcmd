@@ -29,16 +29,16 @@
 
 BayesWBase::BayesWBase(const Data *data, const Options *opt, const long memPageSize)
 : Analysis(data, opt)
-, seed(opt->seed)
-, memPageSize(memPageSize)
-, max_iterations(opt->chainLength)
-, thinning(opt->thin)
-, burn_in(opt->burnin)
-, outputFile(opt->mcmcSampleFile)
-, bedFile(opt->dataFile)
-, dist(opt->seed)
-, quad_points(opt->quad_points)
-, K(opt->S.size() + 1)
+, m_seed(opt->seed)
+, m_memPageSize(memPageSize)
+, m_max_iterations(opt->chainLength)
+, m_thinning(opt->thin)
+, m_burn_in(opt->burnin)
+, m_outputFile(opt->mcmcSampleFile)
+, m_bedFile(opt->dataFile)
+, m_dist(opt->seed)
+, m_quad_points(opt->quad_points)
+, m_K(opt->S.size() + 1)
 {
 
 }
@@ -127,7 +127,7 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
     assert(kernel);
 
     double temp = 0;
-    double sqrt_2ck_sigma = sqrt(2*mixture_classes(k)*sigma_b);
+    double sqrt_2ck_sigma = sqrt(2*m_mixture_classes(k)*m_sigma_b);
 
     if(n == "3"){
         double x1,x2;
@@ -144,8 +144,8 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x1 = sigma*x1;
         x2 = sigma*x2;
 
-        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,m_alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,m_alpha,sqrt_2ck_sigma) +
                 w3;
     }
     // n=5
@@ -172,10 +172,10 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x4 = sigma*x4;
         //x5 = sigma*x5;
 
-        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
-                w3 * kernel->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
-                w4 * kernel->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,m_alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,m_alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,m_alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,m_alpha,sqrt_2ck_sigma) +
                 w5;
     }else if(n == "7"){
         double x1,x2,x3,x4,x5,x6;
@@ -205,12 +205,12 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x5 = sigma*x5;
         x6 = sigma*x6;
 
-        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
-                w3 * kernel->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
-                w4 * kernel->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
-                w5 * kernel->integrand_adaptive(x5,alpha,sqrt_2ck_sigma) +
-                w6 * kernel->integrand_adaptive(x6,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,m_alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,m_alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,m_alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,m_alpha,sqrt_2ck_sigma) +
+                w5 * kernel->integrand_adaptive(x5,m_alpha,sqrt_2ck_sigma) +
+                w6 * kernel->integrand_adaptive(x6,m_alpha,sqrt_2ck_sigma) +
                 w7;
     }else if(n == "11"){
         double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
@@ -256,16 +256,16 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
         x10 = sigma*x10;
         //	x11 = sigma*x11;
 
-        temp = w1 * kernel->integrand_adaptive(x1,alpha,sqrt_2ck_sigma) +
-                w2 * kernel->integrand_adaptive(x2,alpha,sqrt_2ck_sigma) +
-                w3 * kernel->integrand_adaptive(x3,alpha,sqrt_2ck_sigma) +
-                w4 * kernel->integrand_adaptive(x4,alpha,sqrt_2ck_sigma) +
-                w5 * kernel->integrand_adaptive(x5,alpha,sqrt_2ck_sigma) +
-                w6 * kernel->integrand_adaptive(x6,alpha,sqrt_2ck_sigma) +
-                w7 * kernel->integrand_adaptive(x7,alpha,sqrt_2ck_sigma) +
-                w8 * kernel->integrand_adaptive(x8,alpha,sqrt_2ck_sigma) +
-                w9 * kernel->integrand_adaptive(x9,alpha,sqrt_2ck_sigma) +
-                w10 * kernel->integrand_adaptive(x10,alpha,sqrt_2ck_sigma) +
+        temp = w1 * kernel->integrand_adaptive(x1,m_alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,m_alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,m_alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,m_alpha,sqrt_2ck_sigma) +
+                w5 * kernel->integrand_adaptive(x5,m_alpha,sqrt_2ck_sigma) +
+                w6 * kernel->integrand_adaptive(x6,m_alpha,sqrt_2ck_sigma) +
+                w7 * kernel->integrand_adaptive(x7,m_alpha,sqrt_2ck_sigma) +
+                w8 * kernel->integrand_adaptive(x8,m_alpha,sqrt_2ck_sigma) +
+                w9 * kernel->integrand_adaptive(x9,m_alpha,sqrt_2ck_sigma) +
+                w10 * kernel->integrand_adaptive(x10,m_alpha,sqrt_2ck_sigma) +
                 w11;
     }else{
         cout << "Possible number of quad_points = 3,5,7,11" << endl;
@@ -278,66 +278,66 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
 	// Component variables
-	pi_L = VectorXd(K);           		 // prior mixture probabilities
-	marginal_likelihoods = VectorXd(K);  // likelihood for each mixture component
-	v = VectorXd(K);            		 // vector storing the component assignment
+    m_pi_L = VectorXd(m_K);           		 // prior mixture probabilities
+    m_marginal_likelihoods = VectorXd(m_K);  // likelihood for each mixture component
+    m_v = VectorXd(m_K);            		 // vector storing the component assignment
 
 	// Linear model variables
-	beta = VectorXd(markerCount);           // effect sizes
-	theta = VectorXd(fixedCount);
+    m_beta = VectorXd(markerCount);           // effect sizes
+    m_theta = VectorXd(fixedCount);
 
-	sum_failure_fix = VectorXd(fixedCount); // Vector to sum fixed vector * failure vector per fixed effect
+    m_sum_failure_fix = VectorXd(fixedCount); // Vector to sum fixed vector * failure vector per fixed effect
 
 	//phenotype vector
-	y = VectorXd();
+    m_y = VectorXd();
 	//residual vector
-	epsilon = VectorXd();
+    m_epsilon = VectorXd();
 
 	// Init the working variables
-	const int km1 = K - 1;
+    const int km1 = m_K - 1;
 
 	//vector with component class for each marker
-	components = VectorXi(markerCount);
-	components.setZero();
+    m_components = VectorXi(markerCount);
+    m_components.setZero();
 
 	//set priors for pi parameters
 	//Give all mixtures (except 0 class) equal initial probabilities
-	pi_L(0) = 0.99;
-	pi_L.segment(1,km1).setConstant((1-pi_L(0))/km1);
+    m_pi_L(0) = 0.99;
+    m_pi_L.segment(1,km1).setConstant((1-m_pi_L(0))/km1);
 
-	marginal_likelihoods.setOnes();   //Initialize with just ones
+    m_marginal_likelihoods.setOnes();   //Initialize with just ones
 
-	beta.setZero();
-	theta.setZero();
+    m_beta.setZero();
+    m_theta.setZero();
 
 	//initialize epsilon vector as the phenotype vector
-    y = m_data->y.cast<double>().array();
-	epsilon = y;
-	mu = y.mean();       // mean or intercept
+    m_y = m_data->y.cast<double>().array();
+    m_epsilon = m_y;
+    m_mu = m_y.mean();       // mean or intercept
 
 	// Initialize the variables in structures
 	//Save variance classes
-    mixture_classes.resize(km1); //The future solution
+    m_mixture_classes.resize(km1); //The future solution
 
 
 	for(int i=0;i<(km1);i++){
-        mixture_classes(i) = m_opt->S.row(0)[i];   //Save the mixture data (C_k)
+        m_mixture_classes(i) = m_opt->S.row(0)[i];   //Save the mixture data (C_k)
 	}
 
     //Store the vector of failures
-    failure_vector = m_data->fail.cast<double>();
+    m_failure_vector = m_data->fail.cast<double>();
     // Save the number of events
-    d = failure_vector.array().sum();
+    d = m_failure_vector.array().sum();
 
-	double denominator = (6 * ((y.array() - mu).square()).sum()/(y.size()-1));
-    alpha = PI/sqrt(denominator);    // The shape parameter initial value
+    double denominator = (6 * ((m_y.array() - m_mu).square()).sum()/(m_y.size()-1));
+    m_alpha = PI/sqrt(denominator);    // The shape parameter initial value
 
 
-    for(int i=0; i<(y.size()); ++i){
-        epsilon[i] = y[i] - mu; // Initially, all the BETA elements are set to 0, XBeta = 0
+    for(int i=0; i<(m_y.size()); ++i){
+        m_epsilon[i] = m_y[i] - m_mu; // Initially, all the BETA elements are set to 0, XBeta = 0
 	}
 
-    sigma_b = PI2/ (6 * pow(alpha,2) * markerCount ) ;
+    m_sigma_b = PI2/ (6 * pow(m_alpha,2) * markerCount ) ;
 
 	// Save the sum(X_j*failure) for each j
 	//Previous preprocessed version for reading columns
@@ -348,7 +348,7 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	//If there are fixed effects, find the same values for them
 	if(fixedCount > 0){
 		for(int fix_i=0; fix_i < fixedCount; fix_i++){
-            sum_failure_fix(fix_i) = ((m_data->X.col(fix_i).cast<double>()).array() * failure_vector.array()).sum();
+            m_sum_failure_fix(fix_i) = ((m_data->X.col(fix_i).cast<double>()).array() * m_failure_vector.array()).sum();
 		}
 	}
 }
@@ -361,25 +361,25 @@ void BayesWBase::sampleMu(){
 	double convex = 1.0;
 	int dometrop = 0;
 	double xprev = 0.0;
-	double xinit[4] = {0.995*mu, mu,  1.005*mu, 1.01*mu};     // Initial abscissae
+    double xinit[4] = {0.995*m_mu, m_mu,  1.005*m_mu, 1.01*m_mu};     // Initial abscissae
 	double *p_xinit = xinit;
 
 	double xl = 2;
 	double xr = 5;   //xl and xr and the maximum and minimum values between which we sample
 
     mu_params params;
-    params.alpha = alpha;
+    params.alpha = m_alpha;
     params.d = d;
-    params.epsilon = epsilon.array() + mu; // we add to epsilon =Y+mu-X*beta
-    params.sigma_mu = sigma_mu;
+    params.epsilon = m_epsilon.array() + m_mu; // we add to epsilon =Y+mu-X*beta
+    params.sigma_mu = m_sigma_mu;
 
 	// Use ARS to sample mu (with density mu_dens, using parameters from used_data)
     err = arms(xinit,ninit,&xl,&xr,mu_dens,&params,&convex,
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 
 	errorCheck(err); // If there is error, stop the program
-	mu = xsamp[0];   // Save the sampled value
-    epsilon = params.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+    m_mu = xsamp[0];   // Save the sampled value
+    m_epsilon = params.epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
 }
 
 // Function for sampling fixed effect (theta_i)
@@ -391,18 +391,18 @@ void BayesWBase::sampleTheta(int fix_i){
 	double convex = 1.0;
 	int dometrop = 0;
 	double xprev = 0.0;
-	double xinit[4] = {theta(fix_i)-0.01, theta(fix_i),  theta(fix_i)+0.005, theta(fix_i)+0.01};     // Initial abscissae
+    double xinit[4] = {m_theta(fix_i)-0.01, m_theta(fix_i),  m_theta(fix_i)+0.005, m_theta(fix_i)+0.01};     // Initial abscissae
 	double *p_xinit = xinit;
 
 	double xl = -2;
 	double xr = 2;			  // Initial left and right (pseudo) extremes
 
     theta_params params;
-    params.alpha = alpha;
-    params.sum_failure = sum_failure_fix(fix_i);
+    params.alpha = m_alpha;
+    params.sum_failure = m_sum_failure_fix(fix_i);
     params.X_j = m_data->X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
-    params.epsilon = epsilon.array() + (params.X_j * theta(fix_i)).array(); // Adjust residual
-    params.sigma_mu = sigma_mu;
+    params.epsilon = m_epsilon.array() + (params.X_j * m_theta(fix_i)).array(); // Adjust residual
+    params.sigma_mu = m_sigma_mu;
 
 
 	// Sample using ARS
@@ -410,8 +410,8 @@ void BayesWBase::sampleTheta(int fix_i){
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 	errorCheck(err);
 
-	theta(fix_i) = xsamp[0];  // Save the new result
-    epsilon = params.epsilon - params.X_j * theta(fix_i); // Adjust residual
+    m_theta(fix_i) = xsamp[0];  // Save the new result
+    m_epsilon = params.epsilon - params.X_j * m_theta(fix_i); // Adjust residual
 }
 
 // Function for sampling marker effect (beta_i)
@@ -420,39 +420,39 @@ void BayesWBase::processColumn(Kernel *kernel)
     auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
     assert(gaussKernel);
 
-    const double beta_old = beta(gaussKernel->marker->i);
+    const double beta_old = m_beta(gaussKernel->marker->i);
 
 	//Change the residual vector only if the previous beta was non-zero
     if(beta_old != 0.0){
-        epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
+        m_epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
         //Also find the transformed residuals
-        vi = (alpha*epsilon.array()-EuMasc).exp();
+        m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
 	}
 
-    gaussKernel->setVi(vi);
-    gaussKernel->calculateSumFailure(failure_vector);
+    gaussKernel->setVi(m_vi);
+    gaussKernel->calculateSumFailure(m_failure_vector);
 
 	/* Calculate the mixture probability */
-	double p = dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
+    double p = m_dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
 
     // Calculate the (ratios of) marginal likelihoods
     {
         const double exp_sum = gaussKernel->exponent_sum();
 
-        for(int i=0; i < mixture_classes.size(); i++){
+        for(int i=0; i < m_mixture_classes.size(); i++){
             //Calculate the sigma for the adaptive G-H
-            double sigma = 1.0/sqrt(1 + alpha * alpha * sigma_b * mixture_classes(i) * exp_sum);
-            marginal_likelihoods(i+1) = pi_L(i+1) * gauss_hermite_adaptive_integral(i, sigma, quad_points, gaussKernel);
+            double sigma = 1.0/sqrt(1 + m_alpha * m_alpha * m_sigma_b * m_mixture_classes(i) * exp_sum);
+            m_marginal_likelihoods(i+1) = m_pi_L(i+1) * gauss_hermite_adaptive_integral(i, sigma, m_quad_points, gaussKernel);
         }
     }
 	// Calculate the probability that marker is 0
-	double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
+    double acum = m_marginal_likelihoods(0)/m_marginal_likelihoods.sum();
 
-    VectorXd localV = VectorXd::Zero(K);
+    VectorXd localV = VectorXd::Zero(m_K);
     int component = 0;
     double beta_new = beta_old;
 	//Loop through the possible mixture classes
-	for (int k = 0; k < K; k++) {
+    for (int k = 0; k < m_K; k++) {
 		if (p <= acum) {
 			//if zeroth component
 			if (k == 0) {
@@ -461,12 +461,12 @@ void BayesWBase::processColumn(Kernel *kernel)
 			// If is not 0th component then sample using ARS
 			else {
                 beta_params params;
-                params.alpha = alpha;
-                params.sigma_b = sigma_b;
+                params.alpha = m_alpha;
+                params.sigma_b = m_sigma_b;
                 params.sum_failure = gaussKernel->sum_failure;
-                params.used_mixture = mixture_classes(k-1);
+                params.used_mixture = m_mixture_classes(k-1);
 
-                double safe_limit = 2 * sqrt(sigma_b * mixture_classes(k-1));
+                double safe_limit = 2 * sqrt(m_sigma_b * m_mixture_classes(k-1));
 
 				// ARS parameters
                 int err, ninit = 4, npoint = 100, nsamp = 1, ncent = 4 ;
@@ -493,10 +493,10 @@ void BayesWBase::processColumn(Kernel *kernel)
             component = k;
 			break;
 		} else {
-			if((k+1) == (K-1)){
+            if((k+1) == (m_K-1)){
 				acum = 1; // In the end probability will be 1
 			}else{
-				acum += marginal_likelihoods(k+1)/marginal_likelihoods.sum();
+                acum += m_marginal_likelihoods(k+1)/m_marginal_likelihoods.sum();
 			}
 		}
 	}
@@ -505,13 +505,13 @@ void BayesWBase::processColumn(Kernel *kernel)
     const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
     if (!skipUpdate) {
         //Re-update the residual vector
-        epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
-        vi = (alpha*epsilon.array()-EuMasc).exp();
+        m_epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
+        m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
     }
 
-    v += localV;
-    components(gaussKernel->marker->i) = component;
-    beta(gaussKernel->marker->i) = beta_new;
+    m_v += localV;
+    m_components(gaussKernel->marker->i) = component;
+    m_beta(gaussKernel->marker->i) = beta_new;
 }
 
 // Function for sampling Weibull shape parameter (alpha)
@@ -523,7 +523,7 @@ void BayesWBase::sampleAlpha(){
 	double convex = 1.0;
 	int dometrop = 0;
 	double xprev = 0.0;
-    double xinit[4] = {(alpha)*0.5, alpha,  (alpha)*1.5, (alpha)*3};     // Initial abscissae
+    double xinit[4] = {(m_alpha)*0.5, m_alpha,  (m_alpha)*1.5, (m_alpha)*3};     // Initial abscissae
 	double *p_xinit = xinit;
 
 	// Initial left and right (pseudo) extremes
@@ -531,17 +531,17 @@ void BayesWBase::sampleAlpha(){
 	double xr = 400.0;
 
     alpha_params params;
-    params.alpha_0 = alpha_0;
+    params.alpha_0 = m_alpha_0;
     params.d = d;
-    params.epsilon = epsilon;
-    params.failure_vector = failure_vector;
-    params.kappa_0 = kappa_0;
+    params.epsilon = m_epsilon;
+    params.failure_vector = m_failure_vector;
+    params.kappa_0 = m_kappa_0;
 
 	//Sample using ARS
     err = arms(xinit,ninit,&xl,&xr,alpha_dens,&params,&convex,
 			npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 	errorCheck(err);
-    alpha = xsamp[0];
+    m_alpha = xsamp[0];
 }
 
 /* Adaptive Gauss-Hermite version. Currently RAM solution */
@@ -555,13 +555,13 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
     const unsigned int M(m_data->numSnps);
     const unsigned int N(m_data->numInds);
     const unsigned int numFixedEffects(m_data->numFixedEffects);
-	const int km1 = K - 1;
+    const int km1 = m_K - 1;
 
 	init(M, N, numFixedEffects);
 	int marker; //Marker index
 
 	SampleWriter writer;
-	writer.setFileName(outputFile);
+    writer.setFileName(m_outputFile);
 	writer.setMarkerCount(M);
 	writer.setIndividualCount(N);
 
@@ -586,7 +586,7 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 
 	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
 	srand(2);
-	for (int iteration = 0; iteration < max_iterations; iteration++) {
+    for (int iteration = 0; iteration < m_max_iterations; iteration++) {
 
 		/* 1. Intercept (mu) */
 		sampleMu();
@@ -598,41 +598,41 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 			}
 		}
 		// Calculate the vector of exponent of the adjusted residuals
-        vi = (alpha*epsilon.array()-EuMasc).exp();
+        m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
 
 		std::random_shuffle(markerI.begin(), markerI.end());
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
 		// 2. Sample beta parameters
 
 		// Set counter for each mixture to be 1 ( (1,...,1) prior)
-		v.setOnes();
+        m_v.setOnes();
 
 		// First element for the marginal likelihoods is always is pi_0 *sqrt(pi) for
-		marginal_likelihoods(0) = pi_L(0) * sqrtPI;
+        m_marginal_likelihoods(0) = m_pi_L(0) * sqrtPI;
         analysis->exec(this, N, M, markerI);
 
 		// 3. Sample alpha parameter
 		sampleAlpha();
 
 		// 4. Sample sigma_b
-        sigma_b = dist.inv_gamma_rng((double) (alpha_sigma + 0.5 * (M - v[0]+1)),
-                (double)(beta_sigma + 0.5 * (M - v[0]+1) * beta.squaredNorm()));
+        m_sigma_b = m_dist.inv_gamma_rng((double) (m_alpha_sigma + 0.5 * (M - m_v[0]+1)),
+                (double)(m_beta_sigma + 0.5 * (M - m_v[0]+1) * m_beta.squaredNorm()));
 
 		// 5. Sample prior mixture component probability from Dirichlet distribution
-		pi_L = dist.dirichilet_rng(v.array());
+        m_pi_L = m_dist.dirichilet_rng(m_v.array());
 
 		// Write the result to file
-        if (iteration >= burn_in && iteration % thinning == 0) {
+        if (iteration >= m_burn_in && iteration % m_thinning == 0) {
 			if(numFixedEffects > 0){
-                sample << iteration, alpha, mu, theta, beta,components.cast<double>(), sigma_b ;
+                sample << iteration, m_alpha, m_mu, m_theta, m_beta,m_components.cast<double>(), m_sigma_b ;
 			}else{
-                sample << iteration, alpha, mu, beta,components.cast<double>(), sigma_b ;
+                sample << iteration, m_alpha, m_mu, m_beta,m_components.cast<double>(), m_sigma_b ;
 			}
 			writer.write(sample);
 		}
 
 		//Print results
-        cout << iteration << ". " << M - v[0] +1 <<"; "<<v[1]-1 << "; "<<v[2]-1 << "; " << v[3]-1  <<"; " << alpha << "; " << sigma_b << endl;
+        cout << iteration << ". " << M - m_v[0] +1 <<"; "<<m_v[1]-1 << "; "<<m_v[2]-1 << "; " << m_v[3]-1  <<"; " << m_alpha << "; " << m_sigma_b << endl;
 	}
 
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();

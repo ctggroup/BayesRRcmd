@@ -60,7 +60,7 @@ int DenseBayesW::estimateBeta(const BayesWKernel *kernel, double *xinit, int nin
     assert(denseMarker);
 
     dense_beta_params dense_params {params};
-    dense_params.epsilon = epsilon;
+    dense_params.epsilon = m_epsilon;
     dense_params.Cx = denseMarker->Cx;
 
     return arms(xinit, ninit, xl, xr, beta_dens, &dense_params, convex,

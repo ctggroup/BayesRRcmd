@@ -13,7 +13,7 @@
 class DenseBayesW : public BayesWBase
 {
 public:
-    DenseBayesW(const Data *data, const Options *opt, const long memPageSize);
+    DenseBayesW(const Data *data, const Options *opt, const long m_memPageSize);
 
     std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const override;
     MarkerBuilder *markerBuilder() const override;
