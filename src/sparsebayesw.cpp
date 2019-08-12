@@ -78,10 +78,12 @@ MarkerBuilder *SparseBayesW::markerBuilder() const
     return nullptr;
 }
 
-int SparseBayesW::estimateBeta(const BayesWKernel *kernel, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
+int SparseBayesW::estimateBeta(const BayesWKernel *kernel, const VectorXd &epsilon, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
                                int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                                double *xcent, int ncent, int *neval)
  {
+    (void) epsilon; // Unused
+
     const auto* raggedKernel = dynamic_cast<const RaggedBayesWKernel*>(kernel);
     assert(raggedKernel);
 

@@ -88,7 +88,7 @@ protected:
 
     double gauss_hermite_adaptive_integral(int k, double sigma, string n, const BayesWKernel *kernel);
 
-    virtual int estimateBeta (const BayesWKernel *kernel, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
+    virtual int estimateBeta (const BayesWKernel *kernel, const VectorXd &epsilon, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;

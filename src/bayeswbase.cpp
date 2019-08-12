@@ -482,7 +482,7 @@ void BayesWBase::processColumn(Kernel *kernel)
                 double xr = beta_old + safe_limit;
 
                 // Sample using ARS
-                err = estimateBeta(gaussKernel,xinit,ninit,&xl,&xr, params, &convex,
+                err = estimateBeta(gaussKernel,m_epsilon,xinit,ninit,&xl,&xr, params, &convex,
                         npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
 				errorCheck(err);
 

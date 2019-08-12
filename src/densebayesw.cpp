@@ -16,8 +16,12 @@
 namespace  {
 
 struct dense_beta_params : public beta_params {
-    dense_beta_params(const beta_params &params) : beta_params(params) {}
-    VectorXd epsilon;
+    dense_beta_params(const beta_params &params, const VectorXd &epsilon, const std::shared_ptr<Map<VectorXd>>& Cx)
+        : beta_params(params)
+        , epsilon(epsilon)
+        , Cx(Cx)
+    {}
+    const VectorXd& epsilon;
     std::shared_ptr<Map<VectorXd>> Cx = nullptr;
 };
 
@@ -52,16 +56,14 @@ MarkerBuilder *DenseBayesW::markerBuilder() const
     return builderForType(PreprocessDataType::Dense);
 }
 
-int DenseBayesW::estimateBeta(const BayesWKernel *kernel, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
+int DenseBayesW::estimateBeta(const BayesWKernel *kernel, const VectorXd &epsilon, double *xinit, int ninit, double *xl, double *xr, const beta_params params, double *convex, int npoint,
                               int dometrop, double *xprev, double *xsamp, int nsamp, double *qcent,
                               double *xcent, int ncent, int *neval)
 {
     const auto* denseMarker = dynamic_cast<const DenseMarker*>(kernel->marker.get());
     assert(denseMarker);
 
-    dense_beta_params dense_params {params};
-    dense_params.epsilon = m_epsilon;
-    dense_params.Cx = denseMarker->Cx;
+    dense_beta_params dense_params {params, epsilon, denseMarker->Cx};
 
     return arms(xinit, ninit, xl, xr, beta_dens, &dense_params, convex,
                 npoint, dometrop, xprev, xsamp, nsamp, qcent, xcent, ncent, neval);
