@@ -51,7 +51,6 @@ protected:
 	// Component variables
     VectorXd m_mixture_classes; // Vector to store mixture component C_k values
     VectorXd m_pi_L;        // mixture probabilities
-    VectorXd m_marginal_likelihoods;      // likelihood for each mixture component
     VectorXd m_v;         // variable storing the component assignment
     VectorXi m_components; // Indicator vector stating to which mixture SNP belongs to
 

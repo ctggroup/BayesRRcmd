@@ -279,7 +279,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 {
 	// Component variables
     m_pi_L = VectorXd(m_K);           		 // prior mixture probabilities
-    m_marginal_likelihoods = VectorXd(m_K);  // likelihood for each mixture component
     m_v = VectorXd(m_K);            		 // vector storing the component assignment
 
 	// Linear model variables
@@ -304,8 +303,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	//Give all mixtures (except 0 class) equal initial probabilities
     m_pi_L(0) = 0.99;
     m_pi_L.segment(1,km1).setConstant((1-m_pi_L(0))/km1);
-
-    m_marginal_likelihoods.setOnes();   //Initialize with just ones
 
     m_beta.setZero();
     m_theta.setZero();
@@ -436,17 +433,20 @@ void BayesWBase::processColumn(Kernel *kernel)
     double p = m_dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
 
     // Calculate the (ratios of) marginal likelihoods
+    VectorXd marginal_likelihoods {m_K}; // likelihood for each mixture component
+    // First element for the marginal likelihoods is always is pi_0 *sqrt(pi) for
+    marginal_likelihoods(0) = m_pi_L(0) * sqrtPI;
     {
         const double exp_sum = gaussKernel->exponent_sum();
 
         for(int i=0; i < m_mixture_classes.size(); i++){
             //Calculate the sigma for the adaptive G-H
             double sigma = 1.0/sqrt(1 + m_alpha * m_alpha * m_sigma_b * m_mixture_classes(i) * exp_sum);
-            m_marginal_likelihoods(i+1) = m_pi_L(i+1) * gauss_hermite_adaptive_integral(i, sigma, m_quad_points, gaussKernel);
+            marginal_likelihoods(i+1) = m_pi_L(i+1) * gauss_hermite_adaptive_integral(i, sigma, m_quad_points, gaussKernel);
         }
     }
 	// Calculate the probability that marker is 0
-    double acum = m_marginal_likelihoods(0)/m_marginal_likelihoods.sum();
+    double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
     VectorXd localV = VectorXd::Zero(m_K);
     int component = 0;
@@ -496,7 +496,7 @@ void BayesWBase::processColumn(Kernel *kernel)
             if((k+1) == (m_K-1)){
 				acum = 1; // In the end probability will be 1
 			}else{
-                acum += m_marginal_likelihoods(k+1)/m_marginal_likelihoods.sum();
+                acum += marginal_likelihoods(k+1)/marginal_likelihoods.sum();
 			}
 		}
 	}
@@ -606,9 +606,6 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 
 		// Set counter for each mixture to be 1 ( (1,...,1) prior)
         m_v.setOnes();
-
-		// First element for the marginal likelihoods is always is pi_0 *sqrt(pi) for
-        m_marginal_likelihoods(0) = m_pi_L(0) * sqrtPI;
         analysis->exec(this, N, M, markerI);
 
 		// 3. Sample alpha parameter
