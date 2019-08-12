@@ -218,7 +218,7 @@ bool runGaussAnalysis(const Options &options) {
     const bool useSparseData = gaussOptions.preprocessDataType == PreprocessDataType::SparseRagged;
 
     std::unique_ptr<AnalysisGraph> graph {nullptr};
-    if (options.analysisType == AnalysisType::AsyncPpBayes) {
+    if (options.analysisType == AnalysisType::AsyncGauss) {
         graph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
         auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
         parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
