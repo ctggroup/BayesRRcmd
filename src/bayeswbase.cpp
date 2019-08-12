@@ -289,8 +289,8 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 
 	//phenotype vector
     m_y = VectorXd();
-	//residual vector
-    m_epsilon = VectorXd();
+
+    m_vi = std::make_shared<VectorXd>(individualCount);
 
 	// Init the working variables
     const int km1 = m_K - 1;
@@ -309,7 +309,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 
 	//initialize epsilon vector as the phenotype vector
     m_y = m_data->y.cast<double>().array();
-    m_epsilon = m_y;
     m_mu = m_y.mean();       // mean or intercept
 
 	// Initialize the variables in structures
@@ -329,10 +328,7 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
     double denominator = (6 * ((m_y.array() - m_mu).square()).sum()/(m_y.size()-1));
     m_alpha = PI/sqrt(denominator);    // The shape parameter initial value
 
-
-    for(int i=0; i<(m_y.size()); ++i){
-        m_epsilon[i] = m_y[i] - m_mu; // Initially, all the BETA elements are set to 0, XBeta = 0
-	}
+    m_epsilon = std::make_shared<VectorXd>(m_y.array() - m_mu); // Initially, all the BETA elements are set to 0, XBeta = 0
 
     m_sigma_b = PI2/ (6 * pow(m_alpha,2) * markerCount ) ;
 
@@ -367,7 +363,7 @@ void BayesWBase::sampleMu(){
     mu_params params;
     params.alpha = m_alpha;
     params.d = d;
-    params.epsilon = m_epsilon.array() + m_mu; // we add to epsilon =Y+mu-X*beta
+    params.epsilon = m_epsilon->array() + m_mu; // we add to epsilon =Y+mu-X*beta
     params.sigma_mu = m_sigma_mu;
 
 	// Use ARS to sample mu (with density mu_dens, using parameters from used_data)
@@ -376,7 +372,7 @@ void BayesWBase::sampleMu(){
 
 	errorCheck(err); // If there is error, stop the program
     m_mu = xsamp[0];   // Save the sampled value
-    m_epsilon = params.epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
+    *m_epsilon = params.epsilon.array() - m_mu;// we substract again now epsilon =Y-mu-X*beta
 }
 
 // Function for sampling fixed effect (theta_i)
@@ -398,7 +394,7 @@ void BayesWBase::sampleTheta(int fix_i){
     params.alpha = m_alpha;
     params.sum_failure = m_sum_failure_fix(fix_i);
     params.X_j = m_data->X.col(fix_i).cast<double>();  //Take from the fixed effects matrix
-    params.epsilon = m_epsilon.array() + (params.X_j * m_theta(fix_i)).array(); // Adjust residual
+    params.epsilon = m_epsilon->array() + (params.X_j * m_theta(fix_i)).array(); // Adjust residual
     params.sigma_mu = m_sigma_mu;
 
 
@@ -408,7 +404,7 @@ void BayesWBase::sampleTheta(int fix_i){
 	errorCheck(err);
 
     m_theta(fix_i) = xsamp[0];  // Save the new result
-    m_epsilon = params.epsilon - params.X_j * m_theta(fix_i); // Adjust residual
+    *m_epsilon = params.epsilon - params.X_j * m_theta(fix_i); // Adjust residual
 }
 
 // Function for sampling marker effect (beta_i)
@@ -421,9 +417,9 @@ void BayesWBase::processColumn(Kernel *kernel)
 
 	//Change the residual vector only if the previous beta was non-zero
     if(beta_old != 0.0){
-        m_epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
+        *m_epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
         //Also find the transformed residuals
-        m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
+        *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
 	}
 
     gaussKernel->setVi(m_vi);
@@ -505,8 +501,8 @@ void BayesWBase::processColumn(Kernel *kernel)
     const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
     if (!skipUpdate) {
         //Re-update the residual vector
-        m_epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
-        m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
+        *m_epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
+        *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
     }
 
     m_v += localV;
@@ -533,7 +529,7 @@ void BayesWBase::sampleAlpha(){
     alpha_params params;
     params.alpha_0 = m_alpha_0;
     params.d = d;
-    params.epsilon = m_epsilon;
+    params.epsilon = *m_epsilon;
     params.failure_vector = m_failure_vector;
     params.kappa_0 = m_kappa_0;
 
@@ -598,7 +594,7 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 			}
 		}
 		// Calculate the vector of exponent of the adjusted residuals
-        m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
+        *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
 
 		std::random_shuffle(markerI.begin(), markerI.end());
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
@@ -644,9 +640,9 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
     assert(gaussKernel);
 
-    // Take copies - not ideal, could be refactored out?
-    auto epsilon {m_epsilon};
-    auto vi {m_vi};
+    // Local copies required to sample beta
+    auto epsilon = std::make_shared<VectorXd>(*m_epsilon);
+    auto vi = std::make_shared<VectorXd>(*m_vi);
 
     // No shared mutex for reading because no other thread writes to the values
     // specific to the marker this thread is working on
@@ -659,9 +655,9 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
 
     //Change the residual vector only if the previous beta was non-zero
     if(beta_old != 0.0){
-        epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
+        *epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
         //Also find the transformed residuals
-        vi = (m_alpha*epsilon.array()-EuMasc).exp();
+        *vi = (m_alpha*epsilon->array()-EuMasc).exp();
     }
 
     gaussKernel->setVi(vi);
@@ -748,8 +744,8 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     const bool skipUpdate = result->betaOld == 0.0 && result->beta == 0.0;
     if (!skipUpdate) {
         //Re-update the residual vector
-        epsilon -= *gaussKernel->calculateEpsilonChange(result->beta);
-        result->deltaEpsilon = std::make_unique<VectorXd>(m_epsilon - epsilon);
+        *epsilon -= *gaussKernel->calculateEpsilonChange(result->beta);
+        result->deltaEpsilon = std::make_unique<VectorXd>(*m_epsilon - *epsilon);
     }
 
     {
@@ -769,8 +765,8 @@ void BayesWBase::updateGlobal(Kernel *kernel, const double beta_old, const doubl
     (void) beta_old; // Unushed
     (void) beta; // Unused
 
-    m_epsilon += deltaEps;
-    m_vi = (m_alpha*m_epsilon.array()-EuMasc).exp();
+    *m_epsilon += deltaEps;
+    *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
 
     assert(false); // Not implemented
 }

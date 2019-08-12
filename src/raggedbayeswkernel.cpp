@@ -7,11 +7,11 @@ RaggedBayesWKernel::RaggedBayesWKernel(const RaggedSparseMarker *marker)
     assert(marker);
 }
 
-void RaggedBayesWKernel::setVi(const VectorXd &vi)
+void RaggedBayesWKernel::setVi(const std::shared_ptr<VectorXd> &vi)
 {
-    vi_sum = vi.sum();
-    vi_2 = vi(rsm->Ztwos).sum();
-    vi_1 = vi(rsm->Zones).sum();
+    vi_sum = vi->sum();
+    vi_2 = (*vi)(rsm->Ztwos).sum();
+    vi_1 = (*vi)(rsm->Zones).sum();
     vi_0 = vi_sum - vi_1 - vi_2;
 }
 

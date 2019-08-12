@@ -13,7 +13,7 @@ struct RaggedBayesWKernel : public BayesWKernel
     double vi_1 = 0;
     double vi_0 = 0;
 
-    void setVi(const VectorXd &vi) override;
+    void setVi(const std::shared_ptr<VectorXd> &vi) override;
     void calculateSumFailure(const VectorXd &failure_vector);
 
     VectorXdPtr calculateEpsilonChange(const double beta) override;

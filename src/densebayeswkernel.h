@@ -8,7 +8,7 @@ struct DenseBayesWKernel : public BayesWKernel
 {
     explicit DenseBayesWKernel(const DenseMarker *marker);
 
-    void setVi(const VectorXd &vi) override;
+    void setVi(const std::shared_ptr<VectorXd> &vi) override;
     void calculateSumFailure(const VectorXd &failure_vector);
 
     VectorXdPtr calculateEpsilonChange(const double beta) override;
@@ -18,7 +18,7 @@ struct DenseBayesWKernel : public BayesWKernel
 
 protected:
     const DenseMarker *dm = nullptr;
-    VectorXd m_vi;
+    std::shared_ptr<VectorXd> m_vi = nullptr;
 };
 
 #endif // DENSEBAYESWKERNEL_H

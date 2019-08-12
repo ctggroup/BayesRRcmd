@@ -58,12 +58,12 @@ protected:
 	// Linear model variables
     VectorXd m_theta;		 // Fixed effect sizes
     VectorXd m_beta;       // effect sizes
-    VectorXd m_vi;		 // adjusted and exponented epsilon
+    std::shared_ptr<VectorXd> m_vi = nullptr;		 // adjusted and exponented epsilon
 
     VectorXd m_y;
     VectorXd m_sum_failure_fix;
 
-    VectorXd m_epsilon; //Vector for residuals
+    std::shared_ptr<VectorXd> m_epsilon = nullptr; //Vector for residuals
     double m_alpha = 0;
     double m_mu = 0;
     double m_sigma_b = 0;
@@ -91,7 +91,7 @@ protected:
 
     double gauss_hermite_adaptive_integral(int k, double sigma, string n, const BayesWKernel *kernel);
 
-    virtual int estimateBeta (const BayesWKernel *kernel, const VectorXd &epsilon, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
+    virtual int estimateBeta (const BayesWKernel *kernel, const std::shared_ptr<VectorXd> &epsilon, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;

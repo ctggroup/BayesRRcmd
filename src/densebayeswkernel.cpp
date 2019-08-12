@@ -7,7 +7,7 @@ DenseBayesWKernel::DenseBayesWKernel(const DenseMarker *marker)
     assert(dm);
 }
 
-void DenseBayesWKernel::setVi(const VectorXd &vi)
+void DenseBayesWKernel::setVi(const std::shared_ptr<VectorXd> &vi)
 {
     m_vi = vi;
 }
@@ -24,12 +24,14 @@ VectorXdPtr DenseBayesWKernel::calculateEpsilonChange(const double beta)
 
 double DenseBayesWKernel::exponent_sum() const
 {
-    return (m_vi.array() * dm->Cx->array() * dm->Cx->array()).sum();
+    assert(m_vi);
+    return (m_vi->array() * dm->Cx->array() * dm->Cx->array()).sum();
 }
 
 double DenseBayesWKernel::integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const
 {
+    assert(m_vi);
     //vi is a vector of exp(vi)
-    double temp = -alpha *s*sum_failure*sqrt_2Ck_sigmab + (m_vi.array()* (1 - (-dm->Cx->array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
+    double temp = -alpha *s*sum_failure*sqrt_2Ck_sigmab + (m_vi->array()* (1 - (-dm->Cx->array()*s*sqrt_2Ck_sigmab*alpha).exp() )).sum() -pow(s,2);
     return exp(temp);
 }

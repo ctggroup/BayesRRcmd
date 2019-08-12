@@ -15,7 +15,7 @@ struct BayesWKernel : public Kernel
 
     double sum_failure = 0;
 
-    virtual void setVi(const VectorXd& vi) = 0;
+    virtual void setVi(const std::shared_ptr<VectorXd>& vi) = 0;
     // Should really be done as part of the preprocess step
     virtual void calculateSumFailure(const VectorXd &failure_vector) = 0;
 
