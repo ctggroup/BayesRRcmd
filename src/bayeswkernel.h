@@ -19,7 +19,7 @@ struct BayesWKernel : public Kernel
     // Should really be done as part of the preprocess step
     virtual void calculateSumFailure(const VectorXd &failure_vector) = 0;
 
-    virtual VectorXdPtr calculateEpsilonChange(const double beta) = 0;
+    virtual VectorXdPtr calculateResidualUpdate(const double beta) = 0;
 
     virtual double exponent_sum() const = 0;
     virtual double integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const = 0;

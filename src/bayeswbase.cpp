@@ -417,7 +417,7 @@ void BayesWBase::processColumn(Kernel *kernel)
 
 	//Change the residual vector only if the previous beta was non-zero
     if(beta_old != 0.0){
-        *m_epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
+        *m_epsilon += *gaussKernel->calculateResidualUpdate(beta_old);
         //Also find the transformed residuals
         *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
 	}
@@ -501,7 +501,7 @@ void BayesWBase::processColumn(Kernel *kernel)
     const bool skipUpdate = beta_old == 0.0 && beta_new == 0.0;
     if (!skipUpdate) {
         //Re-update the residual vector
-        *m_epsilon -= *gaussKernel->calculateEpsilonChange(beta_new);
+        *m_epsilon -= *gaussKernel->calculateResidualUpdate(beta_new);
         *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
     }
 
@@ -655,7 +655,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
 
     //Change the residual vector only if the previous beta was non-zero
     if(beta_old != 0.0){
-        *epsilon += *gaussKernel->calculateEpsilonChange(beta_old);
+        *epsilon += *gaussKernel->calculateResidualUpdate(beta_old);
         //Also find the transformed residuals
         *vi = (m_alpha*epsilon->array()-EuMasc).exp();
     }
@@ -744,7 +744,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     const bool skipUpdate = result->betaOld == 0.0 && result->beta == 0.0;
     if (!skipUpdate) {
         //Re-update the residual vector
-        *epsilon -= *gaussKernel->calculateEpsilonChange(result->beta);
+        *epsilon -= *gaussKernel->calculateResidualUpdate(result->beta);
         result->deltaEpsilon = std::make_unique<VectorXd>(*m_epsilon - *epsilon);
     }
 

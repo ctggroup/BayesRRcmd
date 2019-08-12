@@ -24,7 +24,7 @@ void RaggedBayesWKernel::calculateSumFailure(const VectorXd &failure_vector)
     sum_failure = (temp_sum - rsm->mean * failure_vector.array().sum()) / rsm->sd;
 }
 
-VectorXdPtr RaggedBayesWKernel::calculateEpsilonChange(const double beta)
+VectorXdPtr RaggedBayesWKernel::calculateResidualUpdate(const double beta)
 {
     const auto mean_sd_ratio = rsm->mean / rsm->sd;
     const double meanAdjustment = mean_sd_ratio * beta;

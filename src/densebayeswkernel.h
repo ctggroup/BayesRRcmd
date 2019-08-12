@@ -11,7 +11,7 @@ struct DenseBayesWKernel : public BayesWKernel
     void setVi(const std::shared_ptr<VectorXd> &vi) override;
     void calculateSumFailure(const VectorXd &failure_vector);
 
-    VectorXdPtr calculateEpsilonChange(const double beta) override;
+    VectorXdPtr calculateResidualUpdate(const double beta) override;
 
     double exponent_sum() const override;
     double integrand_adaptive(double s, double alpha, double sqrt_2Ck_sigmab) const override;

@@ -17,7 +17,7 @@ void DenseBayesWKernel::calculateSumFailure(const VectorXd &failure_vector)
     sum_failure = (dm->Cx->array() * failure_vector.array()).sum();
 }
 
-VectorXdPtr DenseBayesWKernel::calculateEpsilonChange(const double beta)
+VectorXdPtr DenseBayesWKernel::calculateResidualUpdate(const double beta)
 {
     return std::make_unique<VectorXd>(*dm->Cx * beta);
 }
