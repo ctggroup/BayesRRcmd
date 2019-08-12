@@ -226,7 +226,7 @@ double BayesW::gauss_hermite_adaptive_integral(int k, double sigma, string n, do
 																vi_sum, vi_2, vi_1, vi_0, mean, sd, mean_sd_ratio)+
 																w7;
 	}else if(n == "9"){
-		double x1,x2,x3,x4,x5,x6,x7,x8,x9;//,x11;
+		double x1,x2,x3,x4,x5,x6,x7,x8;//,x11;
 		double w1,w2,w3,w4,w5,w6,w7,w8,w9; //These are adjusted weights
 
 		x1 = 3.1909932017815;
