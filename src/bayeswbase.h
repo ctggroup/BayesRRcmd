@@ -87,7 +87,6 @@ protected:
     void sampleTheta(int fix_i);
 	void sampleAlpha();
 
-    void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const BayesWKernel *kernel);
     double gauss_hermite_adaptive_integral(int k, double sigma, string n, const BayesWKernel *kernel);
 
     virtual int estimateBeta (const BayesWKernel *kernel, double *xinit, int ninit, double *xl, double *xr, const beta_params params,

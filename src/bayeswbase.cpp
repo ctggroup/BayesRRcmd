@@ -275,18 +275,6 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
     return sigma*temp;
 }
 
-//Pass the vector post_marginals of marginal likelihoods by reference
-void BayesWBase::marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, const BayesWKernel *kernel){
-    assert(kernel);
-    double exp_sum = kernel->exponent_sum();
-
-    for(int i=0; i < mixture_classes.size(); i++){
-        //Calculate the sigma for the adaptive G-H
-        double sigma = 1.0/sqrt(1 + alpha * alpha * sigma_b * mixture_classes(i) * exp_sum);
-        post_marginals(i+1) = prior_prob(i+1) * gauss_hermite_adaptive_integral(i, sigma, n, kernel);
-    }
-}
-
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
 	// Component variables
@@ -448,7 +436,15 @@ void BayesWBase::processColumn(Kernel *kernel)
 	double p = dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
 
     // Calculate the (ratios of) marginal likelihoods
-    marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, quad_points, gaussKernel);
+    {
+        const double exp_sum = gaussKernel->exponent_sum();
+
+        for(int i=0; i < mixture_classes.size(); i++){
+            //Calculate the sigma for the adaptive G-H
+            double sigma = 1.0/sqrt(1 + alpha * alpha * sigma_b * mixture_classes(i) * exp_sum);
+            marginal_likelihoods(i+1) = pi_L(i+1) * gauss_hermite_adaptive_integral(i, sigma, quad_points, gaussKernel);
+        }
+    }
 	// Calculate the probability that marker is 0
 	double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
