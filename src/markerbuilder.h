@@ -30,8 +30,7 @@ public:
     virtual Marker* build();
 
 protected:
-    using MarkerPtr = std::unique_ptr<Marker>;
-    MarkerPtr m_marker = nullptr;
+    std::unique_ptr<Marker> m_marker = nullptr;
 
     unsigned int m_snp = 0;
     double m_numInds = 0;
