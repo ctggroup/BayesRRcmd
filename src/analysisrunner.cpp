@@ -197,7 +197,8 @@ bool runBayesAnalysis(const Options &options) {
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
     std::unique_ptr<AnalysisGraph> graph {nullptr};
-    if (options.analysisType == AnalysisType::AsyncPpBayes) {
+    if (options.analysisType == AnalysisType::AsyncPpBayes
+            || options.analysisType == AnalysisType::AsyncGauss) {
         graph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
         auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
         parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
