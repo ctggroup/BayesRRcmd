@@ -241,7 +241,10 @@ std::unique_ptr<AnalysisGraph> makeAnalysisGraph(const Options &options)
         // Fall through
     case AnalysisType::AsyncGauss:
     {
-        auto parallelGraph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
+        static const bool useMarkerCache = false;
+        auto parallelGraph = std::make_unique<ParallelGraph>(options.decompressionTokens,
+                                                             options.analysisTokens,
+                                                             useMarkerCache);
         parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
         parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
         return std::move(parallelGraph);
