@@ -30,6 +30,7 @@ add_library(bayes
     sparsebayesrkernel.cpp
     sparsebayesw.cpp
     marker.cpp
+    markercache.cpp
     densemarker.cpp
     sparsemarker.cpp
     raggedbayesrkernel.cpp
