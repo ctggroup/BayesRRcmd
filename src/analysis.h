@@ -1,6 +1,7 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#include "common.h"
 #include "data.hpp"
 #include "options.hpp"
 
@@ -11,7 +12,6 @@ using namespace Eigen;
 
 struct Kernel;
 struct IndexEntry;
-struct Marker;
 
 class AnalysisGraph;
 class MarkerBuilder;

@@ -1,8 +1,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <string>
 #include <iostream>
+#include <memory>
+#include <string>
 
 enum class AnalysisType : unsigned int {
     Unknown = 0,
@@ -31,6 +32,9 @@ enum class PreprocessDataType : unsigned int {
 };
 
 std::ostream &operator<<(std::ostream &os, const PreprocessDataType &obj);
+
+struct Marker;
+using MarkerPtr = std::shared_ptr<Marker>;
 
 class MarkerBuilder;
 MarkerBuilder* builderForType(const PreprocessDataType type);

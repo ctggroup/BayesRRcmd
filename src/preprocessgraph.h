@@ -38,7 +38,6 @@ protected:
 
         const Data* data = nullptr;
 
-        using MarkerPtr = std::shared_ptr<Marker>;
         using MarkerPtrList = std::vector<MarkerPtr>;
         MarkerPtrList snpData;
 
