@@ -5,7 +5,7 @@
 
 struct BayesRKernel : public Kernel
 {
-    explicit BayesRKernel(const Marker *marker) : Kernel(marker) {}
+    explicit BayesRKernel(const ConstMarkerPtr &marker) : Kernel(marker) {}
     ~BayesRKernel();
 
     virtual double computeNum(const VectorXd &epsilon,

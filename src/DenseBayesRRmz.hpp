@@ -19,7 +19,7 @@ public:
     explicit DenseBayesRRmz(const Data *data, const Options *opt);
     ~DenseBayesRRmz() override;
 
-    std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const override;
+    std::unique_ptr<Kernel> kernelForMarker(const ConstMarkerPtr &marker) const override;
     MarkerBuilder *markerBuilder() const override;
 
     void updateMu(double old_mu,double N) override;

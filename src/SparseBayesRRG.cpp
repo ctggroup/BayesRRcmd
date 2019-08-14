@@ -15,19 +15,19 @@ SparseBayesRRG::~SparseBayesRRG()
 
 }
 
-std::unique_ptr<Kernel> SparseBayesRRG::kernelForMarker(const Marker *marker) const
+std::unique_ptr<Kernel> SparseBayesRRG::kernelForMarker(const ConstMarkerPtr &marker) const
 {
     switch (m_opt->preprocessDataType) {
     case PreprocessDataType::SparseEigen:
     {
-        const auto* eigenSparseMarker = dynamic_cast<const EigenSparseMarker*>(marker);
+        const auto eigenSparseMarker = dynamic_pointer_cast<const EigenSparseMarker>(marker);
         assert(eigenSparseMarker);
         return std::make_unique<EigenBayesRKernel>(eigenSparseMarker);
     }
 
     case PreprocessDataType::SparseRagged:
     {
-        const auto* raggedSparseMarker = dynamic_cast<const RaggedSparseMarker*>(marker);
+        const auto raggedSparseMarker = dynamic_pointer_cast<const RaggedSparseMarker>(marker);
         assert(raggedSparseMarker);
         return std::make_unique<RaggedBayesRKernel>(raggedSparseMarker);
     }

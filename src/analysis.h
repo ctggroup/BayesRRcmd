@@ -27,7 +27,7 @@ public:
     explicit Analysis(const Data *data, const Options *opt);
     virtual ~Analysis();
 
-    virtual std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const = 0;
+    virtual std::unique_ptr<Kernel> kernelForMarker(const ConstMarkerPtr &marker) const = 0;
 
     virtual MarkerBuilder* markerBuilder() const = 0;
     virtual IndexEntry indexEntry(unsigned int i) const;

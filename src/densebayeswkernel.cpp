@@ -1,8 +1,8 @@
 #include "densebayeswkernel.h"
 
-DenseBayesWKernel::DenseBayesWKernel(const DenseMarker *marker)
+DenseBayesWKernel::DenseBayesWKernel(const std::shared_ptr<const DenseMarker> &marker)
     : BayesWKernel(marker)
-    , dm(marker)
+    , dm(marker.get())
 {
     assert(dm);
 }

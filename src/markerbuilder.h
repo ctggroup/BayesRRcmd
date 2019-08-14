@@ -27,7 +27,7 @@ public:
     virtual void decompress(unsigned char *data,
                             const IndexEntry &index) const;
 
-    virtual Marker* build();
+    virtual std::unique_ptr<Marker> build();
 
 protected:
     std::unique_ptr<Marker> m_marker = nullptr;

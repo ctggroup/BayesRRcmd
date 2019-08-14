@@ -35,6 +35,7 @@ std::ostream &operator<<(std::ostream &os, const PreprocessDataType &obj);
 
 struct Marker;
 using MarkerPtr = std::shared_ptr<Marker>;
+using ConstMarkerPtr = std::shared_ptr<const Marker>;
 
 class MarkerBuilder;
 MarkerBuilder* builderForType(const PreprocessDataType type);

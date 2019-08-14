@@ -1,8 +1,8 @@
 #include "densebayesrkernel.h"
 
-DenseRKernel::DenseRKernel(const DenseMarker *marker)
+DenseRKernel::DenseRKernel(const std::shared_ptr<const DenseMarker> &marker)
     : BayesRKernel(marker)
-    , dm(marker)
+    , dm(marker.get())
 {
     assert(dm);
 }

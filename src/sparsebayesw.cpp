@@ -44,12 +44,12 @@ SparseBayesW::SparseBayesW(const Data *data, const Options *opt, const long memP
 
 }
 
-std::unique_ptr<Kernel> SparseBayesW::kernelForMarker(const Marker *marker) const
+std::unique_ptr<Kernel> SparseBayesW::kernelForMarker(const ConstMarkerPtr &marker) const
 {
     switch (m_opt->preprocessDataType) {
     case PreprocessDataType::SparseRagged:
     {
-        const auto* raggedSparseMarker = dynamic_cast<const RaggedSparseMarker*>(marker);
+        const auto raggedSparseMarker = dynamic_pointer_cast<const RaggedSparseMarker>(marker);
         assert(raggedSparseMarker);
         return std::make_unique<RaggedBayesWKernel>(raggedSparseMarker);
     }

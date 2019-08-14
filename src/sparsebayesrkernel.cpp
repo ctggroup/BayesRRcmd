@@ -1,8 +1,8 @@
 #include "sparsebayesrkernel.h"
 
-SparseBayesRKernel::SparseBayesRKernel(const SparseMarker *marker)
+SparseBayesRKernel::SparseBayesRKernel(const std::shared_ptr<const SparseMarker> &marker)
     : BayesRKernel(marker)
-    , sm(marker)
+    , sm(marker.get())
 {
     assert(sm);
 }
