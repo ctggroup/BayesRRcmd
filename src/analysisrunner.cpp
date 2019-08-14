@@ -118,16 +118,72 @@ bool preprocess(const Options &options) {
     }
 }
 
-bool runPpBayesAnalysis(const Options &options) {
-    assert(options.analysisType == AnalysisType::PpBayes ||
-           options.analysisType == AnalysisType::AsyncPpBayes);
+bool runBayesRAnalysis(const Options *options, const Data *data, AnalysisGraph *graph) {
+    switch (options->preprocessDataType) {
+    case PreprocessDataType::Dense:
+    {
+        DenseBayesRRmz analysis(data, options);
+        analysis.runGibbs(graph);
+        break;
+    }
 
+    case PreprocessDataType::SparseEigen:
+        // Fall through
+    case PreprocessDataType::SparseRagged:
+    {
+        SparseBayesRRG analysis(data, options);
+        analysis.runGibbs(graph);
+        break;
+    }
+
+    default:
+        cerr << "Unsupported DataType: BayesR does not support"
+             << options->preprocessDataType << endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph) {
+    // If there is a file for fixed effects (model matrix), then read the data
+    if(!options->fixedFile.empty()) {
+        data->readCSV(options->fixedFile, options->fixedEffectNumber);
+    }
+
+    // Read the failure indicator vector
+    data->readFailureFile(options->failureFile);
+
+    switch (options->preprocessDataType) {
+    case PreprocessDataType::Dense:
+    {
+        DenseBayesW analysis(data, options, sysconf(_SC_PAGE_SIZE));
+        analysis.runGibbs(graph);
+        break;
+    }
+
+    case PreprocessDataType::SparseRagged:
+    {
+        SparseBayesW analysis(data, options, sysconf(_SC_PAGE_SIZE));
+        analysis.runGibbs(graph);
+        break;
+    }
+
+    default:
+        cerr << "Unsupported DataType: BayesW does not support"
+             << options->preprocessDataType << endl;
+        return false;
+    }
+
+    return true;
+}
+
+bool runBayesAnalysis(const Options &options) {
     Data data;
     readMetaData(data, options);
 
     const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
     const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
-
 
     cout << "Start reading preprocessed bed file: " << ppFile << endl;
     clock_t start_bed = clock();
@@ -154,89 +210,29 @@ bool runPpBayesAnalysis(const Options &options) {
         data.unmapCompressedPreprocessedBedFile();
     };
 
-    switch (options.preprocessDataType) {
-    case PreprocessDataType::Dense:
-    {
-        DenseBayesRRmz analysis(&data, &options);
-        analysis.runGibbs(graph.get());
-        break;
-    }
-
-    case PreprocessDataType::SparseEigen:
+    bool result = false;
+    switch (options.analysisType) {
+    case AnalysisType::PpBayes:
         // Fall through
-    case PreprocessDataType::SparseRagged:
-    {
-        SparseBayesRRG analysis(&data, &options);
-        analysis.runGibbs(graph.get());
+    case AnalysisType::AsyncPpBayes:
+        result = runBayesRAnalysis(&options, &data, graph.get());
         break;
-    }
+
+    case AnalysisType::Gauss:
+        // Fall through
+    case AnalysisType::AsyncGauss:
+        result = runBayesWAnalysis(&options, &data, graph.get());
+        break;
 
     default:
-        cerr << "Unsupported DataType: " << options.preprocessDataType << endl;
+        cerr << "Unsupported AnalysisType: runBayesAnalysis does not support"
+             << options.analysisType << endl;
         cleanup();
         return false;
     }
 
     cleanup();
-    return true;
-}
-
-bool runGaussAnalysis(const Options &options) {
-    assert(options.analysisType == AnalysisType::Gauss);
-    assert(options.preprocessDataType == PreprocessDataType::Dense ||
-           options.preprocessDataType == PreprocessDataType::SparseRagged);
-
-    // Make a copy as BayesW takes a non-const reference
-    Options gaussOptions = options;
-
-
-    Data data;
-    readMetaData(data, gaussOptions);
-
-    const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
-    const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
-
-    cout << "Start reading preprocessed bed file: " << ppFile << endl;
-    clock_t start_bed = clock();
-    data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
-    clock_t end = clock();
-    printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-    cout << endl;
-
-    // If there is a file for fixed effects (model matrix), then read the data
-    if(!options.fixedFile.empty()) {
-        data.readCSV(options.fixedFile, options.fixedEffectNumber);
-    }
-
-    // Read the failure indicator vector
-    data.readFailureFile(gaussOptions.failureFile);
-
-    std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
-    if (options.numThreadSpawned > 0)
-        taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
-
-    const bool useSparseData = gaussOptions.preprocessDataType == PreprocessDataType::SparseRagged;
-
-    std::unique_ptr<AnalysisGraph> graph {nullptr};
-    if (options.analysisType == AnalysisType::AsyncGauss) {
-        graph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
-        auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
-        parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
-        parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
-    } else {
-        graph = std::make_unique<LimitSequenceGraph>(options.numThread);
-    }
-
-    int result = 0;
-    if (useSparseData) {
-        SparseBayesW analysis(&data, &gaussOptions, sysconf(_SC_PAGE_SIZE));
-        result = analysis.runGibbs(graph.get());
-    } else {
-        DenseBayesW analysis(&data, &gaussOptions, sysconf(_SC_PAGE_SIZE));
-        result = analysis.runGibbs(graph.get());
-    }
-
-    return result == 0;
+    return result;
 }
 
 bool AnalysisRunner::run(const Options &options)
@@ -253,17 +249,15 @@ bool AnalysisRunner::run(const Options &options)
     case AnalysisType::PpBayes:
         // Fall through
     case AnalysisType::AsyncPpBayes:
+        // Fall through
+    case AnalysisType::Gauss:
+        // Fall through
+    case AnalysisType::AsyncGauss:
         if (options.S.size() == 0) {
             cerr << "Variance components `--S` are missing or could not be parsed!" << endl;
             return false;
         }
-
-        return runPpBayesAnalysis(options);
-
-     case AnalysisType::Gauss:
-        // Fall through
-    case AnalysisType::AsyncGauss:
-        return runGaussAnalysis(options);
+        return runBayesAnalysis(options);
 
     default:
         cerr << "Unknown --analyis-type" << endl;
