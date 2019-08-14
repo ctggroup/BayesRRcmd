@@ -91,6 +91,15 @@ public:
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
     vector<int> G; 			 // groups
+    VectorXd fail;			 // Failure indicator
+
+    // Vectors for the sparse format solution
+    std::vector<std::vector<int>> Zones; // Vector for each SNP: per SNP all the indices with 1 allele are written down
+    std::vector<std::vector<int>> Ztwos; // Vector for each SNP: per SNP all the indices with 2 alleles are written down
+    VectorXd means; //Mean for each SNP
+    VectorXd sds;
+    VectorXd mean_sd_ratio;
+
 
     MatrixXf XPX;            // X'X the MME lhs
     MatrixXf ZPX;            // Z'X the covariance matrix of SNPs and fixed effects
@@ -121,7 +130,7 @@ public:
     vector<bool> fullSnpFlag;
     vector<vector<SnpInfo*> > mldmVec;
 
-    unsigned numFixedEffects;
+    unsigned numFixedEffects = 0;
     unsigned numSnps;
     unsigned numInds;
 
@@ -134,14 +143,20 @@ public:
     void mapCompressedPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
     void unmapCompressedPreprocessedBedFile();
 
+    void readCSV(const string &filename, int cols);
+
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);
     void readBedFile_noMPI(const string &bedFile);
+    void readBedFile_noMPI_unstandardised(const string &bedFile);
+
     void readPhenotypeFile(const string &phenFile);
     void readGroupFile(const string &groupFile);
     void readCSVFile(const string &csvFile);
     void readCSVPhenFile( const string &csvFile);
     void readmSFile(const string& mSfile);
+    //BayesW variables
+    void readFailureFile(const string &failureFile);
 };
 
 #endif /* data_hpp */

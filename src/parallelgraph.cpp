@@ -2,7 +2,7 @@
 
 #include "compression.h"
 #include "BayesRBase.hpp"
-#include "marker.h"
+#include "kernel.h"
 #include "markerbuilder.h"
 
 #include <iostream>
@@ -19,15 +19,15 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     auto f = [this] (DecompressionTuple tuple) -> DecompressionTuple {
         auto &msg = std::get<1>(tuple);
         // Decompress the column
-        std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
+        std::unique_ptr<MarkerBuilder> builder{m_analysis->markerBuilder()};
         builder->initialise(msg.snp, msg.numInds);
-        const auto index = m_bayes->indexEntry(msg.snp);
-        if (m_bayes->compressed()) {
-            builder->decompress(m_bayes->compressedData(), index);
+        const auto index = m_analysis->indexEntry(msg.snp);
+        if (m_analysis->compressed()) {
+            builder->decompress(m_analysis->compressedData(), index);
         } else {
-            builder->read(m_bayes->preprocessedFile(), index);
+            builder->read(m_analysis->preprocessedFile(), index);
         }
-        msg.marker.reset(builder->build());
+        msg.kernel = m_analysis->kernelForMarker(builder->build());
         return tuple;
     };
 
@@ -40,7 +40,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     // Sampling of the column to the async algorithm class
     auto g = [this] (AnalysisTuple tuple) -> AnalysisTuple {
         auto &msg = std::get<1>(std::get<1>(tuple));
-        msg.result = m_bayes->processColumnAsync(msg.marker.get());
+        msg.result = m_analysis->processColumnAsync(msg.kernel.get());
         return tuple;
     };
 
@@ -72,7 +72,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
         auto &decompressionTuple = std::get<1>(input);
         auto &msg = std::get<1>(decompressionTuple);
 
-        m_bayes->updateGlobal(msg.marker.get(),
+        m_analysis->updateGlobal(msg.kernel.get(),
                               msg.result->betaOld,
                               msg.result->beta,
                               *msg.result->deltaEpsilon);
@@ -121,18 +121,18 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     make_edge(output_port<1>(*m_globalUpdateNode), *m_analysisControlNode);
 }
 
-void ParallelGraph::exec(BayesRBase *bayes,
+void ParallelGraph::exec(Analysis *analysis,
                               unsigned int numInds,
                               unsigned int numSnps,
                               const std::vector<unsigned int> &markerIndices)
 {
-    if (!bayes) {
+    if (!analysis) {
         std::cerr << "Cannot run ParallelGraph without bayes" << std::endl;
         return;
     }
 
     // Set our Bayes for this run
-    m_bayes = bayes;
+    m_analysis = analysis;
 
     // Do not allow Eigen to parallalize during ParallelGraph execution.
     const auto eigenThreadCount = Eigen::nbThreads();
@@ -156,7 +156,7 @@ void ParallelGraph::exec(BayesRBase *bayes,
     Eigen::setNbThreads(eigenThreadCount);
 
     // Clean up
-    m_bayes = nullptr;
+    m_analysis = nullptr;
 }
 
 size_t ParallelGraph::decompressionNodeConcurrency() const

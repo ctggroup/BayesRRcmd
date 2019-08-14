@@ -2,13 +2,6 @@
 
 #include <iostream>
 
-VectorXdPtr EigenSparseMarker::calculateEpsilonChange(const double beta_old, const double beta)
-{
-    SparseMarker::calculateEpsilonChange(beta_old, beta);
-    const double dBeta = beta_old - beta;
-    return std::make_unique<VectorXd>(dBeta * Zg / sd - dBeta * mean / sd * *ones);
-}
-
 std::streamsize EigenSparseMarker::size() const
 {
     const auto count = static_cast<unsigned long>(Zg.nonZeros());
@@ -75,9 +68,4 @@ bool EigenSparseMarker::isValid() const
     // nonZeros can be > 0 but size can be 0 if the SparseVector hasn't been
     // built correctly.
     return Zg.size() > 0;
-}
-
-double EigenSparseMarker::dot(const VectorXd &epsilon) const
-{
-    return Zg.dot(epsilon) / sd;
 }

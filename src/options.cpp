@@ -12,6 +12,10 @@ AnalysisType parseAnalysisType(const std::string &type)
         return AnalysisType::PpBayes;
     else if (type.compare("asyncppbayes") == 0)
         return AnalysisType::AsyncPpBayes;
+    else if (type.compare("gauss") == 0)
+        return AnalysisType::Gauss;
+    else if (type.compare("asyncgauss") == 0)
+        return AnalysisType::AsyncGauss;
     else
         return AnalysisType::Unknown;
 }
@@ -154,6 +158,31 @@ void Options::inputOptions(const int argc, const char* argv[]){
             groupFile = argv[++i];
             ss << "--group " << argv[i] << "\n";
         }
+        // Fixed effects matrix file
+        else if (!strcmp(argv[i], "--fixed_effects")) {
+        	fixedFile = argv[++i];
+           	ss << "--fixed_effects " << argv[i] << "\n";
+      	}
+        // Fixed effects number
+        else if (!strcmp(argv[i], "--fixedEffectNumber")) {
+                fixedEffectNumber = atoi(argv[++i]);
+                ss << "--fixedEffectNumber " << argv[i] << "\n";
+        }
+        // Failure vector file
+        else if (!strcmp(argv[i], "--failure")) {
+        	failureFile = argv[++i];
+        	ss << "--failure " << argv[i] << "\n";
+		}
+        else if (!strcmp(argv[i], "--bayesW_version")) {
+        		bayesW_version = argv[++i];
+               	ss << "--bayesW_version " << argv[i] << "\n";
+       	}
+        else if (!strcmp(argv[i], "--quad_points")) {
+        		quad_points = argv[++i];
+                ss << "--quad_points " << argv[i] << "\n";
+          	}
+
+
         else if (!strcmp(argv[i], "--thread")) {
             numThread = atoi(argv[++i]);
             ss << "--thread " << argv[i] << "\n";

@@ -9,7 +9,7 @@
 
 using namespace tbb::flow;
 
-struct Marker;
+struct Kernel;
 
 class LimitSequenceGraph : public AnalysisGraph
 {
@@ -18,7 +18,7 @@ public:
 
     bool isAsynchronous() const override { return false; }
 
-    void exec(BayesRBase* bayes,
+    void exec(Analysis* analysis,
               unsigned int numKeptInds,
               unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;
@@ -28,7 +28,7 @@ private:
         unsigned int id = 0;
         unsigned int snp = 0;
         unsigned int numInds = 0;
-        std::shared_ptr<Marker> marker = nullptr;
+        std::shared_ptr<Kernel> kernel = nullptr;
     };
 
     std::unique_ptr<graph> m_graph;

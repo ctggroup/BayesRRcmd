@@ -10,12 +10,13 @@ class SparseBayesRRG : public BayesRBase
     friend class SparseParallelGraph;
 
 public:
-    explicit SparseBayesRRG(const Data *data, const Options &opt);
+    explicit SparseBayesRRG(const Data *data, const Options *opt);
     ~SparseBayesRRG() override;
 
+    std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const override;
     MarkerBuilder *markerBuilder() const override;
 
-  void updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd &deltaEps ) override;
+    void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps ) override;
    void updateMu(double old_mu,double N);
 protected:
     double m_asyncEpsilonSum = 0.0;
@@ -25,9 +26,9 @@ protected:
     void init(int K, unsigned int markerCount, unsigned int individualCount) override;
     void prepareForAnylsis() override;
 
-    void prepare(Marker *marker) override;
-    void readWithSharedLock(Marker *marker) override;
-    void writeWithUniqueLock(Marker *marker) override;
+    void prepare(BayesRKernel *kernel) override;
+    void readWithSharedLock(BayesRKernel *kernel) override;
+    void writeWithUniqueLock(BayesRKernel *kernel) override;
    
 };
 

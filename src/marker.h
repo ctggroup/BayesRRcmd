@@ -23,12 +23,6 @@ struct Marker
     unsigned int i = 0;
     unsigned int numInds = 0;
 
-    virtual double computeNum(const VectorXd &epsilon,
-                              const double beta_old) = 0;
-
-    virtual VectorXdPtr calculateEpsilonChange(const double beta_old,
-                                               const double beta) = 0;
-
     virtual CompressedMarker compress() const;
     virtual void decompress(unsigned char* data,
                             const IndexEntry& index);

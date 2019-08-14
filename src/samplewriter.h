@@ -18,9 +18,16 @@ public:
     void open() override;
     void openGroups(int numberGroups);
 
+    void setFixedCount(unsigned int fixedCount) { m_fixedCount = fixedCount; }
+    unsigned int fixedCount() const { return m_fixedCount; }
+
+    void open_bayesW();
+    void open_bayesW_fixed();
+
 private:
     unsigned int m_markerCount;
     unsigned int m_individualCount;
+    unsigned int m_fixedCount;
 };
 
 #endif // SAMPLEWRITER_H

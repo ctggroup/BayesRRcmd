@@ -6,6 +6,7 @@
  */
 
 #include "BayesRBase.hpp"
+#include "bayesrkernel.h"
 #include "samplewriter.h"
 #include "analysisgraph.hpp"
 #include "marker.h"
@@ -14,52 +15,21 @@
 #include <chrono>
 #include <mutex>
 
-BayesRBase::BayesRBase(const Data *data, const Options &opt)
-    : m_data(data)
-    , m_opt(opt)
-    , m_outputFile(opt.mcmcSampleFile)
-    , m_iterLogFile(opt.iterLogFile)
-    , m_seed(opt.seed)
-    , m_maxIterations(opt.chainLength)
-    , m_burnIn(opt.burnin)
-    , m_thinning(opt.thin)
-    , m_cva(opt.S)
-    , m_dist(opt.seed)
-    , m_showDebug(opt.iterLog)
-    , m_colLog(opt.colLog)
-    , m_colLogFile(opt.colLogFile)
+BayesRBase::BayesRBase(const Data *data, const Options *opt)
+    : Analysis(data, opt)
+    , m_outputFile(opt->mcmcSampleFile)
+    , m_iterLogFile(opt->iterLogFile)
+    , m_seed(opt->seed)
+    , m_maxIterations(opt->chainLength)
+    , m_burnIn(opt->burnin)
+    , m_thinning(opt->thin)
+    , m_cva(opt->S)
+    , m_dist(opt->seed)
+    , m_showDebug(opt->iterLog)
+    , m_colLog(opt->colLog)
+    , m_colLogFile(opt->colLogFile)
 {
     assert(m_data);
-}
-
-BayesRBase::~BayesRBase()
-{
-}
-
-IndexEntry BayesRBase::indexEntry(unsigned int i) const
-{
-    if (!m_data)
-        return {};
-
-    return m_data->ppbedIndex[i];
-}
-
-bool BayesRBase::compressed() const
-{
-    return m_opt.compress;
-}
-
-unsigned char* BayesRBase::compressedData() const
-{
-    if (!m_data)
-        return nullptr;
-
-    return reinterpret_cast<unsigned char*>(m_data->ppBedMap);
-}
-
-std::string BayesRBase::preprocessedFile() const
-{
-    return ppFileForType(m_opt.preprocessDataType, m_opt.dataFile);
 }
 
 void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCount)
@@ -126,22 +96,22 @@ void BayesRBase::prepareForAnylsis()
     // Empty in BayesRBase
 }
 
-void BayesRBase::prepare(Marker *marker)
+void BayesRBase::prepare(BayesRKernel *kernel)
 {
     // Empty in BayesRBase
-    (void) marker; // Unused
+    (void) kernel; // Unused
 }
 
-void BayesRBase::readWithSharedLock(Marker *marker)
+void BayesRBase::readWithSharedLock(BayesRKernel *kernel)
 {
     // Empty in BayesRBase
-    (void) marker; // Unused
+    (void) kernel; // Unused
 }
 
-void BayesRBase::writeWithUniqueLock(Marker *marker)
+void BayesRBase::writeWithUniqueLock(BayesRKernel *kernel)
 {
     // Empty in BayesRBase
-    (void) marker; // Unused
+    (void) kernel; // Unused
 }
 
 int BayesRBase::runGibbs(AnalysisGraph *analysis)
@@ -267,8 +237,11 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     return 0;
 }
 
-void BayesRBase::processColumn(Marker *marker)
+void BayesRBase::processColumn(Kernel *kernel)
 {
+    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel);
+    assert(bayesKernel);
+
     const unsigned int N(m_data->numInds);
     const double NM1 = double(N - 1);
     const int K(int(m_cva.cols()) + 1);
@@ -277,11 +250,11 @@ void BayesRBase::processColumn(Marker *marker)
     double beta_old;
     const auto t1c = std::chrono::high_resolution_clock::now();
 
-    beta_old = m_beta(marker->i);
-    const auto group = m_data->G[marker->i];
+    beta_old = m_beta(bayesKernel->marker->i);
+    const auto group = m_data->G[bayesKernel->marker->i];
 
-    prepare(marker);
-    readWithSharedLock(marker);
+    prepare(bayesKernel);
+    readWithSharedLock(bayesKernel);
 
     // muk for the zeroth component=0
     m_muk[0] = 0.0;
@@ -297,7 +270,7 @@ void BayesRBase::processColumn(Marker *marker)
     m_denom = NM1 + sigmaEOverSigmaG * m_cVaI.segment(1, km1).array();
 
     const auto num_begin = std::chrono::high_resolution_clock::now();
-    const double num = marker->computeNum(m_epsilon, beta_old);
+    const double num = bayesKernel->computeNum(m_epsilon, beta_old);
     const auto num_end = std::chrono::high_resolution_clock::now();
     //The rest of the algorithm remains the same
      const auto beta_begin = std::chrono::high_resolution_clock::now();
@@ -324,13 +297,13 @@ void BayesRBase::processColumn(Marker *marker)
         if (p <= acum) {
             //if zeroth component
             if (k == 0) {
-                m_beta(marker->i) = 0;
+                m_beta(bayesKernel->marker->i) = 0;
             } else {
-                m_beta(marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
-                m_betasqnG(group) += pow(m_beta(marker->i), 2);
+                m_beta(bayesKernel->marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+                m_betasqnG(group) += pow(m_beta(bayesKernel->marker->i), 2);
             }
             m_v.row(group)(k)+=1.0;
-            m_components[marker->i] = k;
+            m_components[bayesKernel->marker->i] = k;
             break;
         } else {
             //if too big or too small
@@ -342,7 +315,7 @@ void BayesRBase::processColumn(Marker *marker)
         }
     }
     const auto beta_end = std::chrono::high_resolution_clock::now();
-    const double beta_new = m_beta(marker->i);
+    const double beta_new = m_beta(bayesKernel->marker->i);
 
     //until here
     //we skip update if old and new beta equals zero
@@ -350,8 +323,8 @@ void BayesRBase::processColumn(Marker *marker)
 
     const auto eps_begin = std::chrono::high_resolution_clock::now();
     if (!skipUpdate) {
-        m_epsilon += *marker->calculateEpsilonChange(beta_old, beta_new);
-        writeWithUniqueLock(marker);
+        m_epsilon += *bayesKernel->calculateEpsilonChange(beta_old, beta_new);
+        writeWithUniqueLock(bayesKernel);
     }
     const auto eps_end = std::chrono::high_resolution_clock::now();
 
@@ -361,33 +334,36 @@ void BayesRBase::processColumn(Marker *marker)
       const auto numDuration = std::chrono::duration_cast<std::chrono::microseconds>(num_end - num_begin).count();
       const auto betaDuration = std::chrono::duration_cast<std::chrono::microseconds>(beta_end - beta_begin).count();
       const auto epsDuration = std::chrono::duration_cast<std::chrono::microseconds>(eps_end - eps_begin).count();
-      colLog<< marker->i, static_cast<double>(numDuration), static_cast<double>(betaDuration),static_cast<double>(epsDuration);
+      colLog<< bayesKernel->marker->i, static_cast<double>(numDuration), static_cast<double>(betaDuration),static_cast<double>(epsDuration);
       m_colWriter.write(colLog);
     }
    // const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
 
 }
 
-std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
+std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
 {
-    const auto group = m_data->G[marker->i];
+    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel);
+    assert(bayesKernel);
+
+    const auto group = m_data->G[bayesKernel->marker->i];
     const double sigmaG = m_sigmaG[group];
     double component = 0;
     auto result = std::make_unique<AsyncResult>();
     // to keep track of the column processing time
     const auto t1c = std::chrono::high_resolution_clock::now();
-    prepare(marker);
+    prepare(bayesKernel);
 
     double num = 0;
     {
         // Use a shared lock to allow multiple threads to read updates
         std::shared_lock lock(m_mutex);
 
-        result->beta = m_beta(marker->i);
+        result->beta = m_beta(bayesKernel->marker->i);
         result->betaOld = result->beta;
-        component = m_components(marker->i);
-        readWithSharedLock(marker);//here we are reading the column and also epsilonsum
-        num = marker->computeNum(m_epsilon, result->betaOld);
+        component = m_components(bayesKernel->marker->i);
+        readWithSharedLock(bayesKernel);//here we are reading the column and also epsilonsum
+        num = bayesKernel->computeNum(m_epsilon, result->betaOld);
     }
 
     // We compute the denominator in the variance expression to save computations
@@ -470,7 +446,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {
           // this  also updates epsilonSum!
-        result->deltaEpsilon = marker->calculateEpsilonChange(result->betaOld, result->beta);
+        result->deltaEpsilon = bayesKernel->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum
     }
     // In the new version of Async we do not synchronise epsilon Async, we will handle this through the global node
@@ -483,8 +459,8 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
       }
 
     // These updates do not need to be atomic
-    m_beta(marker->i) = result->beta;
-    m_components(marker->i) = component;
+    m_beta(bayesKernel->marker->i) = result->beta;
+    m_components(bayesKernel->marker->i) = component;
 
     //info on the running time of the column processing, would be very useful to have it as an option, and output it to a file
     //const auto t2c = std::chrono::high_resolution_clock::now();
@@ -495,13 +471,13 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Marker *marker)
     return result;
 }
 
-void BayesRBase::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd &deltaEps)
+void BayesRBase::updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps)
 {
     (void) beta_old; // Unused;
-    assert(marker);
+    assert(kernel);
 
     m_epsilon += deltaEps;
-    m_betasqnG[m_data->G[marker->i]] += pow(beta, 2);
+    m_betasqnG[m_data->G[kernel->marker->i]] += pow(beta, 2);
 }
 
 void BayesRBase::printDebugInfo() const

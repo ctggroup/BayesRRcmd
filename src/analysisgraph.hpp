@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <vector>
 
-class BayesRBase;
+class Analysis;
 
 class AnalysisGraph
 {
@@ -15,13 +15,13 @@ public:
     // Return true if the analysis calls BayesRBase::processColumnAsync
     virtual bool isAsynchronous() const = 0;
 
-    virtual void exec(BayesRBase* bayes,
+    virtual void exec(Analysis* analysis,
                       unsigned int numInds,
                       unsigned int numSnps,
                       const std::vector<unsigned int> &markerIndices) = 0;
 
 protected:
-    BayesRBase *m_bayes = nullptr;
+    Analysis *m_analysis = nullptr;
     size_t m_maxParallel = 0; // Default to tbb::flow::unlimited
 };
 

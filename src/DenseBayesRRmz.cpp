@@ -6,10 +6,11 @@
  */
 
 #include "DenseBayesRRmz.hpp"
+#include "densebayesrkernel.h"
 #include "densemarker.h"
 #include "common.h"
 
-DenseBayesRRmz::DenseBayesRRmz(const Data *data, const Options &opt)
+DenseBayesRRmz::DenseBayesRRmz(const Data *data, const Options *opt)
     : BayesRBase(data, opt)
 {
 
@@ -17,6 +18,13 @@ DenseBayesRRmz::DenseBayesRRmz(const Data *data, const Options &opt)
 
 DenseBayesRRmz::~DenseBayesRRmz()
 {
+}
+
+std::unique_ptr<Kernel> DenseBayesRRmz::kernelForMarker(const Marker *marker) const
+{
+    const auto* denseMarker = dynamic_cast<const DenseMarker*>(marker);
+    assert(denseMarker);
+    return std::make_unique<DenseRKernel>(denseMarker);
 }
 
 MarkerBuilder *DenseBayesRRmz::markerBuilder() const
@@ -36,14 +44,6 @@ void DenseBayesRRmz::prepareForAnylsis()
 {
     if (m_isAsync)
         std::memcpy(m_asyncEpsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
-}
-
-void DenseBayesRRmz::readWithSharedLock(Marker *marker)
-{
-    auto* denseMarker = dynamic_cast<DenseMarker*>(marker);
-    assert(denseMarker);
-
-    denseMarker->component = m_components(denseMarker->i);
 }
 
 //update for mu, in dense case the cache variable m_epsilonSum is not used

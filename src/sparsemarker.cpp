@@ -5,20 +5,6 @@
 #include <fstream>
 #include <iostream>
 
-double SparseMarker::computeNum(const VectorXd &epsilon, const double beta_old)
-{
-    return computeNum(epsilon, beta_old, epsilonSum);
-}
-
-VectorXdPtr SparseMarker::calculateEpsilonChange(const double beta_old, const double beta)
-{
-    // now every update only saves delta epsilon sum
-    epsilonSum = computeEpsilonSumUpdate(beta_old, beta);
-
-    // return nullptr because we don't calculate the epsilon change here
-    return nullptr;
-}
-
 void SparseMarker::updateStatistics(unsigned int allele1, unsigned int allele2)
 {
     if (allele1 == 0 && allele2 == 1) {  // missing genotype
@@ -69,16 +55,4 @@ void SparseMarker::write(std::ostream *outStream) const
     writeDouble(sd);
     writeDouble(sqrdZ);
     writeDouble(Zsum);
-}
-
-double SparseMarker::computeNum(const VectorXd &epsilon, const double beta_old, const double epsilonSum)
-{
-    return beta_old * (static_cast<double>(numInds) - 1.0) - mean * epsilonSum / sd + dot(epsilon);
-}
-
-double SparseMarker::computeEpsilonSumUpdate(const double beta_old, const double beta) const
-{
-    //Regardless of which scheme, the update of epsilonSum is the same
-    const double dBeta = beta_old - beta;
-    return dBeta * Zsum / sd - dBeta * mean * static_cast<double>(numInds) / sd;
 }

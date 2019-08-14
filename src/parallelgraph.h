@@ -10,7 +10,7 @@
 
 class BayesRBase;
 
-struct Marker;
+struct Kernel;
 struct AsyncResult;
 
 using DecompressionToken = size_t;
@@ -25,7 +25,7 @@ public:
 
     bool isAsynchronous() const override { return true; }
 
-    void exec(BayesRBase* bayes,
+    void exec(Analysis* analysis,
               unsigned int numKeptInds,
               unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;
@@ -51,7 +51,7 @@ private:
         unsigned int id = 0;
         unsigned int snp = 0;
         unsigned int numInds = 0;
-        std::shared_ptr<Marker> marker = nullptr;
+        std::shared_ptr<Kernel> kernel = nullptr;
         std::shared_ptr<const AsyncResult> result = nullptr;
     };
 

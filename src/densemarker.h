@@ -6,14 +6,8 @@
 
 struct DenseMarker : public Marker
 {
-    double component = 0;
-
     std::shared_ptr<unsigned char[]> buffer = nullptr;
     std::shared_ptr<Map<VectorXd>> Cx = nullptr;
-
-    double computeNum(const VectorXd &epsilon, const double beta_old) override;
-    VectorXdPtr calculateEpsilonChange(const double beta_old,
-                                       const double beta) override;
 
     CompressedMarker compress() const override;
     void decompress(unsigned char *data, const IndexEntry &index) override;

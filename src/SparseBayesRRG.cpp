@@ -1,10 +1,11 @@
 #include "SparseBayesRRG.hpp"
 
 #include "common.h"
-#include "eigensparsemarker.h"
+#include "eigenbayesrkernel.h"
+#include "raggedbayesrkernel.h"
 #include "sparsemarker.h"
 
-SparseBayesRRG::SparseBayesRRG(const Data *data, const Options &opt)
+SparseBayesRRG::SparseBayesRRG(const Data *data, const Options *opt)
     : BayesRBase(data, opt)
 {
 }
@@ -14,17 +15,43 @@ SparseBayesRRG::~SparseBayesRRG()
 
 }
 
+std::unique_ptr<Kernel> SparseBayesRRG::kernelForMarker(const Marker *marker) const
+{
+    switch (m_opt->preprocessDataType) {
+    case PreprocessDataType::SparseEigen:
+    {
+        const auto* eigenSparseMarker = dynamic_cast<const EigenSparseMarker*>(marker);
+        assert(eigenSparseMarker);
+        return std::make_unique<EigenBayesRKernel>(eigenSparseMarker);
+    }
+
+    case PreprocessDataType::SparseRagged:
+    {
+        const auto* raggedSparseMarker = dynamic_cast<const RaggedSparseMarker*>(marker);
+        assert(raggedSparseMarker);
+        return std::make_unique<RaggedBayesRKernel>(raggedSparseMarker);
+    }
+
+    default:
+        std::cerr << "SparseBayesRRG::kernelForMarker - unsupported type: "
+                  << m_opt->preprocessDataType
+                  << std::endl;
+    }
+
+    return {};
+}
+
 MarkerBuilder *SparseBayesRRG::markerBuilder() const
 {
-    switch (m_opt.preprocessDataType) {
+    switch (m_opt->preprocessDataType) {
     case PreprocessDataType::SparseEigen:
         // Fall through
     case PreprocessDataType::SparseRagged:
-        return builderForType(m_opt.preprocessDataType);
+        return builderForType(m_opt->preprocessDataType);
 
     default:
         std::cerr << "SparseBayesRRG::markerBuilder - unsupported type: "
-                  << m_opt.preprocessDataType
+                  << m_opt->preprocessDataType
                   << std::endl;
     }
 
@@ -50,39 +77,39 @@ void SparseBayesRRG::prepareForAnylsis()
     }
 }
 
-void SparseBayesRRG::prepare(Marker *marker)
+void SparseBayesRRG::prepare(BayesRKernel *kernel)
 {
     // Hmmm
-    if (auto* eigenSparseMarker = dynamic_cast<EigenSparseMarker*>(marker)) {
-        eigenSparseMarker->ones = &m_ones;
+    if (auto* eigenBayesRKernel = dynamic_cast<EigenBayesRKernel*>(kernel)) {
+        eigenBayesRKernel->ones = &m_ones;
     }
 }
 
-void SparseBayesRRG::readWithSharedLock(Marker *marker)
+void SparseBayesRRG::readWithSharedLock(BayesRKernel *kernel)
 {
-    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
-    assert(sparseMarker);
+    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel);
+    assert(sparseKernel);
     //now we update to the global epsilonSum 
-    sparseMarker->epsilonSum=m_epsilonSum;
+    sparseKernel->epsilonSum = m_epsilonSum;
 }
 
-void SparseBayesRRG::writeWithUniqueLock(Marker *marker)
+void SparseBayesRRG::writeWithUniqueLock(BayesRKernel *kernel)
 {
-    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
-    assert(sparseMarker);
+    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel);
+    assert(sparseKernel);
     if (m_isAsync)
       {} //now the global node is in charge of updating m_epsilon  
     else
-        m_epsilonSum += sparseMarker->epsilonSum;
+        m_epsilonSum += sparseKernel->epsilonSum;
 }
 
-void SparseBayesRRG::updateGlobal(Marker *marker, const double beta_old, const double beta, const VectorXd& deltaEps)
+void SparseBayesRRG::updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd& deltaEps)
 {
-    BayesRBase::updateGlobal(marker, beta_old, beta, deltaEps);
+    BayesRBase::updateGlobal(kernel, beta_old, beta, deltaEps);
 
-    auto* sparseMarker = dynamic_cast<SparseMarker*>(marker);
-    assert(sparseMarker);
-    m_epsilonSum+=sparseMarker->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
+    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel);
+    assert(sparseKernel);
+    m_epsilonSum += sparseKernel->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
 }
 
 

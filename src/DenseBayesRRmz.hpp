@@ -16,9 +16,10 @@ class DenseBayesRRmz : public BayesRBase
     friend class DenseParallelGraph;
 
 public:
-    explicit DenseBayesRRmz(const Data *data, const Options &opt);
+    explicit DenseBayesRRmz(const Data *data, const Options *opt);
     ~DenseBayesRRmz() override;
 
+    std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const override;
     MarkerBuilder *markerBuilder() const override;
 
     void updateMu(double old_mu,double N) override;
@@ -26,8 +27,6 @@ public:
 protected:
     void init(int K, unsigned int markerCount, unsigned int individualCount) override;
     void prepareForAnylsis() override;
-
-    void readWithSharedLock(Marker *marker) override;
     
 };
 

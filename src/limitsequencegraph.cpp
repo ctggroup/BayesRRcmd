@@ -2,7 +2,7 @@
 
 #include "BayesRBase.hpp"
 #include "compression.h"
-#include "marker.h"
+#include "kernel.h"
 #include "markerbuilder.h"
 
 #include <iostream>
@@ -13,15 +13,15 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
 {
     // Decompress the column for this marker
     auto f = [this] (Message msg) -> Message {
-        std::unique_ptr<MarkerBuilder> builder{m_bayes->markerBuilder()};
+        std::unique_ptr<MarkerBuilder> builder{m_analysis->markerBuilder()};
         builder->initialise(msg.snp, msg.numInds);
-        const auto index = m_bayes->indexEntry(msg.snp);
-        if (m_bayes->compressed()) {
-            builder->decompress(m_bayes->compressedData(), index);
+        const auto index = m_analysis->indexEntry(msg.snp);
+        if (m_analysis->compressed()) {
+            builder->decompress(m_analysis->compressedData(), index);
         } else {
-            builder->read(m_bayes->preprocessedFile(), index);
+            builder->read(m_analysis->preprocessedFile(), index);
         }
-        msg.marker.reset(builder->build());
+        msg.kernel = m_analysis->kernelForMarker(builder->build());
         return msg;
     };
     // Do the decompression work on up to maxParallel threads at once
@@ -45,7 +45,7 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
 
     auto g = [this] (Message msg) -> continue_msg {
         // Delegate the processing of this column to the algorithm class
-        m_bayes->processColumn(msg.marker.get());
+        m_analysis->processColumn(msg.kernel.get());
 
         // Signal for next decompression task to continue
         return continue_msg();
@@ -71,18 +71,18 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
     make_edge(*m_samplingNode, m_limit->decrement);
 }
 
-void LimitSequenceGraph::exec(BayesRBase *bayes,
+void LimitSequenceGraph::exec(Analysis *analysis,
                               unsigned int numInds,
                               unsigned int numSnps,
                               const std::vector<unsigned int> &markerIndices)
 {
-    if (!bayes) {
+    if (!analysis) {
         std::cerr << "Cannot run LimitSequenceGraph without bayes" << std::endl;
         return;
     }
 
     // Set our Bayes for this run
-    m_bayes = bayes;
+    m_analysis = analysis;
 
     // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
     m_graph->reset();
@@ -97,5 +97,5 @@ void LimitSequenceGraph::exec(BayesRBase *bayes,
     m_graph->wait_for_all();
 
     // Clean up
-    m_bayes = nullptr;
+    m_analysis = nullptr;
 }

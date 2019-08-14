@@ -8,102 +8,102 @@
 
 
 #define handle_error(msg)                               \
-    do { perror(msg); exit(EXIT_FAILURE); } while (0)
+		do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 Data::Data()
-    : ppBedFd(-1)
-    , ppBedMap(nullptr)
-    , mappedZ(nullptr, 1, 1)
-    , ppbedIndex()
+: ppBedFd(-1)
+, ppBedMap(nullptr)
+, mappedZ(nullptr, 1, 1)
+, ppbedIndex()
 {
 }
 
 void Data::mapPreprocessBedFile(const string &preprocessedBedFile)
 {
-    // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
-    // that we would otherwise get as intermediate variables!
-    const size_t ppBedSize = size_t(numInds) * size_t(numSnps) * sizeof(double);
+	// Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
+	// that we would otherwise get as intermediate variables!
+	const size_t ppBedSize = size_t(numInds) * size_t(numSnps) * sizeof(double);
 
-    // Open and mmap the preprocessed bed file
-    ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
-    if (ppBedFd == -1)
-        throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
+	// Open and mmap the preprocessed bed file
+	ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
+	if (ppBedFd == -1)
+		throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
 
-    ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
-    if (ppBedMap == MAP_FAILED)
-        throw("Error: Failed to mmap preprocessed bed file");
+	ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
+	if (ppBedMap == MAP_FAILED)
+		throw("Error: Failed to mmap preprocessed bed file");
 
-    // Now that the raw data is available, wrap it into the mapped Eigen types using the
-    // placement new operator.
-    // See https://eigen.tuxfamily.org/dox/group__TutorialMapClass.html#TutorialMapPlacementNew
-    new (&mappedZ) Map<MatrixXd>(ppBedMap, numInds, numSnps);
+	// Now that the raw data is available, wrap it into the mapped Eigen types using the
+	// placement new operator.
+	// See https://eigen.tuxfamily.org/dox/group__TutorialMapClass.html#TutorialMapPlacementNew
+	new (&mappedZ) Map<MatrixXd>(ppBedMap, numInds, numSnps);
 }
 
 void Data::unmapPreprocessedBedFile()
 {
-    // Unmap the data from the Eigen accessors
-    new (&mappedZ) Map<MatrixXd>(nullptr, 1, 1);
+	// Unmap the data from the Eigen accessors
+	new (&mappedZ) Map<MatrixXd>(nullptr, 1, 1);
 
-    const auto ppBedSize = numInds * numSnps * sizeof(double);
-    munmap(ppBedMap, ppBedSize);
-    close(ppBedFd);
+	const auto ppBedSize = numInds * numSnps * sizeof(double);
+	munmap(ppBedMap, ppBedSize);
+	close(ppBedFd);
 }
 
 void Data::mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
-                                          const string &indexFile)
+		const string &indexFile)
 {
-    // Load the index to the compressed preprocessed bed file
-    ppbedIndex.resize(numSnps);
-    ifstream indexStream(indexFile, std::ifstream::binary);
-    if (!indexStream)
-        throw("Error: Failed to open compressed preprocessed bed file index");
-    indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
-                     numSnps * 3 * sizeof(unsigned long));
+	// Load the index to the compressed preprocessed bed file
+	ppbedIndex.resize(numSnps);
+	ifstream indexStream(indexFile, std::ifstream::binary);
+	if (!indexStream)
+		throw("Error: Failed to open compressed preprocessed bed file index");
+	indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
+			numSnps * 3 * sizeof(unsigned long));
 
-    // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
-    // that we would otherwise get as intermediate variables!
-    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
+	// Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
+	// that we would otherwise get as intermediate variables!
+	const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
 
-    // Open and mmap the preprocessed bed file
-    ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
-    if (ppBedFd == -1)
-        throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
+	// Open and mmap the preprocessed bed file
+	ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
+	if (ppBedFd == -1)
+		throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
 
-    ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
-    if (ppBedMap == MAP_FAILED)
-        throw("Error: Failed to mmap preprocessed bed file");
+	ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
+	if (ppBedMap == MAP_FAILED)
+		throw("Error: Failed to mmap preprocessed bed file");
 }
 
 void Data::unmapCompressedPreprocessedBedFile()
 {
-    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
-    munmap(ppBedMap, ppBedSize);
-    close(ppBedFd);
-    ppbedIndex.clear();
+	const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
+	munmap(ppBedMap, ppBedSize);
+	close(ppBedFd);
+	ppbedIndex.clear();
 }
 
 void Data::readFamFile(const string &famFile){
-    // ignore phenotype column
-    ifstream in(famFile.c_str());
-    if (!in) throw ("Error: can not open the file [" + famFile + "] to read.");
+	// ignore phenotype column
+	ifstream in(famFile.c_str());
+	if (!in) throw ("Error: can not open the file [" + famFile + "] to read.");
 
-    cout << "Reading PLINK FAM file from [" + famFile + "]." << endl;
+	cout << "Reading PLINK FAM file from [" + famFile + "]." << endl;
 
-    indInfoVec.clear();
-    indInfoMap.clear();
-    string fid, pid, dad, mom, sex, phen;
-    unsigned idx = 0;
-    while (in >> fid >> pid >> dad >> mom >> sex >> phen) {
-        IndInfo *ind = new IndInfo(idx++, fid, pid, dad, mom, atoi(sex.c_str()));
-        indInfoVec.push_back(ind);
-        if (indInfoMap.insert(pair<string, IndInfo*>(ind->catID, ind)).second == false) {
-            throw ("Error: Duplicate individual ID found: \"" + fid + "\t" + pid + "\".");
-        }
-    }
-    in.close();
-    numInds = (unsigned) indInfoVec.size();
+	indInfoVec.clear();
+	indInfoMap.clear();
+	string fid, pid, dad, mom, sex, phen;
+	unsigned idx = 0;
+	while (in >> fid >> pid >> dad >> mom >> sex >> phen) {
+		IndInfo *ind = new IndInfo(idx++, fid, pid, dad, mom, atoi(sex.c_str()));
+		indInfoVec.push_back(ind);
+		if (indInfoMap.insert(pair<string, IndInfo*>(ind->catID, ind)).second == false) {
+			throw ("Error: Duplicate individual ID found: \"" + fid + "\t" + pid + "\".");
+		}
+	}
+	in.close();
+	numInds = (unsigned) indInfoVec.size();
 
-    cout << numInds << " individuals to be included from [" + famFile + "]." << endl;
+	cout << numInds << " individuals to be included from [" + famFile + "]." << endl;
 }
 
 void Data::readBimFile(const string &bimFile) {
@@ -134,90 +134,202 @@ void Data::readBimFile(const string &bimFile) {
 
 
 void Data::readBedFile_noMPI(const string &bedFile){
-    unsigned i = 0, j = 0, k = 0;
+	unsigned i = 0, j = 0, k = 0;
 
-    if (numSnps == 0) throw ("Error: No SNP is retained for analysis.");
-    if (numInds == 0) throw ("Error: No individual is retained for analysis.");
+	if (numSnps == 0) throw ("Error: No SNP is retained for analysis.");
+	if (numInds == 0) throw ("Error: No individual is retained for analysis.");
 
-    Z.resize(numInds, numSnps);
-    ZPZdiag.resize(numSnps);
-    snp2pq.resize(numSnps);
+	Z.resize(numInds, numSnps);
+	ZPZdiag.resize(numSnps);
+	snp2pq.resize(numSnps);
 
-    // Read bed file
-    char ch[1];
-    bitset<8> b;
-    unsigned allele1=0, allele2=0;
-    ifstream BIT(bedFile.c_str(), ios::binary);
-    if (!BIT) throw ("Error: can not open the file [" + bedFile + "] to read.");
-    cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
-    for (i = 0; i < 3; i++) BIT.read(ch, 1); // skip the first three bytes
-    SnpInfo *snpInfo = NULL;
-    unsigned snp = 0, ind = 0;
-    unsigned nmiss = 0;
-    float mean = 0.0;
+	// Read bed file
+	char ch[1];
+	bitset<8> b;
+	unsigned allele1=0, allele2=0;
+	ifstream BIT(bedFile.c_str(), ios::binary);
+	if (!BIT) throw ("Error: can not open the file [" + bedFile + "] to read.");
+	cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
+	for (i = 0; i < 3; i++) BIT.read(ch, 1); // skip the first three bytes
+	SnpInfo *snpInfo = NULL;
+	unsigned snp = 0, ind = 0;
+	unsigned nmiss = 0;
+	float mean = 0.0;
 
-    for (j = 0, snp = 0; j < numSnps; j++) { // Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
-        snpInfo = snpInfoVec[j];
-        mean = 0.0;
-        nmiss = 0;
-        if (!snpInfo->included) {
-            for (i = 0; i < numInds; i += 4) BIT.read(ch, 1);
-            continue;
-        }
-        for (i = 0, ind = 0; i < numInds;) {
-            BIT.read(ch, 1);
-            if (!BIT) throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
-            b = ch[0];
-            k = 0;
-            while (k < 7 && i < numInds) {
-                if (!indInfoVec[i]->kept) k += 2;
-                else {
-                    allele1 = (!b[k++]);
-                    allele2 = (!b[k++]);
-                    if (allele1 == 0 && allele2 == 1) {  // missing genotype
-                        Z(ind++, snp) = -9;
-                        ++nmiss;
-                    } else {
-                        mean += Z(ind++, snp) = allele1 + allele2;
-                    }
-                }
-                i++;
-            }
-        }
-        // fill missing values with the mean
-        float sum = mean;
-        mean /= float(numInds-nmiss);
+	for (j = 0, snp = 0; j < numSnps; j++) { // Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
+		snpInfo = snpInfoVec[j];
+		mean = 0.0;
+		nmiss = 0;
+		if (!snpInfo->included) {
+			for (i = 0; i < numInds; i += 4) BIT.read(ch, 1);
+			continue;
+		}
+		for (i = 0, ind = 0; i < numInds;) {
+			BIT.read(ch, 1);
+			if (!BIT) throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
+			b = ch[0];
+			k = 0;
+			while (k < 7 && i < numInds) {
+				if (!indInfoVec[i]->kept) k += 2;
+				else {
+					allele1 = (!b[k++]);
+					allele2 = (!b[k++]);
+					if (allele1 == 0 && allele2 == 1) {  // missing genotype
+						Z(ind++, snp) = -9;
+						++nmiss;
+					} else {
+						mean += Z(ind++, snp) = allele1 + allele2;
+					}
+				}
+				i++;
+			}
+		}
+		// fill missing values with the mean
+		float sum = mean;
+		mean /= float(numInds-nmiss);
 
-        if (nmiss) {
-            for (i=0; i<numInds; ++i) {
-                if (Z(i,snp) == -9) Z(i,snp) = mean;
-            }
-        }
 
-        // compute allele frequency
-        snpInfo->af = 0.5f*mean;
-        snp2pq[snp] = 2.0f*snpInfo->af*(1.0f-snpInfo->af);
+		if (nmiss) {
+			for (i=0; i<numInds; ++i) {
+				if (Z(i,snp) == -9) Z(i,snp) = mean;
+			}
+		}
 
-        // standardize genotypes
-        Z.col(j).array() -= mean;
+		// compute allele frequency
+		snpInfo->af = 0.5f*mean;
+		snp2pq[snp] = 2.0f*snpInfo->af*(1.0f-snpInfo->af);
 
-        float sqn = Z.col(j).squaredNorm();
-        float std_ = 1.f / (sqrt(sqn / float(numInds)));
-        Z.col(j).array() *= std_;
+		// standardize genotypes
 
-        ZPZdiag[j] = sqn;
 
-        if (++snp == numSnps) break;
-    }
-    BIT.clear();
-    BIT.close();
-    // standardize genotypes
-    for (i=0; i<numSnps; ++i) {
-        Z.col(i).array() -= Z.col(i).mean();
-        ZPZdiag[i] = Z.col(i).squaredNorm();
-    }
-    cout << "Genotype data for " << numInds << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
+	//	Z.col(j).array() -= mean;
+
+	//	float sqn = Z.col(j).squaredNorm();
+		float sqn = Z.col(j).squaredNorm() - numInds * mean * mean;
+		Z.col(j).array() -= mean;
+		float std_ = 1.f / (sqrt(sqn / float(numInds)));
+
+		Z.col(j).array() *= std_;
+
+		ZPZdiag[j] = sqn;
+
+		if (++snp == numSnps) break;
+	}
+	BIT.clear();
+	BIT.close();
+	// standardize genotypes
+	for (i=0; i<numSnps; ++i) {
+		Z.col(i).array() -= Z.col(i).mean();
+		ZPZdiag[i] = Z.col(i).squaredNorm();
+	}
+	cout << "Genotype data for " << numInds << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
 }
+
+void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
+	unsigned i = 0, j = 0, k = 0;
+
+	if (numSnps == 0) throw ("Error: No SNP is retained for analysis.");
+	if (numInds == 0) throw ("Error: No individual is retained for analysis.");
+
+	Zones.resize(numSnps);
+	Ztwos.resize(numSnps);
+	means.resize(numSnps);
+	sds.resize(numSnps);
+	mean_sd_ratio.resize(numSnps);
+
+	//	Z.resize(numInds, numSnps);
+	//	ZPZdiag.resize(numSnps);
+	snp2pq.resize(numSnps);
+
+	// Read bed file
+	char ch[1];
+	bitset<8> b;
+	unsigned allele1=0, allele2=0;
+	ifstream BIT(bedFile.c_str(), ios::binary);
+	if (!BIT) throw ("Error: can not open the file [" + bedFile + "] to read.");
+	cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
+	for (i = 0; i < 3; i++) BIT.read(ch, 1); // skip the first three bytes
+	SnpInfo *snpInfo = NULL;
+	unsigned snp = 0, ind = 0;
+	unsigned nmiss = 0;
+	float mean = 0.0;
+	float sqn = 0.0;
+
+	for (j = 0, snp = 0; j < numSnps; j++) { // Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
+		snpInfo = snpInfoVec[j];
+		mean = 0.0;
+		sqn = 0.0;
+		nmiss = 0;
+		if (!snpInfo->included) {
+			for (i = 0; i < numInds; i += 4) BIT.read(ch, 1);
+			continue;
+		}
+		for (i = 0, ind = 0; i < numInds;) {
+			BIT.read(ch, 1);
+			if (!BIT) throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
+			b = ch[0];
+			k = 0;
+			while (k < 7 && i < numInds) {
+				if (!indInfoVec[i]->kept) k += 2;
+				else {
+					allele1 = (!b[k++]);
+					allele2 = (!b[k++]);
+					//Assume no missing genotypes
+					//if (allele1 == 0 && allele2 == 1) {  // missing genotype
+					//	Z(ind++, snp) = -9;
+					//++nmiss;
+					//	} else {
+					int all_sum = allele1 + allele2;
+					if(all_sum == 1 ){
+						Zones[j].push_back(ind++); //Save the index of the individual to the vector of ones
+					}else if(all_sum == 2){
+						Ztwos[j].push_back(ind++);
+					}else{
+						ind++;
+					}
+
+					if (allele1 == 0 && allele2 == 1) {  // missing genotype
+						cout << "MISSING " << endl;
+					}
+
+					mean += all_sum;
+					sqn += all_sum*all_sum;
+					//	}
+				}
+				i++;
+			}
+		}
+		// fill missing values with the mean
+		mean /= float(numInds-nmiss);
+
+		//Assume non-missingness
+
+		/*	if (nmiss) {
+			for (i=0; i<numInds; ++i) {
+				if (Z(i,snp) == -9) Z(i,snp) = mean;
+			}
+		}
+		 */
+		// compute allele frequency
+		snpInfo->af = 0.5f*mean;
+		snp2pq[snp] = 2.0f*snpInfo->af*(1.0f-snpInfo->af);
+
+		// standardize genotypes
+
+		sqn -= numInds * mean * mean;
+		means(j) = mean;
+		sds(j) = sqrt(sqn / float(numInds));
+
+		mean_sd_ratio(j) = means(j)/sds(j);
+
+		if (++snp == numSnps) break;
+	}
+	BIT.clear();
+	BIT.close();
+
+	cout << "Genotype data for " << numInds << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
+}
+
 
 void Data::readPhenotypeFile(const string &phenFile) {
     // NA: missing phenotype
@@ -252,6 +364,63 @@ void Data::readPhenotypeFile(const string &phenFile) {
     in.close();
 }
 
+//Copied from
+//https://gist.github.com/infusion/43bd2aa421790d5b4582
+void Data::readCSV(const string &filename, int cols) {
+
+	std::ifstream in(filename);
+
+	std::string line;
+
+	int row = 0;
+	int col = 0;
+
+	X.resize(numInds,cols);
+
+	if (in.is_open()) {
+
+		while (std::getline(in, line)) {
+			char *ptr = (char *) line.c_str();
+			int len = line.length();
+
+			col = 0;
+
+			char *start = ptr;
+			for (int i = 0; i < len; i++) {
+				if (ptr[i] == ',') {
+					X(row, col++) = atof(start);
+					start = ptr + i + 1;
+				}
+			}
+			X(row, col) = atof(start);
+
+			row++;
+		}
+
+		in.close();
+	}
+	numFixedEffects=cols;
+
+}
+
+
+void Data::readFailureFile(const string &failureFile){
+	ifstream input(failureFile);
+	vector<double> tmp;
+	int col;
+	if(!input.is_open()){
+		cout << "Error opening the file" << endl;
+		return;
+	}
+
+	while(true){
+		input >> col ;
+		if(input.eof()) break;
+		tmp.push_back(col);
+	}
+	input.close();
+	fail = Eigen::VectorXd::Map(tmp.data(), tmp.size());
+}
 
 void Data::readGroupFile(const string& groupFile) {
     G.clear();

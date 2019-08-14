@@ -37,6 +37,11 @@ public:
 
     unsigned int numGroups;
     string groupFile;
+    string failureFile;
+    string bayesW_version;
+    string quad_points;
+    string fixedFile;
+    unsigned int fixedEffectNumber;
 
     string title;
     AnalysisType analysisType = AnalysisType::Unknown;
@@ -74,11 +79,14 @@ public:
         analysisType            = AnalysisType::Unknown;
         dataFile                = "";
         inputType               = InputType::Unknown;
+        fixedFile 				= "";
         phenotypeFile           = "";
         mcmcSampleFile          = "bayesOutput.csv";
         optionFile				= "";
         numGroups				=2;
         preprocessDataType      = PreprocessDataType::Dense;
+
+        bayesW_version			= "marginal";
     }
 
     void inputOptions(const int argc, const char* argv[]);
