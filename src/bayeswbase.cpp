@@ -212,6 +212,52 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
                 w5 * kernel->integrand_adaptive(x5,m_alpha,sqrt_2ck_sigma) +
                 w6 * kernel->integrand_adaptive(x6,m_alpha,sqrt_2ck_sigma) +
                 w7;
+    }else if(n == "9"){
+        double x1,x2,x3,x4,x5,x6,x7,x8;//x9;
+        double w1,w2,w3,w4,w5,w6,w7,w8,w9; //These are adjusted weights
+
+        x1 = 3.1909932017815;
+        x2 = -x1;
+        w1 = 1.0470035809767;
+        w2 = w1;
+
+        x3 = 2.2665805845318;
+        x4 = -x3;
+        w3 = 0.84175270147867;
+        w4 = w3;
+
+        x5 = 1.4685532892167;
+        x6 = -x3;
+        w5 = 0.7646081250946;
+        w6 = w5;
+
+        x7 = 0.72355101875284;
+        x8 = -x7;
+        w7 = 0.73030245274509;
+        w8 = w7;
+
+        //x9 = 0.0;
+        w9 = 0.72023521560605;
+
+        x1 = sigma*x1;
+        x2 = sigma*x2;
+        x3 = sigma*x3;
+        x4 = sigma*x4;
+        x5 = sigma*x5;
+        x6 = sigma*x6;
+        x7 = sigma*x7;
+        x8 = sigma*x8;
+
+
+        temp = w1 * kernel->integrand_adaptive(x1,m_alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,m_alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,m_alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,m_alpha,sqrt_2ck_sigma) +
+                w5 * kernel->integrand_adaptive(x5,m_alpha,sqrt_2ck_sigma) +
+                w6 * kernel->integrand_adaptive(x6,m_alpha,sqrt_2ck_sigma) +
+                w7 * kernel->integrand_adaptive(x7,m_alpha,sqrt_2ck_sigma) +
+                w8 * kernel->integrand_adaptive(x8,m_alpha,sqrt_2ck_sigma) +
+                w9;
     }else if(n == "11"){
         double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10;//,x11;
         double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11; //These are adjusted weights
@@ -267,8 +313,143 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
                 w9 * kernel->integrand_adaptive(x9,m_alpha,sqrt_2ck_sigma) +
                 w10 * kernel->integrand_adaptive(x10,m_alpha,sqrt_2ck_sigma) +
                 w11;
+    }else if(n == "13"){
+        double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12;
+        double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,w13; //These are adjusted weights
+
+        x1 = 4.1013375961786;
+        x2 = -x1;
+        w1 = 0.97458039564;
+        w2 = w1;
+
+        x3 = 3.2466089783724;
+        x4 = -x3;
+        w3 = 0.7725808233517;
+        w4 = w3;
+
+        x5 = 2.5197356856782;
+        x6 = -x3;
+        w5 = 0.6906180348378;
+        w6 = w5;
+
+        x7 = 1.8531076516015;
+        x8 = -x7;
+        w7 = 0.6467594633158;
+        w8 = w7;
+
+        x9 = 1.2200550365908;
+        x10 = -x9;
+        w9 = 0.6217160552868;
+        w10 = w9;
+
+        x11 = 0.60576387917106;
+        x12 = -x11;
+        w11 = 0.60852958370332;
+        w12 = w11;
+
+        //x13 = 0.0;
+        w13 = 0.60439318792116;
+
+        x1 = sigma*x1;
+        x2 = sigma*x2;
+        x3 = sigma*x3;
+        x4 = sigma*x4;
+        x5 = sigma*x5;
+        x6 = sigma*x6;
+        x7 = sigma*x7;
+        x8 = sigma*x8;
+        x9 = sigma*x9;
+        x10 = sigma*x10;
+        x11 = sigma*x11;
+        x12 = sigma*x12;
+
+        temp = w1 * kernel->integrand_adaptive(x1,m_alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,m_alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,m_alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,m_alpha,sqrt_2ck_sigma) +
+                w5 * kernel->integrand_adaptive(x5,m_alpha,sqrt_2ck_sigma) +
+                w6 * kernel->integrand_adaptive(x6,m_alpha,sqrt_2ck_sigma) +
+                w7 * kernel->integrand_adaptive(x7,m_alpha,sqrt_2ck_sigma) +
+                w8 * kernel->integrand_adaptive(x8,m_alpha,sqrt_2ck_sigma) +
+                w9 * kernel->integrand_adaptive(x9,m_alpha,sqrt_2ck_sigma) +
+                w10 * kernel->integrand_adaptive(x10,m_alpha,sqrt_2ck_sigma) +
+                w11 * kernel->integrand_adaptive(x11,m_alpha,sqrt_2ck_sigma) +
+                w12 * kernel->integrand_adaptive(x12,m_alpha,sqrt_2ck_sigma) +
+                w13;
+    }else if(n == "15"){
+        double x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14;//,x11;
+        double w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,w13,w14,w15; //These are adjusted weights
+
+        x1 = 4.4999907073094;
+        x2 = -x1;
+        w1 = 0.94836897082761;
+        w2 = w1;
+
+        x3 = 3.6699503734045;
+        x4 = -x3;
+        w3 = 0.7486073660169;
+        w4 = w3;
+
+        x5 = 2.9671669279056;
+        x6 = -x3;
+        w5 = 0.666166005109;
+        w6 = w5;
+
+        x7 = 2.3257324861739;
+        x8 = -x7;
+        w7 = 0.620662603527;
+        w8 = w7;
+
+        x9 = 1.7199925751865;
+        x10 = -x9;
+        w9 = 0.5930274497642;
+        w10 = w9;
+
+        x11 = 1.1361155852109;
+        x12 = -x11;
+        w11 = 0.5761933502835;
+        w12 = w11;
+
+        x13 = 0.5650695832556;
+        x14 = -x13;
+        w13 = 0.5670211534466;
+        w14 = w13;
+
+        //x15 = 0.0;
+        w15 = 0.56410030872642;
+
+        x1 = sigma*x1;
+        x2 = sigma*x2;
+        x3 = sigma*x3;
+        x4 = sigma*x4;
+        x5 = sigma*x5;
+        x6 = sigma*x6;
+        x7 = sigma*x7;
+        x8 = sigma*x8;
+        x9 = sigma*x9;
+        x10 = sigma*x10;
+        x11 = sigma*x11;
+        x12 = sigma*x12;
+        x13 = sigma*x13;
+        x14 = sigma*x14;
+
+        temp = w1 * kernel->integrand_adaptive(x1,m_alpha,sqrt_2ck_sigma) +
+                w2 * kernel->integrand_adaptive(x2,m_alpha,sqrt_2ck_sigma) +
+                w3 * kernel->integrand_adaptive(x3,m_alpha,sqrt_2ck_sigma) +
+                w4 * kernel->integrand_adaptive(x4,m_alpha,sqrt_2ck_sigma) +
+                w5 * kernel->integrand_adaptive(x5,m_alpha,sqrt_2ck_sigma) +
+                w6 * kernel->integrand_adaptive(x6,m_alpha,sqrt_2ck_sigma) +
+                w7 * kernel->integrand_adaptive(x7,m_alpha,sqrt_2ck_sigma) +
+                w8 * kernel->integrand_adaptive(x8,m_alpha,sqrt_2ck_sigma) +
+                w9 * kernel->integrand_adaptive(x9,m_alpha,sqrt_2ck_sigma) +
+                w10 * kernel->integrand_adaptive(x10,m_alpha,sqrt_2ck_sigma) +
+                w11 * kernel->integrand_adaptive(x11,m_alpha,sqrt_2ck_sigma) +
+                w12 * kernel->integrand_adaptive(x12,m_alpha,sqrt_2ck_sigma) +
+                w13 * kernel->integrand_adaptive(x13,m_alpha,sqrt_2ck_sigma) +
+                w14 * kernel->integrand_adaptive(x14,m_alpha,sqrt_2ck_sigma) +
+                w15;
     }else{
-        cout << "Possible number of quad_points = 3,5,7,11" << endl;
+        cout << "Possible number of quad_points = 3,5,7,9,11,13,15" << endl;
         exit(1);
     }
 
@@ -519,12 +700,12 @@ void BayesWBase::sampleAlpha(){
 	double convex = 1.0;
 	int dometrop = 0;
 	double xprev = 0.0;
-    double xinit[4] = {(m_alpha)*0.5, m_alpha,  (m_alpha)*1.5, (m_alpha)*3};     // Initial abscissae
+    double xinit[4] = {(m_alpha)*0.5, m_alpha,  (m_alpha)*1.15, (m_alpha)*1.5};     // Initial abscissae
 	double *p_xinit = xinit;
 
 	// Initial left and right (pseudo) extremes
 	double xl = 0.0;
-	double xr = 400.0;
+    double xr = 20.0;
 
     alpha_params params;
     params.alpha_0 = m_alpha_0;
