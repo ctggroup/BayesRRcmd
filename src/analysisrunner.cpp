@@ -196,16 +196,7 @@ bool runBayesAnalysis(const Options &options) {
     if (options.numThreadSpawned > 0)
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
-    std::unique_ptr<AnalysisGraph> graph {nullptr};
-    if (options.analysisType == AnalysisType::AsyncPpBayes
-            || options.analysisType == AnalysisType::AsyncGauss) {
-        graph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
-        auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
-        parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
-        parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
-    } else {
-        graph = std::make_unique<LimitSequenceGraph>(options.numThread);
-    }
+    auto graph = AnalysisRunner::makeAnalysisGraph(options);
 
     auto cleanup = [&data]() {
         data.unmapCompressedPreprocessedBedFile();
