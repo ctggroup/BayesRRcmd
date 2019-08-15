@@ -22,6 +22,7 @@ class ParallelGraph : public AnalysisGraph
 {
 public:
     explicit ParallelGraph(size_t decompressionTokens, size_t analysisTokens);
+    ~ParallelGraph();
 
     bool isAsynchronous() const override { return true; }
 

@@ -17,7 +17,8 @@ using namespace tbb::flow;
 class PreprocessGraph
 {
 public:
-    PreprocessGraph(size_t maxParallel);
+    explicit PreprocessGraph(size_t maxParallel);
+    ~PreprocessGraph();
 
     void preprocessBedFile(const std::string &dataFile,
                            const PreprocessDataType type,

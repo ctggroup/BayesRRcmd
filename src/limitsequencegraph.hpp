@@ -15,6 +15,7 @@ class LimitSequenceGraph : public AnalysisGraph
 {
 public:
     explicit LimitSequenceGraph(size_t maxParallel = 12);
+    ~LimitSequenceGraph();
 
     bool isAsynchronous() const override { return false; }
 
