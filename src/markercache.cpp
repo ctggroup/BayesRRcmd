@@ -49,6 +49,7 @@ ConstMarkerPtr MarkerCache::marker(unsigned int i) const
     if (i > m_markers.size()) {
         std::cerr << "Requesting marker out of bounds: " << i << ". "
                   << m_markers.size() << " cached markers." << std::endl;
+        assert(false);
         return {};
     }
 

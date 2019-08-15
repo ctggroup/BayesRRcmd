@@ -27,6 +27,7 @@ add_library(bayes
     DenseBayesRRmz.cpp
     densebayesw.cpp
     SparseBayesRRG.cpp
+    sequential.cpp
     sparsebayesrkernel.cpp
     sparsebayesw.cpp
     marker.cpp
