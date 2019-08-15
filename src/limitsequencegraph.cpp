@@ -71,6 +71,11 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
     make_edge(*m_samplingNode, m_limit->decrement);
 }
 
+LimitSequenceGraph::~LimitSequenceGraph()
+{
+    m_graph->wait_for_all();
+}
+
 void LimitSequenceGraph::exec(Analysis *analysis,
                               unsigned int numInds,
                               unsigned int numSnps,

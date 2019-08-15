@@ -196,16 +196,7 @@ bool runBayesAnalysis(const Options &options) {
     if (options.numThreadSpawned > 0)
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
-    std::unique_ptr<AnalysisGraph> graph {nullptr};
-    if (options.analysisType == AnalysisType::AsyncPpBayes
-            || options.analysisType == AnalysisType::AsyncGauss) {
-        graph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
-        auto *parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
-        parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
-        parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
-    } else {
-        graph = std::make_unique<LimitSequenceGraph>(options.numThread);
-    }
+    auto graph = AnalysisRunner::makeAnalysisGraph(options);
 
     auto cleanup = [&data]() {
         data.unmapCompressedPreprocessedBedFile();
@@ -236,7 +227,34 @@ bool runBayesAnalysis(const Options &options) {
     return result;
 }
 
-bool AnalysisRunner::run(const Options &options)
+namespace AnalysisRunner {
+
+std::unique_ptr<AnalysisGraph> makeAnalysisGraph(const Options &options)
+{
+    switch (options.analysisType) {
+    case AnalysisType::PpBayes:
+        // Fall through
+    case AnalysisType::Gauss:
+        return std::make_unique<LimitSequenceGraph>(options.numThread);
+
+    case AnalysisType::AsyncPpBayes:
+        // Fall through
+    case AnalysisType::AsyncGauss:
+    {
+        auto parallelGraph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
+        parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
+        parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
+        return std::move(parallelGraph);
+    }
+
+    default:
+        std::cerr << "makeAnalysisGraph - unsupported AnalysisType: " << options.analysisType
+                  << std::endl;
+        return {};
+    }
+}
+
+bool run(const Options &options)
 {
     if (options.inputType == InputType::Unknown) {
         cerr << "Unknown --datafile type: '" << options.dataFile << "'" << endl;
@@ -264,4 +282,6 @@ bool AnalysisRunner::run(const Options &options)
         cerr << "Unknown --analyis-type" << endl;
         return false;
     }
+}
+
 }

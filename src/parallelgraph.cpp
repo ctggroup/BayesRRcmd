@@ -121,6 +121,11 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     make_edge(output_port<1>(*m_globalUpdateNode), *m_analysisControlNode);
 }
 
+ParallelGraph::~ParallelGraph()
+{
+    m_graph->wait_for_all();
+}
+
 void ParallelGraph::exec(Analysis *analysis,
                               unsigned int numInds,
                               unsigned int numSnps,

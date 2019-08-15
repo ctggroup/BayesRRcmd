@@ -144,6 +144,11 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
     make_edge(*m_writeNode, m_limit->decrement);
 }
 
+PreprocessGraph::~PreprocessGraph()
+{
+    m_graph->wait_for_all();
+}
+
 void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
                                         const PreprocessDataType type,
                                         const bool compress,
