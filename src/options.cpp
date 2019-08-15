@@ -232,6 +232,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
 	     colLogFile = argv[++i];
 	     ss << "--colLog " << argv[i] << "\n";
 	}
+        else if(!strcmp(argv[i], "--marker-cache")) {
+            useMarkerCache = true;
+            ss << "--marker-cache\n";
+        }
         else {
             stringstream errmsg;
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";

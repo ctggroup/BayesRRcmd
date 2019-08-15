@@ -56,6 +56,7 @@ public:
     bool iterLog = false;
     string colLogFile;
     bool colLog =false;
+    bool useMarkerCache = false;
 
     Options(){
         chainLength             = 10000;

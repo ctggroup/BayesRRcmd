@@ -4,50 +4,64 @@
 #include "limitsequencegraph.hpp"
 #include "options.hpp"
 #include "parallelgraph.h"
+#include "sequential.h"
 
 #include <memory>
 
-TEST(AnalysisRunnerTest, makeAnalysisGraph) {
+class MakeAnalysisGraphTest : public testing::TestWithParam<std::tuple<AnalysisType, bool>> {};
 
+TEST_P(MakeAnalysisGraphTest, makeAnalysisGraph) {
+    const auto params = GetParam();
     Options options;
+    options.analysisType = std::get<0>(params);
+    options.useMarkerCache = std::get<1>(params);
 
+    auto graph = AnalysisRunner::makeAnalysisGraph(options);
+
+    switch (options.analysisType) {
+    case AnalysisType::Unknown:
     {
-        // AnalysisType::Unknown
-        auto graph = AnalysisRunner::makeAnalysisGraph(options);
         ASSERT_EQ(nullptr, graph);
+        break;
     }
-
+    case AnalysisType::Preprocess:
     {
-        options.analysisType = AnalysisType::Preprocess;
-        auto graph = AnalysisRunner::makeAnalysisGraph(options);
         ASSERT_EQ(nullptr, graph);
+        break;
     }
-
+    case AnalysisType::PpBayes:
+        // Fall through
+    case AnalysisType::Gauss:
     {
-        options.analysisType = AnalysisType::PpBayes;
-        auto graph = AnalysisRunner::makeAnalysisGraph(options);
-        auto limitSequenceGraph = dynamic_cast<LimitSequenceGraph*>(graph.get());
-        ASSERT_TRUE(limitSequenceGraph);
+        if (options.useMarkerCache) {
+            auto sequential = dynamic_cast<::Sequential*>(graph.get());
+            ASSERT_TRUE(sequential);
+        } else {
+            auto limitSequenceGraph = dynamic_cast<LimitSequenceGraph*>(graph.get());
+            ASSERT_TRUE(limitSequenceGraph);
+        }
+        break;
     }
-
+    case AnalysisType::AsyncPpBayes:
+        // Fall through
+    case AnalysisType::AsyncGauss:
     {
-        options.analysisType = AnalysisType::AsyncPpBayes;
-        auto graph = AnalysisRunner::makeAnalysisGraph(options);
         auto parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
         ASSERT_TRUE(parallelGraph);
+        break;
     }
-
-    {
-        options.analysisType = AnalysisType::Gauss;
-        auto graph = AnalysisRunner::makeAnalysisGraph(options);
-        auto limitSequenceGraph = dynamic_cast<LimitSequenceGraph*>(graph.get());
-        ASSERT_TRUE(limitSequenceGraph);
-    }
-
-    {
-        options.analysisType = AnalysisType::AsyncGauss;
-        auto graph = AnalysisRunner::makeAnalysisGraph(options);
-        auto parallelGraph = dynamic_cast<ParallelGraph*>(graph.get());
-        ASSERT_TRUE(parallelGraph);
+    default:
+        // The test does not support this analysis type
+        FAIL();
     }
 }
+
+INSTANTIATE_TEST_SUITE_P(AnalysisRunnerTests, MakeAnalysisGraphTest,
+                         ::testing::Combine(
+                             ::testing::ValuesIn({AnalysisType::Unknown,
+                                                  AnalysisType::Preprocess,
+                                                  AnalysisType::PpBayes,
+                                                  AnalysisType::AsyncPpBayes,
+                                                  AnalysisType::Gauss,
+                                                  AnalysisType::AsyncGauss}),
+                             ::testing::Bool()));
