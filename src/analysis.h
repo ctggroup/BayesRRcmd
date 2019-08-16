@@ -19,6 +19,7 @@ struct AsyncResult {
     double betaOld = 0.0;
     double beta = 0.0;
     std::unique_ptr<VectorXd> deltaEpsilon;
+    std::unique_ptr<VectorXd> v;
 };
 
 class Analysis {
@@ -36,9 +37,12 @@ public:
 
     virtual int runGibbs(AnalysisGraph* analysis) = 0;
 
+    // LimitSeqeunceGraph
     virtual void processColumn(const KernelPtr &kernel) = 0;
-    virtual std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) = 0;
 
+    // ParallelGraph
+    virtual std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) = 0;
+    virtual void doThreadSafeUpdates(const ConstAsyncResultPtr& result) = 0;
     virtual void updateGlobal(const KernelPtr& kernel,
                               const ConstAsyncResultPtr& result) = 0;
 

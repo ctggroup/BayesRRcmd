@@ -881,7 +881,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
     // Calculate the probability that marker is 0
     double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
-    VectorXd localV = VectorXd::Zero(m_K);
+    result->v = std::make_unique<VectorXd>(VectorXd::Zero(m_K));
     int component = 0;
     //Loop through the possible mixture classes
     for (int k = 0; k < m_K; k++) {
@@ -921,7 +921,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
                 result->beta = xsamp[0]; // Save the new result
             }
 
-            localV[k] += 1.0;
+            (*result->v)(k) += 1.0;
             component = k;
             break;
         } else {
@@ -939,15 +939,20 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
         result->deltaEpsilon = gaussKernel->calculateEpsilonChange(result->betaOld, result->beta);
     }
 
-    {
-        std::unique_lock lock(m_mutex);
-        m_v += localV;
-    }
-
     m_components(gaussKernel->marker->i) = component;
     m_beta(gaussKernel->marker->i) = result->beta;
 
     return result;
+}
+
+void BayesWBase::doThreadSafeUpdates(const ConstAsyncResultPtr &result)
+{
+    assert(result);
+
+    // No mutex required here - thread_safe_update_node is serial, therefore
+    // only one runs at any time. m_v is not accessed elsewhere whilst the
+    // flow graph is running.
+    m_v += *result->v;
 }
 
 void BayesWBase::updateGlobal(const KernelPtr& kernel,

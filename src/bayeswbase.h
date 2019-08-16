@@ -77,8 +77,9 @@ public:
     int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
 
     void processColumn(const KernelPtr &kernel) override;
-    std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) override;
 
+    std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) override;
+    void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
 protected:

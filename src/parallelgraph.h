@@ -76,6 +76,9 @@ private:
     using analysis_node = function_node<AnalysisTuple, AnalysisTuple>;
     std::unique_ptr<analysis_node> m_analysisNode;
 
+    using thread_safe_update_node = function_node<AnalysisTuple, AnalysisTuple, lightweight>;
+    std::unique_ptr<thread_safe_update_node> m_threadSafeUpdateNode;
+
     using decision_node = multifunction_node<AnalysisTuple, tbb::flow::tuple<DecompressionToken, AnalysisToken, AnalysisTuple>>;
     std::unique_ptr<decision_node> m_decisionNode;
 

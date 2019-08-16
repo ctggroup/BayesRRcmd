@@ -415,7 +415,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
     const double p = m_randomNumbers.at(kernel->marker->i).at(PIndex);
     const double randomNorm = m_randomNumbers.at(kernel->marker->i).at(RandomNormIndex);
 
-    VectorXd v = VectorXd::Zero(K);
+    result->v = std::make_unique<VectorXd>(VectorXd::Zero(K));
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
@@ -424,7 +424,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
             } else {
                 result->beta = randomNorm * (m_sigmaE/denom[k-1]) + muk[1];
             }
-            v[k] += 1.0;
+            (*result->v)(k) += 1.0;
             component = k;
             break;
         } else {
@@ -446,14 +446,6 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
         result->deltaEpsilon = bayesKernel->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum
     }
-    // In the new version of Async we do not synchronise epsilon Async, we will handle this through the global node
-    // Lock to write updates (at end, or perhaps as updates are computed)
-
-     {
-      std::unique_lock lock(m_mutex);
-      // Use a unique lock to ensure only one thread can write updates
-         m_v.row(group) += v; //maybe we can move this to the message struct
-      }
 
     // These updates do not need to be atomic
     m_beta(bayesKernel->marker->i) = result->beta;
@@ -466,6 +458,16 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
    // cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
 
     return result;
+}
+
+void BayesRBase::doThreadSafeUpdates(const ConstAsyncResultPtr &result)
+{
+    assert(result);
+
+    // No mutex required here - thread_safe_update_node is serial, therefore
+    // only one runs at any time. m_v is not accessed elsewhere whilst the
+    // flow graph is running.
+    m_v += *result->v;
 }
 
 void BayesRBase::updateGlobal(const KernelPtr& kernel,
