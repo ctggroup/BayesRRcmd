@@ -16,8 +16,8 @@ public:
     std::unique_ptr<Kernel> kernelForMarker(const ConstMarkerPtr &marker) const override;
     MarkerBuilder *markerBuilder() const override;
 
-    void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps ) override;
-   void updateMu(double old_mu,double N);
+    void updateGlobal(Kernel *kernel, const std::shared_ptr<const AsyncResult> &result) override;
+    void updateMu(double old_mu,double N);
 protected:
     VectorXd m_ones;
 

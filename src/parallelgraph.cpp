@@ -84,10 +84,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
         auto &decompressionTuple = std::get<1>(input);
         auto &msg = std::get<1>(decompressionTuple);
 
-        m_analysis->updateGlobal(msg.kernel.get(),
-                              msg.result->betaOld,
-                              msg.result->beta,
-                              *msg.result->deltaEpsilon);
+        m_analysis->updateGlobal(msg.kernel.get(), msg.result);
 
         std::get<0>(outputPorts).try_put(std::get<0>(decompressionTuple));
         std::get<1>(outputPorts).try_put(std::get<0>(input));
