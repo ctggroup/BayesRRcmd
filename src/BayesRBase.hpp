@@ -84,8 +84,6 @@ protected:
 
     bool m_isAsync = false;
 
-    VectorXd m_asyncEpsilon;
-
     mutable std::shared_mutex m_mutex;
     mutable std::mutex m_rngMutex;
 

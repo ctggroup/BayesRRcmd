@@ -62,19 +62,7 @@ void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individu
 {
     BayesRBase::init(K, markerCount, individualCount);
 
-    m_asyncEpsilon = VectorXd(individualCount);
-
-    m_asyncEpsilonSum = m_epsilonSum;
-
     m_ones.setOnes(individualCount);
-}
-
-void SparseBayesRRG::prepareForAnylsis()
-{
-    if (m_isAsync) {
-        std::memcpy(m_asyncEpsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
-        m_asyncEpsilonSum = m_epsilonSum;
-    }
 }
 
 void SparseBayesRRG::prepare(BayesRKernel *kernel)
