@@ -7,10 +7,12 @@
 #include "DenseBayesRRmz.hpp"
 #include "densebayesw.h"
 #include "limitsequencegraph.hpp"
+#include "markercache.h"
 #include "options.hpp"
 #include "parallelgraph.h"
 #include "preprocessgraph.h"
 #include "SparseBayesRRG.hpp"
+#include "sequential.h"
 #include "sparsebayesw.h"
 
 using namespace std;
@@ -196,6 +198,14 @@ bool runBayesAnalysis(const Options &options) {
     if (options.numThreadSpawned > 0)
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
+    if (options.useMarkerCache) {
+        clock_t start_cache = clock();
+        markerCache()->populate(&data, &options);
+        clock_t end_cache = clock();
+        printf("Populated cache in %.3f sec.\n", double(end_cache - start_cache) / double(CLOCKS_PER_SEC));
+        cout << endl;
+    }
+
     auto graph = AnalysisRunner::makeAnalysisGraph(options);
 
     auto cleanup = [&data]() {
@@ -235,13 +245,20 @@ std::unique_ptr<AnalysisGraph> makeAnalysisGraph(const Options &options)
     case AnalysisType::PpBayes:
         // Fall through
     case AnalysisType::Gauss:
-        return std::make_unique<LimitSequenceGraph>(options.numThread);
+    {
+        if (options.useMarkerCache)
+            return std::make_unique<::Sequential>(); // Differentiate from Eigen::Sequential
+        else
+            return std::make_unique<LimitSequenceGraph>(options.numThread);
+    }
 
     case AnalysisType::AsyncPpBayes:
         // Fall through
     case AnalysisType::AsyncGauss:
     {
-        auto parallelGraph = std::make_unique<ParallelGraph>(options.decompressionTokens, options.analysisTokens);
+        auto parallelGraph = std::make_unique<ParallelGraph>(options.decompressionTokens,
+                                                             options.analysisTokens,
+                                                             options.useMarkerCache);
         parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
         parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
         return std::move(parallelGraph);

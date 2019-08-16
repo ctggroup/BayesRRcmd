@@ -9,7 +9,7 @@ using namespace Eigen;
 
 struct BayesWKernel : public Kernel
 {
-    explicit BayesWKernel(const Marker *marker) : Kernel(marker) {}
+    explicit BayesWKernel(const ConstMarkerPtr &marker) : Kernel(marker) {}
     ~BayesWKernel();
 
 

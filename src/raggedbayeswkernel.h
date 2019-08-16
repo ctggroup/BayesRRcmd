@@ -6,7 +6,7 @@
 
 struct RaggedBayesWKernel : public BayesWKernel
 {
-    explicit RaggedBayesWKernel(const RaggedSparseMarker *marker);
+    explicit RaggedBayesWKernel(const std::shared_ptr<const RaggedSparseMarker> &marker);
 
     double vi_sum = 0;
     double vi_2 = 0;

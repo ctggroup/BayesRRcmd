@@ -151,7 +151,7 @@ protected:
 
 class PpBayesBed :
         public PpBayesBase,
-        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool>> {
+        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool>> {
 protected:
     void SetUp() {
         PpBayesBase::SetUp();
@@ -168,6 +168,7 @@ TEST_P(PpBayesBed, SmokeTests) {
     const auto params = GetParam();
     options.preprocessDataType = std::get<1>(params);
     options.compress = std::get<2>(params);
+    options.useMarkerCache = std::get<3>(params);
 
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
@@ -188,11 +189,12 @@ INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
                              ::testing::ValuesIn({PreprocessDataType::Dense,
                                                   PreprocessDataType::SparseEigen,
                                                   PreprocessDataType::SparseRagged}),
-                             ::testing::Bool()));
+                             ::testing::Bool(), // compress
+                             ::testing::Bool())); // useMarkerCache
 
 class PpBayesBedGroups :
         public PpBayesBase,
-        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool>> {
+        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool>> {
 protected:
     void SetUp() {
         PpBayesBase::SetUp();
@@ -211,6 +213,7 @@ TEST_P(PpBayesBedGroups, SmokeTests) {
     const auto params = GetParam();
     options.preprocessDataType = std::get<1>(params);
     options.compress = std::get<2>(params);
+    options.useMarkerCache = std::get<3>(params);
 
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
@@ -231,7 +234,8 @@ INSTANTIATE_TEST_SUITE_P(PpBayesBedGroups,
                              ::testing::ValuesIn({PreprocessDataType::Dense,
                                                   PreprocessDataType::SparseEigen,
                                                   PreprocessDataType::SparseRagged}),
-                             ::testing::Bool()));
+                             ::testing::Bool(), // compress
+                             ::testing::Bool())); // useMarkerCache
 
 
 class PpBayesCsv :

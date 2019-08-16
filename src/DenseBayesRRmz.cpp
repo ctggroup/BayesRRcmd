@@ -20,9 +20,9 @@ DenseBayesRRmz::~DenseBayesRRmz()
 {
 }
 
-std::unique_ptr<Kernel> DenseBayesRRmz::kernelForMarker(const Marker *marker) const
+std::unique_ptr<Kernel> DenseBayesRRmz::kernelForMarker(const ConstMarkerPtr &marker) const
 {
-    const auto* denseMarker = dynamic_cast<const DenseMarker*>(marker);
+    const auto denseMarker = dynamic_pointer_cast<const DenseMarker>(marker);
     assert(denseMarker);
     return std::make_unique<DenseRKernel>(denseMarker);
 }

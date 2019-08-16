@@ -9,6 +9,7 @@
 #define BAYESWBASE_H_
 
 #include "analysis.h"
+#include "common.h"
 #include "distributions_boost.hpp"
 
 #include <Eigen/Eigen>
@@ -16,8 +17,6 @@
 
 struct BayesWKernel;
 struct Kernel;
-struct Marker;
-struct MarkerBuilder;
 
 struct beta_params {
     double alpha = 0;

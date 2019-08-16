@@ -6,7 +6,7 @@
 
 struct SparseBayesRKernel : public BayesRKernel
 {
-    explicit SparseBayesRKernel(const SparseMarker *marker);
+    explicit SparseBayesRKernel(const std::shared_ptr<const SparseMarker> &marker);
 
     double epsilonSum = 0;
 

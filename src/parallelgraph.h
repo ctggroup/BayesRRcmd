@@ -21,7 +21,7 @@ using namespace tbb::flow;
 class ParallelGraph : public AnalysisGraph
 {
 public:
-    explicit ParallelGraph(size_t decompressionTokens, size_t analysisTokens);
+    explicit ParallelGraph(size_t decompressionTokens, size_t analysisTokens, bool useMarkerCache);
     ~ParallelGraph();
 
     bool isAsynchronous() const override { return true; }
@@ -66,6 +66,9 @@ private:
 
     using decompression_node = function_node<DecompressionTuple, DecompressionTuple>;
     std::unique_ptr<decompression_node> m_decompressionNode;
+
+    using cache_reader_node = function_node<DecompressionTuple, DecompressionTuple, lightweight>;
+    std::unique_ptr<cache_reader_node> m_cacheReaderNode;
 
     using analysis_join_node = join_node<AnalysisTuple, queueing>;
     std::unique_ptr<analysis_join_node> m_analysisJoinNode;

@@ -40,9 +40,9 @@ DenseBayesW::DenseBayesW(const Data *data, const Options *opt, const long memPag
 
 }
 
-std::unique_ptr<Kernel> DenseBayesW::kernelForMarker(const Marker *marker) const
+std::unique_ptr<Kernel> DenseBayesW::kernelForMarker(const ConstMarkerPtr &marker) const
 {
-    const auto* denseMarker = dynamic_cast<const DenseMarker*>(marker);
+    const auto denseMarker = dynamic_pointer_cast<const DenseMarker>(marker);
     assert(denseMarker);
     return std::make_unique<DenseBayesWKernel>(denseMarker);
 }

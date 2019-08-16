@@ -1,8 +1,8 @@
 #include "eigenbayesrkernel.h"
 
-EigenBayesRKernel::EigenBayesRKernel(const EigenSparseMarker *marker)
+EigenBayesRKernel::EigenBayesRKernel(const std::shared_ptr<const EigenSparseMarker> &marker)
     : SparseBayesRKernel(marker)
-    , esm(marker)
+    , esm(marker.get())
 {
     assert(esm);
 }

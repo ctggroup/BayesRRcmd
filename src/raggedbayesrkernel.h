@@ -6,7 +6,7 @@
 
 struct RaggedBayesRKernel : public SparseBayesRKernel
 {
-    explicit RaggedBayesRKernel(const RaggedSparseMarker *marker);
+    explicit RaggedBayesRKernel(const std::shared_ptr<const RaggedSparseMarker> &marker);
 
     VectorXdPtr calculateEpsilonChange(const double beta_old,
                                        const double beta) override;

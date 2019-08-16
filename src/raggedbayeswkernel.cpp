@@ -1,8 +1,8 @@
 #include "raggedbayeswkernel.h"
 
-RaggedBayesWKernel::RaggedBayesWKernel(const RaggedSparseMarker *marker)
+RaggedBayesWKernel::RaggedBayesWKernel(const std::shared_ptr<const RaggedSparseMarker> &marker)
     : BayesWKernel (marker)
-    , rsm(marker)
+    , rsm(marker.get())
 {
     assert(marker);
 }

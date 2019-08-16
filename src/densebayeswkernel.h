@@ -6,7 +6,7 @@
 
 struct DenseBayesWKernel : public BayesWKernel
 {
-    explicit DenseBayesWKernel(const DenseMarker *marker);
+    explicit DenseBayesWKernel(const std::shared_ptr<const DenseMarker> &marker);
 
     void setVi(const std::shared_ptr<VectorXd> &vi) override;
     void calculateSumFailure(const VectorXd &failure_vector);

@@ -4,10 +4,11 @@
 #include "BayesRBase.hpp"
 #include "kernel.h"
 #include "markerbuilder.h"
+#include "markercache.h"
 
 #include <iostream>
 
-ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTokens)
+ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTokens, bool useMarkerCache)
     : AnalysisGraph()
     , m_graph(new graph)
     , m_decompressionTokens(maxDecompressionTokens)
@@ -15,25 +16,36 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
 {
     m_decompressionJoinNode.reset(new decompression_join_node(*m_graph));
 
-    // Decompress the column for this marker then process the column using the algorithm class
-    auto f = [this] (DecompressionTuple tuple) -> DecompressionTuple {
-        auto &msg = std::get<1>(tuple);
-        // Decompress the column
-        std::unique_ptr<MarkerBuilder> builder{m_analysis->markerBuilder()};
-        builder->initialise(msg.snp, msg.numInds);
-        const auto index = m_analysis->indexEntry(msg.snp);
-        if (m_analysis->compressed()) {
-            builder->decompress(m_analysis->compressedData(), index);
-        } else {
-            builder->read(m_analysis->preprocessedFile(), index);
-        }
-        msg.kernel = m_analysis->kernelForMarker(builder->build());
-        return tuple;
-    };
+    if (useMarkerCache) {
+        auto cacheReader = [this] (DecompressionTuple tuple) -> DecompressionTuple {
+            auto &msg = std::get<1>(tuple);
+            msg.kernel = m_analysis->kernelForMarker(markerCache()->marker(msg.snp));
+            return tuple;
+        };
 
-    m_decompressionNode.reset(new decompression_node(*m_graph,
-                                                     m_decompressionNodeConcurrency,
-                                                     f));
+        m_cacheReaderNode.reset(new cache_reader_node(*m_graph,
+                                                      m_decompressionNodeConcurrency,
+                                                      cacheReader));
+    } else {
+        auto diskReader = [this] (DecompressionTuple tuple) -> DecompressionTuple {
+            auto &msg = std::get<1>(tuple);
+            // Read the column from disk
+            std::unique_ptr<MarkerBuilder> builder{m_analysis->markerBuilder()};
+            builder->initialise(msg.snp, msg.numInds);
+            const auto index = m_analysis->indexEntry(msg.snp);
+            if (m_analysis->compressed()) {
+                builder->decompress(m_analysis->compressedData(), index);
+            } else {
+                builder->read(m_analysis->preprocessedFile(), index);
+            }
+            msg.kernel = m_analysis->kernelForMarker(builder->build());
+            return tuple;
+        };
+
+        m_decompressionNode.reset(new decompression_node(*m_graph,
+                                                         m_decompressionNodeConcurrency,
+                                                         diskReader));
+    }
 
     m_analysisJoinNode.reset(new analysis_join_node(*m_graph));
 
@@ -105,13 +117,21 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     m_decisionNode->set_name("decision_node");
     m_globalUpdateNode->set_name("global_update_node");
     m_decompressionJoinNode->set_name("decompression_join_node");
-    m_decompressionNode->set_name("decompression_node");
+    if(useMarkerCache)
+        m_cacheReaderNode->set_name("cache_reader_node");
+    else
+        m_decompressionNode->set_name("decompression_node");
     m_analysisJoinNode->set_name("analysis_join_node");
     m_analysisControlNode->set_name("analysis_control_node");
 #endif
 
-    make_edge(*m_decompressionJoinNode, *m_decompressionNode);
-    make_edge(*m_decompressionNode, input_port<1>(*m_analysisJoinNode));
+    if (useMarkerCache) {
+        make_edge(*m_decompressionJoinNode, *m_cacheReaderNode);
+        make_edge(*m_cacheReaderNode, input_port<1>(*m_analysisJoinNode));
+    } else {
+        make_edge(*m_decompressionJoinNode, *m_decompressionNode);
+        make_edge(*m_decompressionNode, input_port<1>(*m_analysisJoinNode));
+    }
     make_edge(*m_analysisJoinNode, *m_analysisNode);
     make_edge(*m_analysisNode, *m_decisionNode);
     make_edge(output_port<0>(*m_decisionNode), input_port<0>(*m_decompressionJoinNode));

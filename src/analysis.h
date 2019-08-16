@@ -1,6 +1,7 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#include "common.h"
 #include "data.hpp"
 #include "options.hpp"
 
@@ -11,7 +12,6 @@ using namespace Eigen;
 
 struct Kernel;
 struct IndexEntry;
-struct Marker;
 
 class AnalysisGraph;
 class MarkerBuilder;
@@ -27,7 +27,7 @@ public:
     explicit Analysis(const Data *data, const Options *opt);
     virtual ~Analysis();
 
-    virtual std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const = 0;
+    virtual std::unique_ptr<Kernel> kernelForMarker(const ConstMarkerPtr &marker) const = 0;
 
     virtual MarkerBuilder* markerBuilder() const = 0;
     virtual IndexEntry indexEntry(unsigned int i) const;

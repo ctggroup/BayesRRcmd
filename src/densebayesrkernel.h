@@ -6,7 +6,7 @@
 
 struct DenseRKernel : public BayesRKernel
 {
-    explicit DenseRKernel(const DenseMarker *marker);
+    explicit DenseRKernel(const std::shared_ptr<const DenseMarker> &marker);
 
     double computeNum(const VectorXd &epsilon, const double beta_old) override;
     VectorXdPtr calculateEpsilonChange(const double beta_old, const double beta) override;

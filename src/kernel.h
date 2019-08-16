@@ -7,10 +7,10 @@
 
 struct Kernel
 {
-    explicit Kernel(const Marker *marker);
+    explicit Kernel(const ConstMarkerPtr &marker);
     virtual ~Kernel();
 
-    std::unique_ptr<const Marker> marker = nullptr;
+    ConstMarkerPtr marker = nullptr;
 };
 
 #endif // KERNEL_H

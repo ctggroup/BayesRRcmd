@@ -57,7 +57,7 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
             }
 
             builder->endColumn();
-            msg.snpData.at(chunk).reset(builder->build());
+            msg.snpData.at(chunk) = builder->build();
 
             // Compress the data
             if (msg.compress) {

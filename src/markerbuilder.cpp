@@ -36,7 +36,7 @@ void MarkerBuilder::decompress(unsigned char *data, const IndexEntry &index) con
     m_marker->decompress(data, index);
 }
 
-Marker *MarkerBuilder::build()
+std::unique_ptr<Marker> MarkerBuilder::build()
 {
     if (!m_marker) {
         std::cerr << "Not building Marker, was MarkerBuilder::initialise called?" << std::endl;
@@ -49,7 +49,7 @@ Marker *MarkerBuilder::build()
     }
 
     reset();
-    return m_marker.release();
+    return std::move(m_marker);
 }
 
 void MarkerBuilder::reset(const double numInds)

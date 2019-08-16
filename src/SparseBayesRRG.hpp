@@ -13,7 +13,7 @@ public:
     explicit SparseBayesRRG(const Data *data, const Options *opt);
     ~SparseBayesRRG() override;
 
-    std::unique_ptr<Kernel> kernelForMarker(const Marker *marker) const override;
+    std::unique_ptr<Kernel> kernelForMarker(const ConstMarkerPtr &marker) const override;
     MarkerBuilder *markerBuilder() const override;
 
     void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps ) override;

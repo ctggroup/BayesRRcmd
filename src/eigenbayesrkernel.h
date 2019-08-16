@@ -6,7 +6,7 @@
 
 struct EigenBayesRKernel : public SparseBayesRKernel
 {
-    explicit EigenBayesRKernel(const EigenSparseMarker *marker);
+    explicit EigenBayesRKernel(const std::shared_ptr<const EigenSparseMarker> &marker);
 
     const VectorXd *ones = nullptr;
 
