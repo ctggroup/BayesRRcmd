@@ -456,6 +456,16 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
     return sigma*temp;
 }
 
+void BayesWBase::prepareForAnalysis()
+{
+    // Generate the random numbers required for this iteration. The random
+    // number engine is not thread safe, so generate them up front to avoid
+    // having to use a mutex.
+    std::generate(m_randomNumbers.begin(), m_randomNumbers.end(), [&dist = m_dist]() {
+        return dist.unif_rng();
+    });
+}
+
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
 	// Component variables
@@ -525,6 +535,8 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
             m_sum_failure_fix(fix_i) = ((m_data->X.col(fix_i).cast<double>()).array() * m_failure_vector.array()).sum();
 		}
 	}
+
+    m_randomNumbers.resize(markerCount);
 }
 // Function for sampling intercept (mu)
 void BayesWBase::sampleMu(){
@@ -606,8 +618,8 @@ void BayesWBase::processColumn(Kernel *kernel)
     gaussKernel->setVi(m_vi);
     gaussKernel->calculateSumFailure(m_failure_vector);
 
-	/* Calculate the mixture probability */
-    double p = m_dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
+    /* Calculate the mixture probability */
+    const double p = m_randomNumbers.at(kernel->marker->i);
 
     // Calculate the (ratios of) marginal likelihoods
     VectorXd marginal_likelihoods {m_K}; // likelihood for each mixture component
@@ -783,6 +795,7 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 
 		// Set counter for each mixture to be 1 ( (1,...,1) prior)
         m_v.setOnes();
+        prepareForAnalysis();
         analysis->exec(this, N, M, markerI);
 
 		// 3. Sample alpha parameter
@@ -850,13 +863,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     gaussKernel->calculateSumFailure(m_failure_vector);
 
     /* Calculate the mixture probability */
-    double p = 0;
-    {
-        // Use a unique lock to ensure only one thread can use the random number engine
-        // at a time.
-        std::unique_lock lock(m_rngMutex);
-        p = m_dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
-    }
+    const double p = m_randomNumbers.at(kernel->marker->i);
 
     // Calculate the (ratios of) marginal likelihoods
     VectorXd marginal_likelihoods {m_K}; // likelihood for each mixture component

@@ -67,9 +67,9 @@ protected:
     double m_mu = 0;
     double m_sigma_b = 0;
 
-    mutable std::shared_mutex m_mutex;
-    mutable std::mutex m_rngMutex;
+    std::vector<double> m_randomNumbers;
 
+    mutable std::shared_mutex m_mutex;
 
 public:
     BayesWBase(const Data *data, const Options *opt, const long m_memPageSize);
@@ -89,6 +89,8 @@ protected:
 	void sampleAlpha();
 
     double gauss_hermite_adaptive_integral(int k, double sigma, string n, const BayesWKernel *kernel);
+
+    virtual void prepareForAnalysis();
 
     virtual int estimateBeta (const BayesWKernel *kernel, const std::shared_ptr<VectorXd> &epsilon, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
