@@ -84,6 +84,8 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_sigmaE = m_epsilon.squaredNorm() / individualCount * 0.5;
     m_epsilonSum=m_epsilon.sum();
 
+    m_randomNumbers.resize(markerCount);
+
     if(m_colLog)
     {
         m_colWriter.setFileName(m_colLogFile);
@@ -93,7 +95,13 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
 
 void BayesRBase::prepareForAnylsis()
 {
-    // Empty in BayesRBase
+    // Generate the random numbers required for this iteration. The random
+    // number engine is not thread safe, so generate them up front to avoid
+    // having to use a mutex.
+    std::generate(m_randomNumbers.begin(), m_randomNumbers.end(), [&dist = m_dist]()
+                  -> std::array<double, RandomNumberColumns> {
+        return {dist.unif_rng(), dist.norm_rng(0, 1)};
+    });
 }
 
 void BayesRBase::prepare(BayesRKernel *kernel)
@@ -285,13 +293,14 @@ void BayesRBase::processColumn(Kernel *kernel)
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
             + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
 
-    double p(m_dist.unif_rng());
-
     if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
         acum = 0;
     } else {
         acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
+
+    const double p = m_randomNumbers.at(kernel->marker->i).at(PIndex);
+    const double randomNorm = m_randomNumbers.at(kernel->marker->i).at(RandomNormIndex);
 
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
@@ -299,7 +308,7 @@ void BayesRBase::processColumn(Kernel *kernel)
             if (k == 0) {
                 m_beta(bayesKernel->marker->i) = 0;
             } else {
-                m_beta(bayesKernel->marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+                m_beta(bayesKernel->marker->i) = randomNorm * (m_sigmaE/m_denom[k-1]) + m_muk[k];
                 m_betasqnG(group) += pow(m_beta(bayesKernel->marker->i), 2);
             }
             m_v.row(group)(k)+=1.0;
@@ -403,22 +412,9 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
         acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
 
-    double p = 0;
-    std::vector<double> randomNumbers(static_cast<std::vector<double>::size_type>(K), 0);
-    {
-        // Generate all the numbers we are going to need in one go.
-        // Use a unique lock to ensure only one thread can use the random number engine
-        // at a time.
-        std::unique_lock lock(m_rngMutex);
-        p = m_dist.unif_rng();
+    const double p = m_randomNumbers.at(kernel->marker->i).at(PIndex);
+    const double randomNorm = m_randomNumbers.at(kernel->marker->i).at(RandomNormIndex);
 
-        auto beginItr = randomNumbers.begin();
-        std::advance(beginItr, 1);
-        std::generate(beginItr, randomNumbers.end(), [&, k = 0] () mutable {
-            ++k;
-            return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
-        });
-    }
     VectorXd v = VectorXd::Zero(K);
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
@@ -426,7 +422,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
             if (k == 0) {
                 result->beta = 0;
             } else {
-                result->beta = randomNumbers.at(static_cast<std::vector<double>::size_type>(k));
+                result->beta = randomNorm * (m_sigmaE/denom[k-1]) + muk[1];
             }
             v[k] += 1.0;
             component = k;

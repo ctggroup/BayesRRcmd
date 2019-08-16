@@ -82,10 +82,14 @@ protected:
     VectorXd m_y;
     VectorXd m_components;
 
+    static const std::size_t PIndex = 0;
+    static const std::size_t RandomNormIndex = 1;
+    constexpr static const std::size_t RandomNumberColumns = 2; // p, randomNorm
+    std::vector<std::array<double, RandomNumberColumns>> m_randomNumbers;
+
     bool m_isAsync = false;
 
     mutable std::shared_mutex m_mutex;
-    mutable std::mutex m_rngMutex;
 
     void setAsynchronous(bool async) { m_isAsync = async; }
 
