@@ -91,7 +91,7 @@ void SparseBayesRRG::writeWithUniqueLock(BayesRKernel *kernel)
         m_epsilonSum += sparseKernel->epsilonSum;
 }
 
-void SparseBayesRRG::updateGlobal(const std::shared_ptr<Kernel> &kernel, const std::shared_ptr<const AsyncResult> &result)
+void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const std::shared_ptr<const AsyncResult> &result)
 {
     BayesRBase::updateGlobal(kernel, result);
 

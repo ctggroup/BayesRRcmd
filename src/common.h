@@ -37,6 +37,9 @@ struct Marker;
 using MarkerPtr = std::shared_ptr<Marker>;
 using ConstMarkerPtr = std::shared_ptr<const Marker>;
 
+struct Kernel;
+using KernelPtr = std::shared_ptr<Kernel>;
+
 class MarkerBuilder;
 MarkerBuilder* builderForType(const PreprocessDataType type);
 

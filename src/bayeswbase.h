@@ -16,7 +16,6 @@
 #include <shared_mutex>
 
 struct BayesWKernel;
-struct Kernel;
 
 struct beta_params {
     double alpha = 0;
@@ -80,7 +79,7 @@ public:
     void processColumn(Kernel *kernel) override;
     std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) override;
 
-    void updateGlobal(const std::shared_ptr<Kernel> &kernel, const std::shared_ptr<const AsyncResult> &result) override;
+    void updateGlobal(const KernelPtr& kernel, const std::shared_ptr<const AsyncResult> &result) override;
 
 protected:
 	void init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount);

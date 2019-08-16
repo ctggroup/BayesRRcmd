@@ -2,6 +2,7 @@
 #define LIMITSEQUENCEGRAPH_H
 
 #include "analysisgraph.hpp"
+#include "common.h"
 
 #include "tbb/flow_graph.h"
 #include <functional>
@@ -9,7 +10,6 @@
 
 using namespace tbb::flow;
 
-struct Kernel;
 
 class LimitSequenceGraph : public AnalysisGraph
 {
@@ -29,7 +29,7 @@ private:
         unsigned int id = 0;
         unsigned int snp = 0;
         unsigned int numInds = 0;
-        std::shared_ptr<Kernel> kernel = nullptr;
+        KernelPtr kernel = nullptr;
     };
 
     std::unique_ptr<graph> m_graph;
