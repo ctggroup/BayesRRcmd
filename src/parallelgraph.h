@@ -53,7 +53,7 @@ private:
         unsigned int snp = 0;
         unsigned int numInds = 0;
         KernelPtr kernel = nullptr;
-        std::shared_ptr<const AsyncResult> result = nullptr;
+        ConstAsyncResultPtr result = nullptr;
     };
 
     using DecompressionTuple = tbb::flow::tuple<DecompressionToken, Message>;

@@ -79,7 +79,7 @@ public:
     void processColumn(const KernelPtr &kernel) override;
     std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) override;
 
-    void updateGlobal(const KernelPtr& kernel, const std::shared_ptr<const AsyncResult> &result) override;
+    void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
 protected:
 	void init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount);

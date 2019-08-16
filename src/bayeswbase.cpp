@@ -951,7 +951,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
 }
 
 void BayesWBase::updateGlobal(const KernelPtr& kernel,
-                              const std::shared_ptr<const AsyncResult>& result)
+                              const ConstAsyncResultPtr& result)
 {
     assert(kernel);
     assert(result);

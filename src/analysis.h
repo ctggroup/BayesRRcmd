@@ -40,7 +40,7 @@ public:
     virtual std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) = 0;
 
     virtual void updateGlobal(const KernelPtr& kernel,
-                              const std::shared_ptr<const AsyncResult>& result) = 0;
+                              const ConstAsyncResultPtr& result) = 0;
 
 protected:
     const Data *m_data = nullptr; // data matrices
