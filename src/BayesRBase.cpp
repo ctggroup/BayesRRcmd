@@ -468,9 +468,11 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
     return result;
 }
 
-void BayesRBase::updateGlobal(Kernel *kernel, const std::shared_ptr<const AsyncResult>& result)
+void BayesRBase::updateGlobal(const std::shared_ptr<Kernel>& kernel,
+                              const std::shared_ptr<const AsyncResult>& result)
 {
     assert(kernel);
+    assert(result);
 
     std::unique_lock lock(m_mutex);
     m_epsilon += *result->deltaEpsilon;

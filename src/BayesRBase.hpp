@@ -31,7 +31,7 @@ public:
 
     void processColumn(Kernel *kernel) override;
     std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) override;
-    void updateGlobal(Kernel *kernel, const std::shared_ptr<const AsyncResult> &result) override;
+    void updateGlobal(const std::shared_ptr<Kernel> &kernel, const std::shared_ptr<const AsyncResult> &result) override;
 
     virtual void updateMu(double old_mu, double N)=0;
 
