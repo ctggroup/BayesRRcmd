@@ -822,8 +822,13 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     assert(gaussKernel);
 
     // Local copies required to sample beta
-    auto epsilon = std::make_shared<VectorXd>(*m_epsilon);
-    auto vi = std::make_shared<VectorXd>(*m_vi);
+    std::shared_ptr<VectorXd> epsilon;
+    std::shared_ptr<VectorXd> vi;
+    {
+        std::shared_lock lock(m_mutex);
+        epsilon = std::make_shared<VectorXd>(*m_epsilon);
+        vi = std::make_shared<VectorXd>(*m_vi);
+    }
 
     // No shared mutex for reading because no other thread writes to the values
     // specific to the marker this thread is working on
@@ -944,8 +949,8 @@ void BayesWBase::updateGlobal(Kernel *kernel, const double beta_old, const doubl
     (void) beta_old; // Unushed
     (void) beta; // Unused
 
+    std::unique_lock lock(m_mutex);
+
     *m_epsilon += deltaEps;
     *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
-
-    assert(false); // Not implemented
 }

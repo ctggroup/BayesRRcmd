@@ -97,6 +97,8 @@ void SparseBayesRRG::updateGlobal(Kernel *kernel, const double beta_old, const d
 
     auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel);
     assert(sparseKernel);
+
+    std::unique_lock lock(m_mutex);
     m_epsilonSum += sparseKernel->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
 }
 

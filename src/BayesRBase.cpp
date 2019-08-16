@@ -354,14 +354,15 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
     const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(bayesKernel);
 
+    // The elements of these members are only accessed by the thread we are in
+    result->beta = m_beta(bayesKernel->marker->i);
+    result->betaOld = result->beta;
+    component = m_components(bayesKernel->marker->i);
+
     double num = 0;
     {
         // Use a shared lock to allow multiple threads to read updates
         std::shared_lock lock(m_mutex);
-
-        result->beta = m_beta(bayesKernel->marker->i);
-        result->betaOld = result->beta;
-        component = m_components(bayesKernel->marker->i);
         readWithSharedLock(bayesKernel);//here we are reading the column and also epsilonsum
         num = bayesKernel->computeNum(m_epsilon, result->betaOld);
     }
@@ -476,6 +477,7 @@ void BayesRBase::updateGlobal(Kernel *kernel, const double beta_old, const doubl
     (void) beta_old; // Unused;
     assert(kernel);
 
+    std::unique_lock lock(m_mutex);
     m_epsilon += deltaEps;
     m_betasqnG[m_data->G[kernel->marker->i]] += pow(beta, 2);
 }
