@@ -52,7 +52,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     // Sampling of the column to the async algorithm class
     auto g = [this] (AnalysisTuple tuple) -> AnalysisTuple {
         auto &msg = std::get<1>(std::get<1>(tuple));
-        msg.result = m_analysis->processColumnAsync(msg.kernel.get());
+        msg.result = m_analysis->processColumnAsync(msg.kernel);
         return tuple;
     };
 

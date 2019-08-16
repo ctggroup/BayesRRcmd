@@ -36,8 +36,8 @@ public:
 
     virtual int runGibbs(AnalysisGraph* analysis) = 0;
 
-    virtual void processColumn(Kernel *kernel) = 0;
-    virtual std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) = 0;
+    virtual void processColumn(const KernelPtr &kernel) = 0;
+    virtual std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) = 0;
 
     virtual void updateGlobal(const KernelPtr& kernel,
                               const std::shared_ptr<const AsyncResult>& result) = 0;

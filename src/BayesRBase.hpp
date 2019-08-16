@@ -29,8 +29,8 @@ public:
 
     int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
 
-    void processColumn(Kernel *kernel) override;
-    std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) override;
+    void processColumn(const KernelPtr &kernel) override;
+    std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) override;
     void updateGlobal(const KernelPtr& kernel, const std::shared_ptr<const AsyncResult> &result) override;
 
     virtual void updateMu(double old_mu, double N)=0;

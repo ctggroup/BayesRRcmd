@@ -245,9 +245,9 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     return 0;
 }
 
-void BayesRBase::processColumn(Kernel *kernel)
+void BayesRBase::processColumn(const KernelPtr &kernel)
 {
-    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel);
+    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel.get());
     assert(bayesKernel);
 
     const unsigned int N(m_data->numInds);
@@ -350,9 +350,9 @@ void BayesRBase::processColumn(Kernel *kernel)
 
 }
 
-std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
+std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &kernel)
 {
-    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel);
+    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel.get());
     assert(bayesKernel);
 
     const auto group = m_data->G[bayesKernel->marker->i];

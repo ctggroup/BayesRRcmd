@@ -601,9 +601,9 @@ void BayesWBase::sampleTheta(int fix_i){
 }
 
 // Function for sampling marker effect (beta_i)
-void BayesWBase::processColumn(Kernel *kernel)
+void BayesWBase::processColumn(const KernelPtr &kernel)
 {
-    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
+    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel.get());
     assert(gaussKernel);
 
     const double beta_old = m_beta(gaussKernel->marker->i);
@@ -829,9 +829,9 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
     return 0;
 }
 
-std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
+std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &kernel)
 {
-    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
+    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel.get());
     assert(gaussKernel);
 
     // Local copies required to sample beta
