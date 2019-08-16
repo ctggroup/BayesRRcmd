@@ -84,6 +84,8 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_sigmaE = m_epsilon.squaredNorm() / individualCount * 0.5;
     m_epsilonSum=m_epsilon.sum();
 
+    m_randomNumbers.resize(markerCount);
+
     if(m_colLog)
     {
         m_colWriter.setFileName(m_colLogFile);
@@ -93,7 +95,13 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
 
 void BayesRBase::prepareForAnylsis()
 {
-    // Empty in BayesRBase
+    // Generate the random numbers required for this iteration. The random
+    // number engine is not thread safe, so generate them up front to avoid
+    // having to use a mutex.
+    std::generate(m_randomNumbers.begin(), m_randomNumbers.end(), [&dist = m_dist]()
+                  -> std::array<double, RandomNumberColumns> {
+        return {dist.unif_rng(), dist.norm_rng(0, 1)};
+    });
 }
 
 void BayesRBase::prepare(BayesRKernel *kernel)
@@ -237,9 +245,9 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     return 0;
 }
 
-void BayesRBase::processColumn(Kernel *kernel)
+void BayesRBase::processColumn(const KernelPtr &kernel)
 {
-    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel);
+    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel.get());
     assert(bayesKernel);
 
     const unsigned int N(m_data->numInds);
@@ -285,13 +293,14 @@ void BayesRBase::processColumn(Kernel *kernel)
             - 0.5 * ((logLScale * m_cVa.segment(1, km1).array() + 1).array().log())
             + 0.5 * (m_muk.segment(1, km1).array() * num) / m_sigmaE;
 
-    double p(m_dist.unif_rng());
-
     if (((logL.segment(1, km1).array() - logL[0]).abs().array() > 700).any()) {
         acum = 0;
     } else {
         acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
+
+    const double p = m_randomNumbers.at(kernel->marker->i).at(PIndex);
+    const double randomNorm = m_randomNumbers.at(kernel->marker->i).at(RandomNormIndex);
 
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
@@ -299,7 +308,7 @@ void BayesRBase::processColumn(Kernel *kernel)
             if (k == 0) {
                 m_beta(bayesKernel->marker->i) = 0;
             } else {
-                m_beta(bayesKernel->marker->i) = m_dist.norm_rng(m_muk[k], m_sigmaE/m_denom[k-1]);
+                m_beta(bayesKernel->marker->i) = randomNorm * (m_sigmaE/m_denom[k-1]) + m_muk[k];
                 m_betasqnG(group) += pow(m_beta(bayesKernel->marker->i), 2);
             }
             m_v.row(group)(k)+=1.0;
@@ -341,9 +350,9 @@ void BayesRBase::processColumn(Kernel *kernel)
 
 }
 
-std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
+std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &kernel)
 {
-    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel);
+    auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel.get());
     assert(bayesKernel);
 
     const auto group = m_data->G[bayesKernel->marker->i];
@@ -354,14 +363,15 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
     const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(bayesKernel);
 
+    // The elements of these members are only accessed by the thread we are in
+    result->beta = m_beta(bayesKernel->marker->i);
+    result->betaOld = result->beta;
+    component = m_components(bayesKernel->marker->i);
+
     double num = 0;
     {
         // Use a shared lock to allow multiple threads to read updates
         std::shared_lock lock(m_mutex);
-
-        result->beta = m_beta(bayesKernel->marker->i);
-        result->betaOld = result->beta;
-        component = m_components(bayesKernel->marker->i);
         readWithSharedLock(bayesKernel);//here we are reading the column and also epsilonsum
         num = bayesKernel->computeNum(m_epsilon, result->betaOld);
     }
@@ -402,32 +412,19 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
         acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
 
-    double p = 0;
-    std::vector<double> randomNumbers(static_cast<std::vector<double>::size_type>(K), 0);
-    {
-        // Generate all the numbers we are going to need in one go.
-        // Use a unique lock to ensure only one thread can use the random number engine
-        // at a time.
-        std::unique_lock lock(m_rngMutex);
-        p = m_dist.unif_rng();
+    const double p = m_randomNumbers.at(kernel->marker->i).at(PIndex);
+    const double randomNorm = m_randomNumbers.at(kernel->marker->i).at(RandomNormIndex);
 
-        auto beginItr = randomNumbers.begin();
-        std::advance(beginItr, 1);
-        std::generate(beginItr, randomNumbers.end(), [&, k = 0] () mutable {
-            ++k;
-            return m_dist.norm_rng(muk[k], m_sigmaE/denom[k-1]);
-        });
-    }
-    VectorXd v = VectorXd::Zero(K);
+    result->v = std::make_unique<VectorXd>(VectorXd::Zero(K));
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
             if (k == 0) {
                 result->beta = 0;
             } else {
-                result->beta = randomNumbers.at(static_cast<std::vector<double>::size_type>(k));
+                result->beta = randomNorm * (m_sigmaE/denom[k-1]) + muk[1];
             }
-            v[k] += 1.0;
+            (*result->v)(k) += 1.0;
             component = k;
             break;
         } else {
@@ -449,14 +446,6 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
         result->deltaEpsilon = bayesKernel->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum
     }
-    // In the new version of Async we do not synchronise epsilon Async, we will handle this through the global node
-    // Lock to write updates (at end, or perhaps as updates are computed)
-
-     {
-      std::unique_lock lock(m_mutex);
-      // Use a unique lock to ensure only one thread can write updates
-         m_v.row(group) += v; //maybe we can move this to the message struct
-      }
 
     // These updates do not need to be atomic
     m_beta(bayesKernel->marker->i) = result->beta;
@@ -471,13 +460,25 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(Kernel *kernel)
     return result;
 }
 
-void BayesRBase::updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps)
+void BayesRBase::doThreadSafeUpdates(const ConstAsyncResultPtr &result)
 {
-    (void) beta_old; // Unused;
-    assert(kernel);
+    assert(result);
 
-    m_epsilon += deltaEps;
-    m_betasqnG[m_data->G[kernel->marker->i]] += pow(beta, 2);
+    // No mutex required here - thread_safe_update_node is serial, therefore
+    // only one runs at any time. m_v is not accessed elsewhere whilst the
+    // flow graph is running.
+    m_v += *result->v;
+}
+
+void BayesRBase::updateGlobal(const KernelPtr& kernel,
+                              const ConstAsyncResultPtr& result)
+{
+    assert(kernel);
+    assert(result);
+
+    std::unique_lock lock(m_mutex);
+    m_epsilon += *result->deltaEpsilon;
+    m_betasqnG[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
 }
 
 void BayesRBase::printDebugInfo() const

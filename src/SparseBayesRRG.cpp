@@ -62,19 +62,7 @@ void SparseBayesRRG::init(int K, unsigned int markerCount, unsigned int individu
 {
     BayesRBase::init(K, markerCount, individualCount);
 
-    m_asyncEpsilon = VectorXd(individualCount);
-
-    m_asyncEpsilonSum = m_epsilonSum;
-
     m_ones.setOnes(individualCount);
-}
-
-void SparseBayesRRG::prepareForAnylsis()
-{
-    if (m_isAsync) {
-        std::memcpy(m_asyncEpsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
-        m_asyncEpsilonSum = m_epsilonSum;
-    }
 }
 
 void SparseBayesRRG::prepare(BayesRKernel *kernel)
@@ -103,12 +91,14 @@ void SparseBayesRRG::writeWithUniqueLock(BayesRKernel *kernel)
         m_epsilonSum += sparseKernel->epsilonSum;
 }
 
-void SparseBayesRRG::updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd& deltaEps)
+void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result)
 {
-    BayesRBase::updateGlobal(kernel, beta_old, beta, deltaEps);
+    BayesRBase::updateGlobal(kernel, result);
 
-    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel);
+    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel.get());
     assert(sparseKernel);
+
+    std::unique_lock lock(m_mutex);
     m_epsilonSum += sparseKernel->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
 }
 

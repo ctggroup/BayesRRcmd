@@ -52,11 +52,21 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     // Sampling of the column to the async algorithm class
     auto g = [this] (AnalysisTuple tuple) -> AnalysisTuple {
         auto &msg = std::get<1>(std::get<1>(tuple));
-        msg.result = m_analysis->processColumnAsync(msg.kernel.get());
+        msg.result = m_analysis->processColumnAsync(msg.kernel);
         return tuple;
     };
 
     m_analysisNode.reset(new analysis_node(*m_graph, m_analysisNodeConcurrency, g));
+
+    auto threadSafeUpdate = [this] (AnalysisTuple tuple) -> AnalysisTuple {
+        auto &msg = std::get<1>(std::get<1>(tuple));
+        m_analysis->doThreadSafeUpdates(msg.result);
+        return tuple;
+    };
+
+    m_threadSafeUpdateNode.reset(new thread_safe_update_node(*m_graph,
+                                                             serial,
+                                                             threadSafeUpdate));
 
     // Decide whether to continue calculations or discard
     auto h = [] (decision_node::input_type input,
@@ -84,10 +94,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
         auto &decompressionTuple = std::get<1>(input);
         auto &msg = std::get<1>(decompressionTuple);
 
-        m_analysis->updateGlobal(msg.kernel.get(),
-                              msg.result->betaOld,
-                              msg.result->beta,
-                              *msg.result->deltaEpsilon);
+        m_analysis->updateGlobal(msg.kernel, msg.result);
 
         std::get<0>(outputPorts).try_put(std::get<0>(decompressionTuple));
         std::get<1>(outputPorts).try_put(std::get<0>(input));
@@ -133,7 +140,8 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
         make_edge(*m_decompressionNode, input_port<1>(*m_analysisJoinNode));
     }
     make_edge(*m_analysisJoinNode, *m_analysisNode);
-    make_edge(*m_analysisNode, *m_decisionNode);
+    make_edge(*m_analysisNode, *m_threadSafeUpdateNode);
+    make_edge(*m_threadSafeUpdateNode, *m_decisionNode);
     make_edge(output_port<0>(*m_decisionNode), input_port<0>(*m_decompressionJoinNode));
     make_edge(output_port<1>(*m_decisionNode), *m_analysisControlNode);
     make_edge(output_port<2>(*m_decisionNode), *m_globalUpdateNode);

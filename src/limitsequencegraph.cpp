@@ -45,7 +45,7 @@ LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
 
     auto g = [this] (Message msg) -> continue_msg {
         // Delegate the processing of this column to the algorithm class
-        m_analysis->processColumn(msg.kernel.get());
+        m_analysis->processColumn(msg.kernel);
 
         // Signal for next decompression task to continue
         return continue_msg();

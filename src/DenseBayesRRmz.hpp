@@ -23,11 +23,6 @@ public:
     MarkerBuilder *markerBuilder() const override;
 
     void updateMu(double old_mu,double N) override;
-
-protected:
-    void init(int K, unsigned int markerCount, unsigned int individualCount) override;
-    void prepareForAnylsis() override;
-    
 };
 
 #endif /* SRC_DENSEBAYESRRMZ_H_ */

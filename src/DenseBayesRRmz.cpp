@@ -32,20 +32,6 @@ MarkerBuilder *DenseBayesRRmz::markerBuilder() const
     return builderForType(PreprocessDataType::Dense);
 }
 
-void DenseBayesRRmz::init(int K, unsigned int markerCount, unsigned int individualCount)
-{
-    BayesRBase::init(K, markerCount, individualCount);
-
-    if (m_isAsync)
-        m_asyncEpsilon = VectorXd(individualCount);
-}
-
-void DenseBayesRRmz::prepareForAnylsis()
-{
-    if (m_isAsync)
-        std::memcpy(m_asyncEpsilon.data(), m_epsilon.data(), static_cast<size_t>(m_epsilon.size()) * sizeof(double));
-}
-
 //update for mu, in dense case the cache variable m_epsilonSum is not used
 void DenseBayesRRmz::updateMu(double old_mu,double N)
 {

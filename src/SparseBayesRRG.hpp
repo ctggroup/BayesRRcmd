@@ -16,15 +16,12 @@ public:
     std::unique_ptr<Kernel> kernelForMarker(const ConstMarkerPtr &marker) const override;
     MarkerBuilder *markerBuilder() const override;
 
-    void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps ) override;
-   void updateMu(double old_mu,double N);
+    void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
+    void updateMu(double old_mu,double N);
 protected:
-    double m_asyncEpsilonSum = 0.0;
-
     VectorXd m_ones;
 
     void init(int K, unsigned int markerCount, unsigned int individualCount) override;
-    void prepareForAnylsis() override;
 
     void prepare(BayesRKernel *kernel) override;
     void readWithSharedLock(BayesRKernel *kernel) override;

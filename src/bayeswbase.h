@@ -16,7 +16,6 @@
 #include <shared_mutex>
 
 struct BayesWKernel;
-struct Kernel;
 
 struct beta_params {
     double alpha = 0;
@@ -67,9 +66,9 @@ protected:
     double m_mu = 0;
     double m_sigma_b = 0;
 
-    mutable std::shared_mutex m_mutex;
-    mutable std::mutex m_rngMutex;
+    std::vector<double> m_randomNumbers;
 
+    mutable std::shared_mutex m_mutex;
 
 public:
     BayesWBase(const Data *data, const Options *opt, const long m_memPageSize);
@@ -77,10 +76,11 @@ public:
 
     int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
 
-    void processColumn(Kernel *kernel) override;
-    std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) override;
+    void processColumn(const KernelPtr &kernel) override;
 
-    void updateGlobal(Kernel *kernel, const double beta_old, const double m_beta, const VectorXd &deltaEps) override;
+    std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) override;
+    void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
+    void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
 protected:
 	void init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount);
@@ -89,6 +89,8 @@ protected:
 	void sampleAlpha();
 
     double gauss_hermite_adaptive_integral(int k, double sigma, string n, const BayesWKernel *kernel);
+
+    virtual void prepareForAnalysis();
 
     virtual int estimateBeta (const BayesWKernel *kernel, const std::shared_ptr<VectorXd> &epsilon, double *xinit, int ninit, double *xl, double *xr, const beta_params params,
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,

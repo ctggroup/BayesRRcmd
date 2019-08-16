@@ -2,6 +2,7 @@
 #define DENSEPARALLELGRAPH_H
 
 #include "analysisgraph.hpp"
+#include "common.h"
 
 #include "tbb/flow_graph.h"
 #include <functional>
@@ -10,7 +11,6 @@
 
 class BayesRBase;
 
-struct Kernel;
 struct AsyncResult;
 
 using DecompressionToken = size_t;
@@ -52,8 +52,8 @@ private:
         unsigned int id = 0;
         unsigned int snp = 0;
         unsigned int numInds = 0;
-        std::shared_ptr<Kernel> kernel = nullptr;
-        std::shared_ptr<const AsyncResult> result = nullptr;
+        KernelPtr kernel = nullptr;
+        ConstAsyncResultPtr result = nullptr;
     };
 
     using DecompressionTuple = tbb::flow::tuple<DecompressionToken, Message>;
@@ -75,6 +75,9 @@ private:
 
     using analysis_node = function_node<AnalysisTuple, AnalysisTuple>;
     std::unique_ptr<analysis_node> m_analysisNode;
+
+    using thread_safe_update_node = function_node<AnalysisTuple, AnalysisTuple, lightweight>;
+    std::unique_ptr<thread_safe_update_node> m_threadSafeUpdateNode;
 
     using decision_node = multifunction_node<AnalysisTuple, tbb::flow::tuple<DecompressionToken, AnalysisToken, AnalysisTuple>>;
     std::unique_ptr<decision_node> m_decisionNode;

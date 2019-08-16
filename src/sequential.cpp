@@ -21,7 +21,7 @@ void Sequential::exec(Analysis *analysis,
     }
 
     std::for_each(markerIndices.cbegin(), markerIndices.cend(), [&analysis](unsigned int i) {
-        auto kernel = analysis->kernelForMarker(markerCache()->marker(i));
-        analysis->processColumn(kernel.get());
+        KernelPtr kernel = analysis->kernelForMarker(markerCache()->marker(i));
+        analysis->processColumn(kernel);
     });
 }

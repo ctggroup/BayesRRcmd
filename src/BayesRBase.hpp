@@ -29,9 +29,11 @@ public:
 
     int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
 
-    void processColumn(Kernel *kernel) override;
-    std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) override;
-    void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd& deltaEps) override;
+    void processColumn(const KernelPtr &kernel) override;
+
+    std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) override;
+    void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
+    void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
     virtual void updateMu(double old_mu, double N)=0;
 
@@ -82,12 +84,14 @@ protected:
     VectorXd m_y;
     VectorXd m_components;
 
+    static const std::size_t PIndex = 0;
+    static const std::size_t RandomNormIndex = 1;
+    constexpr static const std::size_t RandomNumberColumns = 2; // p, randomNorm
+    std::vector<std::array<double, RandomNumberColumns>> m_randomNumbers;
+
     bool m_isAsync = false;
 
-    VectorXd m_asyncEpsilon;
-
     mutable std::shared_mutex m_mutex;
-    mutable std::mutex m_rngMutex;
 
     void setAsynchronous(bool async) { m_isAsync = async; }
 

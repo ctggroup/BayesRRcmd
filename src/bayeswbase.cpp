@@ -456,6 +456,16 @@ double BayesWBase::gauss_hermite_adaptive_integral(int k, double sigma, string n
     return sigma*temp;
 }
 
+void BayesWBase::prepareForAnalysis()
+{
+    // Generate the random numbers required for this iteration. The random
+    // number engine is not thread safe, so generate them up front to avoid
+    // having to use a mutex.
+    std::generate(m_randomNumbers.begin(), m_randomNumbers.end(), [&dist = m_dist]() {
+        return dist.unif_rng();
+    });
+}
+
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
 	// Component variables
@@ -525,6 +535,8 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
             m_sum_failure_fix(fix_i) = ((m_data->X.col(fix_i).cast<double>()).array() * m_failure_vector.array()).sum();
 		}
 	}
+
+    m_randomNumbers.resize(markerCount);
 }
 // Function for sampling intercept (mu)
 void BayesWBase::sampleMu(){
@@ -589,9 +601,9 @@ void BayesWBase::sampleTheta(int fix_i){
 }
 
 // Function for sampling marker effect (beta_i)
-void BayesWBase::processColumn(Kernel *kernel)
+void BayesWBase::processColumn(const KernelPtr &kernel)
 {
-    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
+    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel.get());
     assert(gaussKernel);
 
     const double beta_old = m_beta(gaussKernel->marker->i);
@@ -606,8 +618,8 @@ void BayesWBase::processColumn(Kernel *kernel)
     gaussKernel->setVi(m_vi);
     gaussKernel->calculateSumFailure(m_failure_vector);
 
-	/* Calculate the mixture probability */
-    double p = m_dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
+    /* Calculate the mixture probability */
+    const double p = m_randomNumbers.at(kernel->marker->i);
 
     // Calculate the (ratios of) marginal likelihoods
     VectorXd marginal_likelihoods {m_K}; // likelihood for each mixture component
@@ -783,6 +795,7 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 
 		// Set counter for each mixture to be 1 ( (1,...,1) prior)
         m_v.setOnes();
+        prepareForAnalysis();
         analysis->exec(this, N, M, markerI);
 
 		// 3. Sample alpha parameter
@@ -816,14 +829,19 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
     return 0;
 }
 
-std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
+std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &kernel)
 {
-    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel);
+    auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel.get());
     assert(gaussKernel);
 
     // Local copies required to sample beta
-    auto epsilon = std::make_shared<VectorXd>(*m_epsilon);
-    auto vi = std::make_shared<VectorXd>(*m_vi);
+    std::shared_ptr<VectorXd> epsilon;
+    std::shared_ptr<VectorXd> vi;
+    {
+        std::shared_lock lock(m_mutex);
+        epsilon = std::make_shared<VectorXd>(*m_epsilon);
+        vi = std::make_shared<VectorXd>(*m_vi);
+    }
 
     // No shared mutex for reading because no other thread writes to the values
     // specific to the marker this thread is working on
@@ -845,13 +863,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     gaussKernel->calculateSumFailure(m_failure_vector);
 
     /* Calculate the mixture probability */
-    double p = 0;
-    {
-        // Use a unique lock to ensure only one thread can use the random number engine
-        // at a time.
-        std::unique_lock lock(m_rngMutex);
-        p = m_dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
-    }
+    const double p = m_randomNumbers.at(kernel->marker->i);
 
     // Calculate the (ratios of) marginal likelihoods
     VectorXd marginal_likelihoods {m_K}; // likelihood for each mixture component
@@ -869,7 +881,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
     // Calculate the probability that marker is 0
     double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
-    VectorXd localV = VectorXd::Zero(m_K);
+    result->v = std::make_unique<VectorXd>(VectorXd::Zero(m_K));
     int component = 0;
     //Loop through the possible mixture classes
     for (int k = 0; k < m_K; k++) {
@@ -909,7 +921,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
                 result->beta = xsamp[0]; // Save the new result
             }
 
-            localV[k] += 1.0;
+            (*result->v)(k) += 1.0;
             component = k;
             break;
         } else {
@@ -927,25 +939,31 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(Kernel *kernel)
         result->deltaEpsilon = gaussKernel->calculateEpsilonChange(result->betaOld, result->beta);
     }
 
-    {
-        std::unique_lock lock(m_mutex);
-        m_v += localV;
-    }
-
     m_components(gaussKernel->marker->i) = component;
     m_beta(gaussKernel->marker->i) = result->beta;
 
     return result;
 }
 
-void BayesWBase::updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd &deltaEps)
+void BayesWBase::doThreadSafeUpdates(const ConstAsyncResultPtr &result)
 {
+    assert(result);
+
+    // No mutex required here - thread_safe_update_node is serial, therefore
+    // only one runs at any time. m_v is not accessed elsewhere whilst the
+    // flow graph is running.
+    m_v += *result->v;
+}
+
+void BayesWBase::updateGlobal(const KernelPtr& kernel,
+                              const ConstAsyncResultPtr& result)
+{
+    assert(kernel);
+    assert(result);
     (void) kernel; // Unused
-    (void) beta_old; // Unushed
-    (void) beta; // Unused
 
-    *m_epsilon += deltaEps;
+    std::unique_lock lock(m_mutex);
+
+    *m_epsilon += *result->deltaEpsilon;
     *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
-
-    assert(false); // Not implemented
 }

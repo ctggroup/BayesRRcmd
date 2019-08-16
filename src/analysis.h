@@ -10,7 +10,6 @@
 
 using namespace Eigen;
 
-struct Kernel;
 struct IndexEntry;
 
 class AnalysisGraph;
@@ -20,6 +19,7 @@ struct AsyncResult {
     double betaOld = 0.0;
     double beta = 0.0;
     std::unique_ptr<VectorXd> deltaEpsilon;
+    std::unique_ptr<VectorXd> v;
 };
 
 class Analysis {
@@ -37,10 +37,14 @@ public:
 
     virtual int runGibbs(AnalysisGraph* analysis) = 0;
 
-    virtual void processColumn(Kernel *kernel) = 0;
-    virtual std::unique_ptr<AsyncResult> processColumnAsync(Kernel *kernel) = 0;
+    // LimitSeqeunceGraph
+    virtual void processColumn(const KernelPtr &kernel) = 0;
 
-    virtual void updateGlobal(Kernel *kernel, const double beta_old, const double beta, const VectorXd& deltaEps) = 0;
+    // ParallelGraph
+    virtual std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) = 0;
+    virtual void doThreadSafeUpdates(const ConstAsyncResultPtr& result) = 0;
+    virtual void updateGlobal(const KernelPtr& kernel,
+                              const ConstAsyncResultPtr& result) = 0;
 
 protected:
     const Data *m_data = nullptr; // data matrices
