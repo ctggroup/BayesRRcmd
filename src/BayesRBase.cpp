@@ -308,7 +308,7 @@ void BayesRBase::processColumn(const KernelPtr &kernel)
             if (k == 0) {
                 m_beta(bayesKernel->marker->i) = 0;
             } else {
-                m_beta(bayesKernel->marker->i) = randomNorm * (m_sigmaE/m_denom[k-1]) + m_muk[k];
+                m_beta(bayesKernel->marker->i) = randomNorm * std::sqrt(m_sigmaE/m_denom[k-1]) + m_muk[k];
                 m_betasqnG(group) += pow(m_beta(bayesKernel->marker->i), 2);
             }
             m_v.row(group)(k)+=1.0;
@@ -422,7 +422,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
             if (k == 0) {
                 result->beta = 0;
             } else {
-                result->beta = randomNorm * (m_sigmaE/denom[k-1]) + muk[1];
+                result->beta = randomNorm * std::sqrt(m_sigmaE/denom[k-1]) + muk[k];
             }
             (*result->v)(k) += 1.0;
             component = k;
