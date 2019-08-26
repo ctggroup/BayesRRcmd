@@ -204,10 +204,8 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         analysis->exec(this, N, M, markerI);
         const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 	
-	if(nF > 0){
         // Fixed effects estimation
         // ---------------------
-	cout<<nF<<endl;
         double dNm1 = (double)(N - 1);
         if (nF>0) {
                 std::random_shuffle(xI.begin(), xI.end());
@@ -222,8 +220,6 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
                       num_f += m_data->X(k, xI[i]) * (m_epsilon[k] + gamma_old * m_data->X(k, xI[i]));
 		    }
 		      denom_f = dNm1 + sigE_sigF;
-		      
-
                       m_gamma(i) = m_dist.norm_rng(num_f/denom_f, m_sigmaE/denom_f);
                     
                     for (int k = 0; k<N ; k++) {
@@ -231,8 +227,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
                     }
                 }
                 m_sigmaF = s02F;
-        }
-	}	
+        }	
 
     const auto sEstartTime = std::chrono::high_resolution_clock::now();
         const double epsilonSqNorm = m_epsilon.squaredNorm();
@@ -248,7 +243,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
     if (iteration >= m_burnIn && iteration % m_thinning == 0) {
-      sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_epsilon;
+            sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_epsilon;
             writer.write(sample);
         }
 
