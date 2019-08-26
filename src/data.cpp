@@ -393,7 +393,6 @@ void Data::readCSV(const string &filename, int cols) {
 				}
 			}
 			X(row, col) = atof(start);
-
 			row++;
 		}
 

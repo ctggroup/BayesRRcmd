@@ -87,7 +87,8 @@ public:
         numGroups				=2;
         preprocessDataType      = PreprocessDataType::Dense;
 
-        bayesW_version			= "marginal";
+        bayesW_version		= "marginal";
+        fixedEffectNumber       = 0;
     }
 
     void inputOptions(const int argc, const char* argv[]);

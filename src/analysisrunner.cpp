@@ -120,8 +120,12 @@ bool preprocess(const Options &options) {
     }
 }
 
-bool runBayesRAnalysis(const Options *options, const Data *data, AnalysisGraph *graph) {
-    switch (options->preprocessDataType) {
+bool runBayesRAnalysis(const Options *options, Data *data, AnalysisGraph *graph) {
+    // If there is a file for fixed effects (model matrix), then read the data
+    if(!options->fixedFile.empty()) {
+        data->readCSV(options->fixedFile, options->fixedEffectNumber);
+    }    
+switch (options->preprocessDataType) {
     case PreprocessDataType::Dense:
     {
         DenseBayesRRmz analysis(data, options);

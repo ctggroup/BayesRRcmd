@@ -135,6 +135,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     const unsigned int N(m_data->numInds);
     const int K(int(m_cva.cols()) + 1);
     const unsigned int nGroups(m_data->numGroups);
+    const unsigned int nF(m_opt->fixedEffectNumber);
 
     init(K, M, N);
 
@@ -142,7 +143,9 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     writer.setFileName(m_outputFile);
     writer.setMarkerCount(M);
     writer.setIndividualCount(N);
+    writer.setFixedCount(nF);
     writer.openGroups(nGroups);
+
     LogWriter iterLogger;
     VectorXd  iterLog(10);
 
@@ -154,10 +157,16 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     }
 
     // Sampler variables
-    VectorXd sample(2*M+3+nGroups+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
+    VectorXd sample(1+2*M+3+nF+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
     std::vector<unsigned int> markerI(M);
     std::iota(markerI.begin(), markerI.end(), 0);
 
+    //fixed effects vector & iterator
+    m_gamma = VectorXd(nF);
+    m_gamma.setZero();
+    std::vector<unsigned int> xI(nF);
+    std::iota(xI.begin(), xI.end(), 0);
+    
     std::cout << "Number of groups: " << nGroups << std::endl
               << "Running Gibbs sampling" << endl;
 
@@ -194,6 +203,36 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
         analysis->exec(this, N, M, markerI);
         const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
+	
+	if(nF > 0){
+        // Fixed effects estimation
+        // ---------------------
+	cout<<nF<<endl;
+        double dNm1 = (double)(N - 1);
+        if (nF>0) {
+                std::random_shuffle(xI.begin(), xI.end());
+                double gamma_old, num_f, denom_f;
+                double sigE_sigF = m_sigmaE / m_sigmaF;
+
+                for (int i=0; i<nF; i++) {
+                    gamma_old = m_gamma(xI[i]);
+                    num_f     = 0.0;
+                    denom_f   = 0.0;                    
+                    for (int k=0; k<N; k++){                  
+                      num_f += m_data->X(k, xI[i]) * (m_epsilon[k] + gamma_old * m_data->X(k, xI[i]));
+		    }
+		      denom_f = dNm1 + sigE_sigF;
+		      
+
+                      m_gamma(i) = m_dist.norm_rng(num_f/denom_f, m_sigmaE/denom_f);
+                    
+                    for (int k = 0; k<N ; k++) {
+		      m_epsilon[k] = m_epsilon[k] + (gamma_old - m_gamma(xI[i])) * m_data->X(k, xI[i]);                        
+                    }
+                }
+                m_sigmaF = s02F;
+        }
+	}	
 
     const auto sEstartTime = std::chrono::high_resolution_clock::now();
         const double epsilonSqNorm = m_epsilon.squaredNorm();
@@ -209,7 +248,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
     if (iteration >= m_burnIn && iteration % m_thinning == 0) {
-            sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_components, m_epsilon;
+      sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_epsilon;
             writer.write(sample);
         }
 

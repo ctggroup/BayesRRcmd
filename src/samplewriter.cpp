@@ -16,6 +16,7 @@ void SampleWriter::open()
 	}
 
 	m_outFile << "sigmaE," << "sigmaG,";
+		
 	for (unsigned int i = 0; i < m_markerCount; ++i) {
 		m_outFile << "comp[" << (i+1) << "],";
 	}
@@ -92,7 +93,11 @@ void SampleWriter::openGroups(int numberGroups)
 
     for(unsigned int i = 0; i < numberGroups; ++i){
     	    m_outFile << "sigmaG[" << (i+1) << "],";
-    	  }
+    }
+
+    for (unsigned int i = 0; i < m_fixedCount; ++i) {
+		m_outFile << "gamma[" << (i+1) << "],";
+    }
 
     for (unsigned int i = 0; i < m_markerCount; ++i) {
         m_outFile << "comp[" << (i+1) << "],";

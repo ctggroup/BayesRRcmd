@@ -83,6 +83,11 @@ protected:
     double m_epsilonSum=0.0;
     VectorXd m_y;
     VectorXd m_components;
+    
+    //fixed effects
+    VectorXd m_gamma;     // fixed effects coefficients
+    const double       s02F    = 1.0;
+    double m_sigmaF;      // covariates variance if using ridge;
 
     static const std::size_t PIndex = 0;
     static const std::size_t RandomNormIndex = 1;
