@@ -4,21 +4,25 @@
 #include <cstddef>
 #include <vector>
 
-class BayesRRmz;
+class Analysis;
 
 class AnalysisGraph
 {
 public:
-    AnalysisGraph(BayesRRmz *bayes, size_t maxParallel = 12);
+    AnalysisGraph(size_t maxParallel = 0);
     virtual ~AnalysisGraph();
 
-    virtual void exec(unsigned int numInds,
+    // Return true if the analysis calls BayesRBase::processColumnAsync
+    virtual bool isAsynchronous() const = 0;
+
+    virtual void exec(Analysis* analysis,
+                      unsigned int numInds,
                       unsigned int numSnps,
                       const std::vector<unsigned int> &markerIndices) = 0;
 
 protected:
-    BayesRRmz *m_bayes = nullptr;
-    size_t m_maxParallel = 12;
+    Analysis *m_analysis = nullptr;
+    size_t m_maxParallel = 0; // Default to tbb::flow::unlimited
 };
 
 #endif // ANALYSISGRAPH_H

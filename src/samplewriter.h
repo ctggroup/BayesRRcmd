@@ -2,35 +2,32 @@
 #define SAMPLEWRITER_H
 
 #include <Eigen/Eigen>
-
+#include "writer.h"
 #include <fstream>
 #include <string>
 
-class SampleWriter
+class SampleWriter : public Writer
 {
 public:
-    SampleWriter();
-    ~SampleWriter();
-
-    void setFileName(const std::string &fileName) { m_fileName = fileName; }
-    std::string fileName() const { return m_fileName; }
-
     void setMarkerCount(unsigned int markerCount) { m_markerCount = markerCount; }
     unsigned int markerCount() const { return m_markerCount; }
 
     void setIndividualCount(unsigned int individualCount) { m_individualCount = individualCount; }
     unsigned int individualCount() const { return m_individualCount; }
+    
+    void open() override;
+    void openGroups(int numberGroups);
 
-    void open();
-    void write(const Eigen::VectorXd &sample);
-    void close();
+    void setFixedCount(unsigned int fixedCount) { m_fixedCount = fixedCount; }
+    unsigned int fixedCount() const { return m_fixedCount; }
+
+    void open_bayesW();
+    void open_bayesW_fixed();
 
 private:
-    std::string m_fileName;
-    std::ofstream m_outFile;
     unsigned int m_markerCount;
     unsigned int m_individualCount;
-    Eigen::IOFormat m_commaInitFormat;
+    unsigned int m_fixedCount;
 };
 
 #endif // SAMPLEWRITER_H

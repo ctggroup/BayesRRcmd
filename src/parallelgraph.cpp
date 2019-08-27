@@ -1,116 +1,185 @@
-#include "parallelgraph.hpp"
+#include "parallelgraph.h"
 
 #include "compression.h"
-#include "BayesRRmz.hpp"
+#include "BayesRBase.hpp"
+#include "kernel.h"
+#include "markerbuilder.h"
+#include "markercache.h"
 
 #include <iostream>
 
-ParallelGraph::ParallelGraph(BayesRRmz *bayes, size_t maxParallel)
-    : AnalysisGraph(bayes, maxParallel)
+ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTokens, bool useMarkerCache)
+    : AnalysisGraph()
     , m_graph(new graph)
+    , m_decompressionTokens(maxDecompressionTokens)
+    , m_analysisTokens(maxAnalysisTokens)
 {
-    // Decompress the column for this marker then process the column using the algorithm class
-    auto f = [this] (Message msg) -> Message {
-        // Decompress the column
-        const unsigned int colSize = msg.numInds * sizeof(double);
+    m_decompressionJoinNode.reset(new decompression_join_node(*m_graph));
 
-        msg.data.reset(new unsigned char[colSize]);
+    if (useMarkerCache) {
+        auto cacheReader = [this] (DecompressionTuple tuple) -> DecompressionTuple {
+            auto &msg = std::get<1>(tuple);
+            msg.kernel = m_analysis->kernelForMarker(markerCache()->marker(msg.snp));
+            return tuple;
+        };
 
-        extractData(reinterpret_cast<unsigned char *>(m_bayes->m_data.ppBedMap) + m_bayes->m_data.ppbedIndex[msg.marker].pos,
-                    static_cast<unsigned int>(m_bayes->m_data.ppbedIndex[msg.marker].size),
-                    msg.data.get(),
-                    colSize);
+        m_cacheReaderNode.reset(new cache_reader_node(*m_graph,
+                                                      m_decompressionNodeConcurrency,
+                                                      cacheReader));
+    } else {
+        auto diskReader = [this] (DecompressionTuple tuple) -> DecompressionTuple {
+            auto &msg = std::get<1>(tuple);
+            // Read the column from disk
+            std::unique_ptr<MarkerBuilder> builder{m_analysis->markerBuilder()};
+            builder->initialise(msg.snp, msg.numInds);
+            const auto index = m_analysis->indexEntry(msg.snp);
+            if (m_analysis->compressed()) {
+                builder->decompress(m_analysis->compressedData(), index);
+            } else {
+                builder->read(m_analysis->preprocessedFile(), index);
+            }
+            msg.kernel = m_analysis->kernelForMarker(builder->build());
+            return tuple;
+        };
 
-        // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.data.get()), msg.numInds);
-        const auto betas = m_bayes->processColumnAsync(msg.marker, Cx);
+        m_decompressionNode.reset(new decompression_node(*m_graph,
+                                                         m_decompressionNodeConcurrency,
+                                                         diskReader));
+    }
 
-        msg.old_beta = std::get<0>(betas);
-        msg.beta = std::get<1>(betas);
+    m_analysisJoinNode.reset(new analysis_join_node(*m_graph));
 
-        return msg;
+    // Sampling of the column to the async algorithm class
+    auto g = [this] (AnalysisTuple tuple) -> AnalysisTuple {
+        auto &msg = std::get<1>(std::get<1>(tuple));
+        msg.result = m_analysis->processColumnAsync(msg.kernel);
+        return tuple;
     };
 
-    // Do the decompress and compute work on up to maxParallel threads at once
-    m_asyncComputeNode.reset(new function_node<Message, Message>(*m_graph, m_maxParallel, f));
+    m_analysisNode.reset(new analysis_node(*m_graph, m_analysisNodeConcurrency, g));
+
+    auto threadSafeUpdate = [this] (AnalysisTuple tuple) -> AnalysisTuple {
+        auto &msg = std::get<1>(std::get<1>(tuple));
+        m_analysis->doThreadSafeUpdates(msg.result);
+        return tuple;
+    };
+
+    m_threadSafeUpdateNode.reset(new thread_safe_update_node(*m_graph,
+                                                             serial,
+                                                             threadSafeUpdate));
 
     // Decide whether to continue calculations or discard
-    auto g = [] (decision_node::input_type input,
-                 decision_node::output_ports_type &outputPorts) {
+    auto h = [] (decision_node::input_type input,
+            decision_node::output_ports_type &outputPorts) {
 
-        std::get<0>(outputPorts).try_put(continue_msg());
+        auto &decompressionTuple = std::get<1>(input);
+        auto &msg = std::get<1>(decompressionTuple);
 
-        if (input.old_beta != 0.0 || input.beta != 0.0) {
+        if (msg.result->betaOld != 0.0 || msg.result->beta != 0.0) {
             // Do global computation
-            std::get<1>(outputPorts).try_put(std::move(input));
+            std::get<2>(outputPorts).try_put(input);
         } else {
             // Discard
-            std::get<0>(outputPorts).try_put(continue_msg());
+            std::get<0>(outputPorts).try_put(std::get<0>(decompressionTuple));
+            std::get<1>(outputPorts).try_put(std::get<0>(input));
         }
     };
 
-    m_decisionNode.reset(new decision_node(*m_graph, m_maxParallel, g));
+    m_decisionNode.reset(new decision_node(*m_graph, unlimited, h));
 
     // Do global computation
-    auto h = [this] (Message msg) -> continue_msg {
+    auto i = [this] (global_update_node::input_type input,
+            global_update_node::output_ports_type &outputPorts) {
 
-        // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.data.get()), msg.numInds);
-        m_bayes->updateGlobal(msg.old_beta, msg.beta, Cx);
+        auto &decompressionTuple = std::get<1>(input);
+        auto &msg = std::get<1>(decompressionTuple);
+
+        m_analysis->updateGlobal(msg.kernel, msg.result);
+
+        std::get<0>(outputPorts).try_put(std::get<0>(decompressionTuple));
+        std::get<1>(outputPorts).try_put(std::get<0>(input));
+    };
+    // Use the serial policy
+    m_globalUpdateNode.reset(new global_update_node(*m_graph, serial, i));
+
+    // Force synchronisation after m_anaylsisToken analyses
+    auto j = [this](AnalysisToken t) -> continue_msg {
+        (void) t; // Unused
+        --m_analysisTokenCount;
+
+        if (m_analysisTokenCount == 0) {
+            // Allow the next set of analyses to take place
+            queueAnalysisTokens();
+        }
 
         return continue_msg();
     };
-    // Use the serial policy
-    m_globalComputeNode.reset(new function_node<Message>(*m_graph, serial, h));
+    m_analysisControlNode.reset(new analysis_control_node(*m_graph, serial, j));
 
-    // Limit the number of parallel computations
-    m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
-
-    // Enforce the correct order, based on the message id
-    m_ordering.reset(new sequencer_node<Message>(*m_graph, [] (const Message& msg) -> unsigned int {
-        return msg.id;
-    }));
 
     // Set up the graph topology:
-    //
-    // orderingNode -> limitNode -> decompressionAndSamplingNode (parallel)
-    //                      ^                   |
-    //                      |___discard____decisionNode (parallel)
-    //                      ^                   |
-    //                      |                   | keep
-    //                      |                   |
-    //                      |______________globalCompute (serial)
-    //
-    // Run the decompressionAndSampling node in the correct order, but do not
-    // wait for the most up-to-date data.
-    make_edge(*m_ordering, *m_limit);
-    make_edge(*m_limit, *m_asyncComputeNode);
+#if defined(TBB_PREVIEW_FLOW_GRAPH_TRACE)
+    m_graph->set_name("ParallelGraph");
+    m_analysisNode->set_name("analysis_node");
+    m_decisionNode->set_name("decision_node");
+    m_globalUpdateNode->set_name("global_update_node");
+    m_decompressionJoinNode->set_name("decompression_join_node");
+    if(useMarkerCache)
+        m_cacheReaderNode->set_name("cache_reader_node");
+    else
+        m_decompressionNode->set_name("decompression_node");
+    m_analysisJoinNode->set_name("analysis_join_node");
+    m_analysisControlNode->set_name("analysis_control_node");
+#endif
 
-    // Feedback that we can now decompress another column, OR
-    make_edge(*m_asyncComputeNode, *m_decisionNode);
-    make_edge(output_port<0>(*m_decisionNode), m_limit->decrement);
-    // Do the global computation
-    make_edge(output_port<1>(*m_decisionNode), *m_globalComputeNode);
-
-    // Feedback that we can now decompress another column
-    make_edge(*m_globalComputeNode, m_limit->decrement);
+    if (useMarkerCache) {
+        make_edge(*m_decompressionJoinNode, *m_cacheReaderNode);
+        make_edge(*m_cacheReaderNode, input_port<1>(*m_analysisJoinNode));
+    } else {
+        make_edge(*m_decompressionJoinNode, *m_decompressionNode);
+        make_edge(*m_decompressionNode, input_port<1>(*m_analysisJoinNode));
+    }
+    make_edge(*m_analysisJoinNode, *m_analysisNode);
+    make_edge(*m_analysisNode, *m_threadSafeUpdateNode);
+    make_edge(*m_threadSafeUpdateNode, *m_decisionNode);
+    make_edge(output_port<0>(*m_decisionNode), input_port<0>(*m_decompressionJoinNode));
+    make_edge(output_port<1>(*m_decisionNode), *m_analysisControlNode);
+    make_edge(output_port<2>(*m_decisionNode), *m_globalUpdateNode);
+    make_edge(output_port<0>(*m_globalUpdateNode), input_port<0>(*m_decompressionJoinNode));
+    make_edge(output_port<1>(*m_globalUpdateNode), *m_analysisControlNode);
 }
 
-void ParallelGraph::exec(unsigned int numInds,
-                         unsigned int numSnps,
-                         const std::vector<unsigned int> &markerIndices)
+ParallelGraph::~ParallelGraph()
 {
+    m_graph->wait_for_all();
+}
+
+void ParallelGraph::exec(Analysis *analysis,
+                              unsigned int numInds,
+                              unsigned int numSnps,
+                              const std::vector<unsigned int> &markerIndices)
+{
+    if (!analysis) {
+        std::cerr << "Cannot run ParallelGraph without bayes" << std::endl;
+        return;
+    }
+
+    // Set our Bayes for this run
+    m_analysis = analysis;
+
     // Do not allow Eigen to parallalize during ParallelGraph execution.
-    const auto eigenThreadCount = Eigen::nbThreads( );
+    const auto eigenThreadCount = Eigen::nbThreads();
     Eigen::setNbThreads(0);
 
-    // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
+    // Reset the graph from the previous iteration.
     m_graph->reset();
+    queueDecompressionTokens();
+    queueAnalysisTokens();
 
     // Push some messages into the top of the graph to be processed - representing the column indices
     for (unsigned int i = 0; i < numSnps; ++i) {
         Message msg = { i, markerIndices[i], numInds };
-        m_ordering->try_put(msg);
+        input_port<1>(*m_decompressionJoinNode).try_put(msg);
     }
 
     // Wait for the graph to complete
@@ -118,4 +187,61 @@ void ParallelGraph::exec(unsigned int numInds,
 
     // Turn Eigen threading back on.
     Eigen::setNbThreads(eigenThreadCount);
+
+    // Clean up
+    m_analysis = nullptr;
+}
+
+size_t ParallelGraph::decompressionNodeConcurrency() const
+{
+    return m_decompressionNodeConcurrency;
+}
+
+void ParallelGraph::setDecompressionNodeConcurrency(size_t c)
+{
+    m_decompressionNodeConcurrency = c;
+}
+
+size_t ParallelGraph::decompressionTokens() const
+{
+    return m_decompressionTokens;
+}
+
+void ParallelGraph::setDecompressionTokens(size_t t)
+{
+    m_decompressionTokens = t;
+}
+
+size_t ParallelGraph::analysisNodeConcurrency() const
+{
+    return m_analysisNodeConcurrency;
+}
+
+void ParallelGraph::setAnalysisNodeConcurrency(size_t c)
+{
+    m_analysisNodeConcurrency = c;
+}
+
+size_t ParallelGraph::analysisTokens() const
+{
+    return m_analysisTokens;
+}
+
+void ParallelGraph::setAnalysisTokens(size_t t)
+{
+    m_analysisTokens = t;
+}
+
+void ParallelGraph::queueDecompressionTokens()
+{
+    for(DecompressionToken t = 0; t < m_decompressionTokens; ++t)
+        input_port<0>(*m_decompressionJoinNode).try_put(t);
+}
+
+void ParallelGraph::queueAnalysisTokens()
+{
+    for(AnalysisToken t = 0; t < m_analysisTokens; ++t)
+        input_port<0>(*m_analysisJoinNode).try_put(t);
+
+    m_analysisTokenCount = m_analysisTokens;
 }

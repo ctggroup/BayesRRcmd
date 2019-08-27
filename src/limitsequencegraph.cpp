@@ -1,26 +1,27 @@
 #include "limitsequencegraph.hpp"
 
+#include "BayesRBase.hpp"
 #include "compression.h"
-#include "BayesRRmz.hpp"
+#include "kernel.h"
+#include "markerbuilder.h"
 
 #include <iostream>
 
-LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
-    : AnalysisGraph(bayes, maxParallel)
+LimitSequenceGraph::LimitSequenceGraph(size_t maxParallel)
+    : AnalysisGraph(maxParallel)
     , m_graph(new graph)
 {
     // Decompress the column for this marker
     auto f = [this] (Message msg) -> Message {
-        //std::cout << "Decompress column " << msg.id << " " << msg.marker << std::endl;
-
-        const unsigned int colSize = msg.numInds * sizeof(double);
-        msg.decompressBuffer = new unsigned char[colSize];
-
-        extractData(reinterpret_cast<unsigned char *>(m_bayes->m_data.ppBedMap) + m_bayes->m_data.ppbedIndex[msg.marker].pos,
-                    static_cast<unsigned int>(m_bayes->m_data.ppbedIndex[msg.marker].size),
-                    msg.decompressBuffer,
-                    colSize);
-
+        std::unique_ptr<MarkerBuilder> builder{m_analysis->markerBuilder()};
+        builder->initialise(msg.snp, msg.numInds);
+        const auto index = m_analysis->indexEntry(msg.snp);
+        if (m_analysis->compressed()) {
+            builder->decompress(m_analysis->compressedData(), index);
+        } else {
+            builder->read(m_analysis->preprocessedFile(), index);
+        }
+        msg.kernel = m_analysis->kernelForMarker(builder->build());
         return msg;
     };
     // Do the decompression work on up to maxParallel threads at once
@@ -37,18 +38,14 @@ LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
 
     // Do not allow predecessors to carry on blindly until later parts of
     // the graph have finished and freed up some resources.
-    m_limit.reset(new limiter_node<Message>(*m_graph, m_maxParallel));
+    const auto limit = m_maxParallel == unlimited
+            ? static_cast<size_t>(tbb::this_task_arena::max_concurrency())
+            : m_maxParallel;
+    m_limit.reset(new limiter_node<Message>(*m_graph, limit));
 
     auto g = [this] (Message msg) -> continue_msg {
-        //std::cout << "Sampling for id: " << msg.id << std::endl;
-
         // Delegate the processing of this column to the algorithm class
-        Map<VectorXd> Cx(reinterpret_cast<double *>(msg.decompressBuffer), msg.numInds);
-        m_bayes->processColumn(msg.marker, Cx);
-
-        // Cleanup
-        delete[] msg.decompressBuffer;
-        msg.decompressBuffer = nullptr;
+        m_analysis->processColumn(msg.kernel);
 
         // Signal for next decompression task to continue
         return continue_msg();
@@ -74,10 +71,24 @@ LimitSequenceGraph::LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel)
     make_edge(*m_samplingNode, m_limit->decrement);
 }
 
-void LimitSequenceGraph::exec(unsigned int numInds,
+LimitSequenceGraph::~LimitSequenceGraph()
+{
+    m_graph->wait_for_all();
+}
+
+void LimitSequenceGraph::exec(Analysis *analysis,
+                              unsigned int numInds,
                               unsigned int numSnps,
                               const std::vector<unsigned int> &markerIndices)
 {
+    if (!analysis) {
+        std::cerr << "Cannot run LimitSequenceGraph without bayes" << std::endl;
+        return;
+    }
+
+    // Set our Bayes for this run
+    m_analysis = analysis;
+
     // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
     m_graph->reset();
 
@@ -89,4 +100,7 @@ void LimitSequenceGraph::exec(unsigned int numInds,
 
     // Wait for the graph to complete
     m_graph->wait_for_all();
+
+    // Clean up
+    m_analysis = nullptr;
 }

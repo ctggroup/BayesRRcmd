@@ -12,6 +12,7 @@
 #include <Eigen/Sparse>
 #include <boost/format.hpp>
 #include "gadgets.hpp"
+#include "common.h"
 
 
 using namespace std;
@@ -72,12 +73,6 @@ public:
     }
 };
 
-// An entry for the index to the compressed preprocessed bed file
-struct IndexEntry {
-    long pos;
-    long size;
-};
-
 using PpBedIndex = std::vector<IndexEntry>;
 
 class Data {
@@ -95,7 +90,16 @@ public:
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
-    VectorXi G; // groups
+    vector<int> G; 			 // groups
+    VectorXd fail;			 // Failure indicator
+
+    // Vectors for the sparse format solution
+    std::vector<std::vector<int>> Zones; // Vector for each SNP: per SNP all the indices with 1 allele are written down
+    std::vector<std::vector<int>> Ztwos; // Vector for each SNP: per SNP all the indices with 2 alleles are written down
+    VectorXd means; //Mean for each SNP
+    VectorXd sds;
+    VectorXd mean_sd_ratio;
+
 
     MatrixXf XPX;            // X'X the MME lhs
     MatrixXf ZPX;            // Z'X the covariance matrix of SNPs and fixed effects
@@ -126,22 +130,33 @@ public:
     vector<bool> fullSnpFlag;
     vector<vector<SnpInfo*> > mldmVec;
 
-    unsigned numFixedEffects;
+    unsigned numFixedEffects = 0;
     unsigned numSnps;
     unsigned numInds;
 
-    void preprocessBedFile(const string &bedFile, const string &preprocessedBedFile, const string &preprocessedBedIndexFile, bool compress);
+    unsigned numGroups = 1; // number of groups
+
+    void preprocessCSVFile(const string &csvFile, const string &preprocessedCSVFile, const string &preprovessedCSVIndexFile, bool compress);
     void mapPreprocessBedFile(const string &preprocessedBedFile);
     void unmapPreprocessedBedFile();
 
     void mapCompressedPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
     void unmapCompressedPreprocessedBedFile();
 
+    void readCSV(const string &filename, int cols);
+
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);
     void readBedFile_noMPI(const string &bedFile);
+    void readBedFile_noMPI_unstandardised(const string &bedFile);
+
     void readPhenotypeFile(const string &phenFile);
     void readGroupFile(const string &groupFile);
+    void readCSVFile(const string &csvFile);
+    void readCSVPhenFile( const string &csvFile);
+    void readmSFile(const string& mSfile);
+    //BayesW variables
+    void readFailureFile(const string &failureFile);
 };
 
 #endif /* data_hpp */

@@ -2,30 +2,34 @@
 #define LIMITSEQUENCEGRAPH_H
 
 #include "analysisgraph.hpp"
+#include "common.h"
 
 #include "tbb/flow_graph.h"
 #include <functional>
 #include <memory>
 
-class BayesRRmz;
-
 using namespace tbb::flow;
+
 
 class LimitSequenceGraph : public AnalysisGraph
 {
 public:
-    LimitSequenceGraph(BayesRRmz *bayes, size_t maxParallel = 12);
+    explicit LimitSequenceGraph(size_t maxParallel = 12);
+    ~LimitSequenceGraph();
 
-    void exec(unsigned int numKeptInds,
+    bool isAsynchronous() const override { return false; }
+
+    void exec(Analysis* analysis,
+              unsigned int numKeptInds,
               unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;
 
 private:
     struct Message {
-        unsigned int id;
-        unsigned int marker;
-        unsigned int numInds;
-        unsigned char *decompressBuffer = nullptr;
+        unsigned int id = 0;
+        unsigned int snp = 0;
+        unsigned int numInds = 0;
+        KernelPtr kernel = nullptr;
     };
 
     std::unique_ptr<graph> m_graph;

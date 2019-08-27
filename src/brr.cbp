@@ -5,7 +5,7 @@
 		<Option title="brr"/>
 		<Option makefile_is_custom="1"/>
 		<Option compiler="gcc"/>
-		<Option virtualFolders="CMake Files\;CMake Files\src\;CMake Files\..\;CMake Files\..\..\;CMake Files\..\..\..\;CMake Files\..\..\..\..\;CMake Files\..\..\..\..\usr\;CMake Files\..\..\..\..\usr\lib\;CMake Files\..\..\..\..\usr\lib\cmake\;CMake Files\..\..\..\..\usr\lib\cmake\eigen3\;CMake Files\tbb\;CMake Files\tbb\cmake\;CMake Files\tbb\cmake\templates\;"/>
+		<Option virtualFolders="CMake Files\;CMake Files\src\;CMake Files\tbb\;CMake Files\tbb\cmake\;CMake Files\tbb\cmake\templates\;"/>
 		<Build>
 			<Target title="all">
 				<Option working_dir="/home/sven/git/BayesRRcmd/src"/>
@@ -25,11 +25,7 @@
 				<Option compiler="gcc"/>
 				<Compiler>
 					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
+					<Add directory="/home/sven/git/BayesRRcmd/src/../eigen"/>
 					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
 					<Add directory="/usr/include/c++/7"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
@@ -55,11 +51,7 @@
 				<Option compiler="gcc"/>
 				<Compiler>
 					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
+					<Add directory="/home/sven/git/BayesRRcmd/src/../eigen"/>
 					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
 					<Add directory="/usr/include/c++/7"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
@@ -85,11 +77,7 @@
 				<Option compiler="gcc"/>
 				<Compiler>
 					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
+					<Add directory="/home/sven/git/BayesRRcmd/src/../eigen"/>
 					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
 					<Add directory="/usr/include/c++/7"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
@@ -115,11 +103,7 @@
 				<Option compiler="gcc"/>
 				<Compiler>
 					<Add directory="/home/sven/git/BayesRRcmd/src"/>
-					<Add directory="/usr/include/eigen3"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi/opal/mca/event/libevent2022/libevent/include"/>
-					<Add directory="/usr/lib/x86_64-linux-gnu/openmpi/include"/>
+					<Add directory="/home/sven/git/BayesRRcmd/src/../eigen"/>
 					<Add directory="/home/sven/git/BayesRRcmd/tbb/include"/>
 					<Add directory="/usr/include/c++/7"/>
 					<Add directory="/usr/include/x86_64-linux-gnu/c++/7"/>
@@ -138,6 +122,14 @@
 				</MakeCommands>
 			</Target>
 		</Build>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRBase.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRBase.hpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRRm.cpp">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
@@ -146,11 +138,35 @@
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRRmz.cpp">
+		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesW.cpp">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesRRmz.hpp">
+		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesW.hpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesW_arms.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/BayesW_arms.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/DenseBayesRRmz.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/DenseBayesRRmz.hpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/SparseBayesRRG.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/SparseBayesRRG.hpp">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
@@ -159,6 +175,14 @@
 			<Option target="brr"/>
 		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/src/analysisgraph.hpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/common.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/common.h">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
@@ -178,11 +202,43 @@
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/densemarker.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/densemarker.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/densemarkerbuilder.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/densemarkerbuilder.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/src/distributions_boost.cpp">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/src/distributions_boost.hpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/eigensparsemarker.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/eigensparsemarker.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/eigensparsemarkerbuilder.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/eigensparsemarkerbuilder.h">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
@@ -205,11 +261,59 @@
 		<Unit filename="/home/sven/git/BayesRRcmd/src/main.cpp">
 			<Option target="brr"/>
 		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/marker.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/marker.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/markerbuilder.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/markerbuilder.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/src/options.cpp">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/src/options.hpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/parallelgraph.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/parallelgraph.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/preprocessgraph.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/preprocessgraph.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/raggedsparsemarker.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/raggedsparsemarker.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/raggedsparsemarkerbuilder.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/raggedsparsemarkerbuilder.h">
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
@@ -221,20 +325,19 @@
 			<Option target="libbrr-dev"/>
 			<Option target="brr"/>
 		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/sparsemarker.cpp">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
+		<Unit filename="/home/sven/git/BayesRRcmd/src/sparsemarker.h">
+			<Option target="libbrr-dev"/>
+			<Option target="brr"/>
+		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/src/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\src\"/>
-		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/../../../../usr/lib/cmake/eigen3/Eigen3Config.cmake">
-			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\cmake\eigen3\"/>
-		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/../../../../usr/lib/cmake/eigen3/Eigen3ConfigVersion.cmake">
-			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\cmake\eigen3\"/>
-		</Unit>
-		<Unit filename="/home/sven/git/BayesRRcmd/../../../../usr/lib/cmake/eigen3/Eigen3Targets.cmake">
-			<Option virtualFolder="CMake Files\..\..\..\..\usr\lib\cmake\eigen3\"/>
 		</Unit>
 		<Unit filename="/home/sven/git/BayesRRcmd/tbb/cmake/TBBBuild.cmake">
 			<Option virtualFolder="CMake Files\tbb\cmake\"/>
