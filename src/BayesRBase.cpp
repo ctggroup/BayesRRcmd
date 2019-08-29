@@ -157,7 +157,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     }
 
     // Sampler variables
-    VectorXd sample(1+2*M+3+nF+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
+    VectorXd sample(2*M+3+nGroups+nF+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
     std::vector<unsigned int> markerI(M);
     std::iota(markerI.begin(), markerI.end(), 0);
 
