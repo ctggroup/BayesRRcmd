@@ -92,6 +92,8 @@ public:
     VectorXf y;              // phenotypes
     VectorXi G; // groups
     VectorXd fail;			 // Failure indicator
+    VectorXd ltrunc;			 // ltrunc value
+
 
     // Vectors for the sparse format solution
     std::vector<std::vector<int>> Zones; // Vector for each SNP: per SNP all the indices with 1 allele are written down
@@ -152,6 +154,8 @@ public:
     void readGroupFile(const string &groupFile);
     //BayesW variables
     void readFailureFile(const string &failureFile);
+    void readltruncFile(const string &ltruncFile);
+
 };
 
 #endif /* data_hpp */

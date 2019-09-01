@@ -486,6 +486,39 @@ void Data::readPhenotypeFile(const string &phenFile) {
 	in.close();
 }
 
+void Data::readltruncFile(const string &ltruncFile) {
+	// NA: missing phenotype
+	ifstream in(ltruncFile.c_str());
+	if (!in) throw ("Error: can not open the ltrunc file [" + ltruncFile + "] to read.");
+
+	cout << "Reading left truncation times from [" + ltruncFile + "]." << endl;
+	map<string, IndInfo*>::iterator it, end=indInfoMap.end();
+	IndInfo *ind = NULL;
+	Gadget::Tokenizer colData;
+	string inputStr;
+	string sep(" \t");
+	string id;
+	unsigned line=0;
+	//correct loop to go through numInds
+	ltrunc.setZero(numInds);
+
+	while (getline(in,inputStr)) {
+		colData.getTokens(inputStr, sep);
+		id = colData[0] + ":" + colData[1];
+		it = indInfoMap.find(id);
+		// First one corresponded to mphen variable (1+1)
+		if (it != end && colData[1+1] != "NA") {
+			ind = it->second;
+			ind->phenotype = atof(colData[1+1].c_str());
+			//fill in phenotype y vector
+			ltrunc[line] = ind->phenotype;
+			++line;
+		}
+	}
+
+	in.close();
+}
+
 //Copied from
 //https://gist.github.com/infusion/43bd2aa421790d5b4582
 void Data::readCSV(string &filename, int cols) {

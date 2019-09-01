@@ -63,7 +63,8 @@ inline double mu_dens(double x, void *norm_data)
 	pars p = *(static_cast<pars *>(norm_data));
 
 	/* cast voided pointer into pointer to struct norm_parm */
-	y = - p.alpha * x * p.d - (( (p.epsilon).array()  - x) * p.alpha - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
+	y = - p.alpha * x * p.d - (( (p.epsilon).array()  - x) * p.alpha - EuMasc).exp().sum() +
+			(( (p.epsilon_ltrunc).array()  - x) * p.alpha - EuMasc).exp().sum() - x*x/(2*p.sigma_mu);
 	return y;
 };
 
@@ -76,7 +77,8 @@ inline double theta_dens(double x, void *norm_data)
 	pars p = *(static_cast<pars *>(norm_data));
 
 	/* cast voided pointer into pointer to struct norm_parm */
-	y = - p.alpha * x * p.sum_failure - (((p.epsilon -  p.X_j * x)* p.alpha).array() - EuMasc).exp().sum() - x*x/(2*p.sigma_mu); // Prior is the same currently for intercepts and fixed effects
+	y = - p.alpha * x * p.sum_failure - (((p.epsilon -  p.X_j * x)* p.alpha).array() - EuMasc).exp().sum()+
+			(( (p.epsilon_ltrunc).array()  - x) * p.alpha - EuMasc).exp().sum() - x*x/(2*p.sigma_mu); // Prior is the same currently for intercepts and fixed effects
 	return y;
 };
 
@@ -89,7 +91,7 @@ inline double alpha_dens(double x, void *norm_data)
 	/* In C++ we need to do a static cast for the void data */
 	pars_alpha p = *(static_cast<pars_alpha *>(norm_data));
 	y = (p.alpha_0 + p.d - 1) * log(x) + x * ((p.epsilon.array() * p.failure_vector.array()).sum() - p.kappa_0) -
-			((p.epsilon * x).array() - EuMasc).exp().sum() ;
+			((p.epsilon * x).array() - EuMasc).exp().sum() + ((p.epsilon_ltrunc * x).array() - EuMasc).exp().sum();
 	return y;
 };
 
@@ -505,11 +507,16 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 	y = VectorXd();
 	//residual vector
 	epsilon = VectorXd();
+	//ltrunc residual vector
+	epsilon_ltrunc = VectorXd();
 
 	// Resize the vectors in the structure
 	used_data.X_j = VectorXd(individualCount);
 	used_data.epsilon.resize(individualCount);
 	used_data_alpha.epsilon.resize(individualCount);
+
+	used_data.epsilon_ltrunc.resize(individualCount);
+	used_data_alpha.epsilon_ltrunc.resize(individualCount);
 
 	// Init the working variables
 	const int km1 = K - 1;
@@ -530,7 +537,9 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 
 	//initialize epsilon vector as the phenotype vector
 	y = data.y.cast<double>().array();
+	ltrunc = data.ltrunc.cast<double>().array();
 	epsilon = y;
+	epsilon_ltrunc = ltrunc;
 	mu = y.mean();       // mean or intercept
 
 	// Initialize the variables in structures
@@ -554,7 +563,11 @@ void BayesW::init(unsigned int markerCount, unsigned int individualCount, unsign
 
 	for(int i=0; i<(y.size()); ++i){
 		(used_data.epsilon)[i] = y[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
+		(used_data.epsilon_ltrunc)[i] = ltrunc[i] - mu ; // Initially, all the BETA elements are set to 0, XBeta = 0
+
 		epsilon[i] = y[i] - mu;
+		epsilon_ltrunc[i] = ltrunc[i] - mu;
+
 	}
 
 	used_data_beta.sigma_b = PI2/ (6 * pow(used_data_beta.alpha,2) * markerCount ) ;
@@ -621,6 +634,8 @@ void BayesW::sampleMu(){
 	double xr = 5;   //xl and xr and the maximum and minimum values between which we sample
 
 	used_data.epsilon = epsilon.array() + mu;// we add to epsilon =Y+mu-X*beta
+	used_data.epsilon_ltrunc = epsilon_ltrunc.array() + mu;// we add to epsilon =Y+mu-X*beta
+
 
 	// Use ARS to sample mu (with density mu_dens, using parameters from used_data)
 	err = arms(xinit,ninit,&xl,&xr,mu_dens,&used_data,&convex,
@@ -629,6 +644,8 @@ void BayesW::sampleMu(){
 	errorCheck(err); // If there is error, stop the program
 	mu = xsamp[0];   // Save the sampled value
 	epsilon = used_data.epsilon.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+	epsilon_ltrunc = used_data.epsilon_ltrunc.array() - mu;// we substract again now epsilon =Y-mu-X*beta
+
 }
 
 // Function for sampling fixed effect (theta_i)
@@ -650,6 +667,7 @@ void BayesW::sampleTheta(int fix_i){
 	used_data.sum_failure = sum_failure_fix(fix_i);
 
 	used_data.epsilon = epsilon.array() + (used_data.X_j * theta(fix_i)).array(); // Adjust residual
+	used_data.epsilon_ltrunc = epsilon_ltrunc.array() + (used_data.X_j * theta(fix_i)).array(); // Adjust residual
 
 	// Sample using ARS
 	err = arms(xinit,ninit,&xl,&xr,theta_dens,&used_data,&convex,
@@ -658,6 +676,8 @@ void BayesW::sampleTheta(int fix_i){
 
 	theta(fix_i) = xsamp[0];  // Save the new result
 	epsilon = used_data.epsilon - used_data.X_j * theta(fix_i); // Adjust residual
+	epsilon_ltrunc = used_data.epsilon_ltrunc - used_data.X_j * theta(fix_i); // Adjust residual
+
 }
 
 // Function for sampling marker effect (beta_i)
@@ -673,21 +693,28 @@ void BayesW::sampleBeta(int marker){
 	//Change the residual vector only if the previous beta was non-zero
 	if(beta(marker) != 0){
 		epsilon = epsilon.array() - used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+		epsilon_ltrunc = epsilon_ltrunc.array() - used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+
 		//And adjust even further for specific 1 and 2 allele values
 		for(int i=0; i < data.Zones[marker].size(); i++){
 			epsilon[data.Zones[marker][i]] += beta(marker)/used_data_beta.sd;
+			epsilon_ltrunc[data.Zones[marker][i]] += beta(marker)/used_data_beta.sd;
 		}
 		for(int i=0; i < data.Ztwos[marker].size(); i++){
 			epsilon[data.Ztwos[marker][i]] += 2*beta(marker)/used_data_beta.sd;
+			epsilon_ltrunc[data.Ztwos[marker][i]] += 2*beta(marker)/used_data_beta.sd;
+
 		}
 		//Also find the transformed residuals
 		vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
+		ui = (used_data.alpha*epsilon_ltrunc.array()-EuMasc).exp();
+
 	}
 
 	// Calculate the sums of vi elements
-	double vi_sum = vi.sum();
-	double vi_2 = vi(data.Ztwos[marker]).sum();
-	double vi_1 = vi(data.Zones[marker]).sum();
+	double vi_sum = vi.sum() - ui.sum();
+	double vi_2 = vi(data.Ztwos[marker]).sum() - ui(data.Ztwos[marker]).sum();
+	double vi_1 = vi(data.Zones[marker]).sum() - ui(data.Zones[marker]).sum();
 	double vi_0 = vi_sum - vi_1 - vi_2;
 
 	/* Calculate the mixture probability */
@@ -740,15 +767,23 @@ void BayesW::sampleBeta(int marker){
 				//Re-update the residual vector
 			//	used_data.epsilon = used_data.epsilon - data.Z.col(marker).cast<double>() * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
 				epsilon = epsilon.array() + used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+				epsilon_ltrunc = epsilon_ltrunc.array() + used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+
 				//And adjust even further for specific 1 and 2 allele values
 				for(int i=0; i < data.Zones[marker].size(); i++){
 					epsilon[data.Zones[marker][i]] -= beta(marker)/used_data_beta.sd;
+					epsilon_ltrunc[data.Zones[marker][i]] -= beta(marker)/used_data_beta.sd;
+
 				}
 				for(int i=0; i < data.Ztwos[marker].size(); i++){
 					epsilon[data.Ztwos[marker][i]] -= 2*beta(marker)/used_data_beta.sd;
+					epsilon_ltrunc[data.Ztwos[marker][i]] -= 2*beta(marker)/used_data_beta.sd;
+
 				}
 
 				vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
+				ui = (used_data.alpha*epsilon_ltrunc.array()-EuMasc).exp();
+
 
 				v[k] += 1.0;
 				components[marker] = k;
@@ -782,6 +817,8 @@ void BayesW::sampleAlpha(){
 
 	//Give the residual to alpha structure
 	used_data_alpha.epsilon = epsilon;
+	used_data_alpha.epsilon_ltrunc = epsilon_ltrunc;
+
 
 	//Sample using ARS
 	err = arms(xinit,ninit,&xl,&xr,alpha_dens,&used_data_alpha,&convex,
@@ -844,6 +881,8 @@ int BayesW::runGibbs_Gauss()
 		}
 		// Calculate the vector of exponent of the adjusted residuals
 		vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
+		ui = (used_data.alpha*epsilon_ltrunc.array()-EuMasc).exp();
+
 
 		std::random_shuffle(markerI.begin(), markerI.end());
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution

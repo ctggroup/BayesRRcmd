@@ -52,6 +52,7 @@ void processDenseData(Options opt) {
         } else if (opt.bayesType == "bayesW") {
             BayesW analysis(data, opt, sysconf(_SC_PAGE_SIZE));
             if(opt.bayesW_version == "gauss"){
+                data.readltruncFile(opt.ltruncFile);
             	analysis.runGibbs_Gauss();
             }else{
             	cout << "Choose either bayesW_version = gauss" << endl;

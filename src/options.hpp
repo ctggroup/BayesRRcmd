@@ -33,6 +33,7 @@ public:
     Eigen::MatrixXd mS;
     string groupFile;
     string failureFile;
+    string ltruncFile;
     string bayesW_version;
     string quad_points;
     string fixedFile;

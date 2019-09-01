@@ -18,6 +18,7 @@
 struct pars{
 	/* Common parameters for the densities */
 	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
+	VectorXd epsilon_ltrunc;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
 
 	VectorXd mixture_classes; // Vector to store mixture component C_k values
 
@@ -72,7 +73,7 @@ struct pars_beta_sparse{
 struct pars_alpha{
 	VectorXd failure_vector;
 	VectorXd epsilon;			// epsilon per subject (before each sampling, need to remove the effect of the sampled parameter and then carry on
-
+	VectorXd epsilon_ltrunc;
 	/* Alpha-specific variables */
 	double alpha_0, kappa_0;  /*  Prior parameters */
 
@@ -117,12 +118,15 @@ class BayesW
 	VectorXd theta;		 // Fixed effect sizes
 	VectorXd beta;       // effect sizes
 	VectorXd vi;		 // adjusted and exponented epsilon
+	VectorXd ui;	     // adjusted and exponented epsilon_ltrunc
 
 	VectorXd y;
+	VectorXd ltrunc;
 	VectorXd sum_failure;
 	VectorXd sum_failure_fix;
 
 	VectorXd epsilon; //Vector for residuals
+	VectorXd epsilon_ltrunc; //Vector for ltrunc residuals
 	//Sampled variables (not kept in struct)
 	double mu;
 

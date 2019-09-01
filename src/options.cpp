@@ -109,6 +109,11 @@ void Options::inputOptions(const int argc, const char* argv[]){
         	failureFile = argv[++i];
         	ss << "--failure " << argv[i] << "\n";
 		}
+        // Left truncation vector file
+        else if (!strcmp(argv[i], "--ltrunc")) {
+        	ltruncFile = argv[++i];
+        	ss << "--ltrunc " << argv[i] << "\n";
+		}
         else if (!strcmp(argv[i], "--bayesW_version")) {
         		bayesW_version = argv[++i];
                	ss << "--bayesW_version " << argv[i] << "\n";
