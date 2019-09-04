@@ -57,6 +57,7 @@ public:
     string colLogFile;
     bool colLog =false;
     bool useMarkerCache = false;
+    bool useHybridMpi = false;
 
 
     double v0E  = 0.0001;

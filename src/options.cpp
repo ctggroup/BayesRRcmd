@@ -222,6 +222,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             preprocessChunks = atoi(argv[++i]);
             ss << "--preprocess-chunks " << argv[i] << "\n";
         }
+        else if(!strcmp(argv[i], "--hybrid-mpi")) {
+            useHybridMpi = true;
+            ss << "--hybrid-mpi " << true << "\n";
+        }
 	else if (!strcmp(argv[i], "--iterLog")) {
 	    iterLog=true;
             iterLogFile = argv[++i];
