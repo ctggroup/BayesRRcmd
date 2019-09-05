@@ -131,8 +131,10 @@ std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *da
         const int recvCount = worldSize * sendCount;
         const int sendArray[sendCount] = {localThreads};
 
-        std::vector<int> worldThreads(recvCount);
-        MPI_Allgather( sendArray, sendCount, MPI_INT, worldThreads.data(), sendCount, MPI_INT, MPI_COMM_WORLD);
+        std::vector<int> worldThreads(recvCount, 1);
+        // For now just spread the load equally between hosts.
+        // Implementation for heterogeneous clusters is more complicated than this...
+//        MPI_Allgather( sendArray, sendCount, MPI_INT, worldThreads.data(), sendCount, MPI_INT, MPI_COMM_WORLD);
 
         const int threadCount = std::accumulate(worldThreads.cbegin(), worldThreads.cend(), 0);
 
