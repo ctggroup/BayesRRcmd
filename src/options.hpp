@@ -21,7 +21,6 @@ class Data;
 
 const unsigned Megabase = 1e6;
 
-static const std::pair<unsigned int, unsigned int> kDefaultMarkerSubset = {0, 0};
 
 class Options {
 public:
@@ -62,7 +61,7 @@ public:
     string colLogFile;
     bool colLog =false;
     bool useMarkerCache = false;
-    std::pair<unsigned int, unsigned int> markerSubset = kDefaultMarkerSubset; // first, count
+    MarkerSubset markerSubset = {0, 0}; // start, size
     bool useHybridMpi = false;
 
 

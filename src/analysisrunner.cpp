@@ -167,8 +167,8 @@ bool runBayesAnalysis(const Options &options) {
     AnalysisRunner::readMetaData(data, options);
 
     if (!options.validMarkerSubset(&data)) {
-        const auto first = options.markerSubset.first;
-        const auto last = first + options.markerSubset.second;
+        const auto first = options.markerSubset.first();
+        const auto last = options.markerSubset.last();
         cerr << "Marker range " << first  << " to " << last << "is not valid!" << endl
              << "Expected range is 0 to " << data.numSnps - 1 << endl;
         return false;

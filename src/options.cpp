@@ -287,24 +287,15 @@ void Options::inputOptions(const int argc, const char* argv[]){
 
 bool Options::validMarkerSubset(const Data *data) const
 {
-    if (!data || data->numSnps == 0)
-        return false;
-
-    if (markerSubset == kDefaultMarkerSubset)
-        return true;
-
-    return markerSubset.first + markerSubset.second - 1 < data->numSnps;
+    return data && markerSubset.isValid(data->numSnps);
 }
 
 std::vector<unsigned int> Options::getMarkerSubset(const Data *data) const
 {
-    const auto first = markerSubset.first;
-    const auto size = markerSubset.second == 0 ? data->numSnps : markerSubset.second;
+    if (!data)
+        return {};
 
-    std::vector<unsigned int> markers(size);
-    std::iota(markers.begin(), markers.end(), first);
-
-    return markers;
+    return markerSubset.toMarkerIndexList(data->numSnps);
 }
 
 void Options::readFile(const string &file){  // input options from file

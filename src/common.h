@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
 enum class AnalysisType : unsigned int {
     Unknown = 0,
@@ -58,6 +59,19 @@ struct IndexEntry {
     unsigned long pos = 0;
     unsigned long compressedSize = 0;
     unsigned long originalSize = 0;
+};
+
+using MarkerIndexList = std::vector<unsigned int>;
+
+struct MarkerSubset {
+    unsigned int start = 0;
+    unsigned int size = 0;
+
+    unsigned int first() const { return start; }
+    unsigned int last() const { return start + size; }
+
+    bool isValid(unsigned int markerCount) const;
+    MarkerIndexList toMarkerIndexList(unsigned int markerCount) const;
 };
 
 //template to read csv files into an eigen vector.

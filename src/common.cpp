@@ -11,6 +11,7 @@
 #include <vector>
 #include <fstream>
 #include <type_traits>
+#include <numeric>
 
 using namespace Eigen;
 
@@ -151,4 +152,27 @@ M load_csv (const std::string & path) {
         ++rows;
     }
     return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
+}
+
+bool MarkerSubset::isValid(unsigned int markerCount) const
+{
+    if (markerCount == 0)
+        return false;
+
+    if (start == 0 && size == 0)
+        return true;
+
+    return start + size - 1 < markerCount;
+}
+
+MarkerIndexList MarkerSubset::toMarkerIndexList(unsigned int markerCount) const
+{
+    if (!isValid(markerCount))
+        return {};
+
+    const auto listSize = size == 0 ? markerCount : size;
+    std::vector<unsigned int> markers(listSize);
+    std::iota(markers.begin(), markers.end(), start);
+
+    return markers;
 }
