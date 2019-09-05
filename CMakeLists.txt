@@ -11,6 +11,7 @@ add_custom_target(
 option(ENABLE_FLOW_GRAPH_TRACING "Enable flow graph tracing" OFF)
 option(ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 option(ENABLE_FAST_OPTIMIZATONS "Enable more compiler optimizations" ON)
+option(ENABLE_MPI "Enable algorithms that require MPI" OFF)
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/eigen/Eigen/)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/eigen/)
@@ -57,6 +58,12 @@ if(ENABLE_FLOW_GRAPH_TRACING)
     add_definitions(-DTBB_PREVIEW_FLOW_GRAPH_TRACE)
     add_definitions(-DTBB_PREVIEW_FLOW_GRAPH_FEATURES)
     add_definitions(-DTBB_PREVIEW_ALGORITHM_TRACE)
+endif()
+
+if (ENABLE_MPI)
+    find_package(MPI REQUIRED)
+    include_directories(${MPI_INCLUDE_PATH})
+    add_definitions(-DMPI_ENABLED)
 endif()
 
 add_subdirectory(src)

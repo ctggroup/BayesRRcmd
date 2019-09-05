@@ -15,6 +15,12 @@
 #include "sequential.h"
 #include "sparsebayesw.h"
 
+#ifdef MPI_ENABLED
+#include <mpi.h>
+#endif
+
+#include <utility>
+
 using namespace std;
 
 bool preprocessBed(const Options &options) {
@@ -93,13 +99,77 @@ bool preprocess(const Options &options) {
     }
 }
 
+std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *data) {
+#ifdef MPI_ENABLED
+    if (options->useHybridMpi) {
+        MPI_Init(nullptr, nullptr);
+
+        int worldSize;
+        MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+        const int localThreads = tbb::task_scheduler_init::default_num_threads();
+
+        constexpr int sendCount = 1;
+        const int recvCount = worldSize * sendCount;
+        const int sendArray[sendCount] = {localThreads};
+
+        std::vector<int> worldThreads(recvCount);
+        MPI_Allgather( sendArray, sendCount, MPI_INT, worldThreads.data(), sendCount, MPI_INT, MPI_COMM_WORLD);
+
+        const int threadCount = std::accumulate(worldThreads.cbegin(), worldThreads.cend(), 0);
+
+        printf("Processor %d out of %d, with %d of %d available threads\n", rank, worldSize, localThreads, threadCount);
+
+        const double blockSize = static_cast<double>(data->numSnps) / static_cast<double>(threadCount);
+        if (rank == 0) {
+            cout << "snpCount: " << data->numSnps << endl
+                 << "blockSize: " << blockSize << endl;
+        }
+
+        std::vector<MarkerSubset> subsets(worldSize);
+        unsigned int blockStart = 0;
+        for (size_t i = 0; i < worldSize; ++i) {
+            const auto blockThreads = worldThreads[i];
+            const auto size = static_cast<unsigned int>(std::ceil(blockSize) * blockThreads);
+            MarkerSubset subset = {blockStart, size};
+            blockStart = subset.last() + 1;
+            subsets.at(i) = std::move(subset);
+        }
+
+        {
+            auto &lastSubset = subsets.back();
+            lastSubset.clamp(data->numSnps);
+        }
+
+        const auto subset = subsets.at(rank);
+        if (subset.isValid(data->numSnps)) {
+            printf("Rank %d working markers %d to %d\n", rank, subset.first(), subset.last());
+        } else {
+            cerr << "Rank " << rank << " has invalid marker subset: " << subset.first() << " to " << subset.last()
+                 << " for " << data->numSnps << " markers" << endl;
+            MPI_Abort(MPI_COMM_WORLD, -1);
+        }
+
+        MPI_Finalize();
+
+        return subset.toMarkerIndexList(data->numSnps);
+    } else
+#endif
+    {
+        return options->getMarkerSubset(data);
+    }
+}
+
 bool runBayesRAnalysis(const Options *options, Data *data, AnalysisGraph *graph) {
     // If there is a file for fixed effects (model matrix), then read the data
     if(!options->fixedFile.empty()) {
         data->readCSV(options->fixedFile, options->fixedEffectNumber);
     }
 
-    auto markers = options->getMarkerSubset(data);
+    auto markers = getMarkerSubset(options, data);
 
     switch (options->preprocessDataType) {
     case PreprocessDataType::Dense:
@@ -136,7 +206,7 @@ bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
     // Read the failure indicator vector
     data->readFailureFile(options->failureFile);
 
-    auto markers = options->getMarkerSubset(data);
+    auto markers = getMarkerSubset(options, data);
 
     switch (options->preprocessDataType) {
     case PreprocessDataType::Dense:

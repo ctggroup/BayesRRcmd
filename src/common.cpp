@@ -154,6 +154,14 @@ M load_csv (const std::string & path) {
     return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
 }
 
+void MarkerSubset::clamp(unsigned int markerCount)
+{
+    if (last() < markerCount)
+        return;
+
+    size = (markerCount - 1) - start;
+}
+
 bool MarkerSubset::isValid(unsigned int markerCount) const
 {
     if (markerCount == 0)

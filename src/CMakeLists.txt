@@ -55,6 +55,14 @@ set_property(TARGET bayes PROPERTY CXX_STANDARD 17)
 target_link_libraries(bayes ${ZLIB_LIBRARIES} ${TBB_IMPORTED_TARGETS}
     ${CMAKE_THREAD_LIBS_INIT} stdc++fs)
 
+if (ENABLE_MPI)
+    target_link_libraries(bayes ${MPI_LIBRARIES})
+    message(STATUS "Adding MPI compile flags: ${MPI_COMPILE_FLAGS}")
+    message(STATUS "Adding MPI link flags: ${MPI_LINK_FLAGS}")
+    set_target_properties(bayes PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+    set_target_properties(bayes PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
+endif()
+
 add_executable(${PROJECT_NAME}
     main.cpp
 )
