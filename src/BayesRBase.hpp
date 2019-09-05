@@ -37,6 +37,9 @@ public:
     void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
+    void accumulate(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
+    void updateMpi() override;
+
     virtual void updateMu(double old_mu, double N)=0;
 
     void setDebugEnabled(bool enabled) { m_showDebug = enabled; }
@@ -101,6 +104,12 @@ protected:
 
     mutable std::shared_mutex m_mutex;
 
+
+    // Accumulated values for MPI
+    VectorXd m_accumulatedEpsilonDelta;
+    VectorXd m_accumulatedBetaSqn;
+    mutable std::shared_mutex m_accumulatorMutex;
+
     void setAsynchronous(bool async) { m_isAsync = async; }
 
     virtual void init(int K, unsigned int markerCount, unsigned int individualCount);
@@ -110,6 +119,8 @@ protected:
     virtual void prepare(BayesRKernel *kernel);
     virtual void readWithSharedLock(BayesRKernel *kernel);
     virtual void writeWithUniqueLock(BayesRKernel *kernel);
+
+    virtual void resetAccumulators();
 
     void printDebugInfo() const;
 };

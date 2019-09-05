@@ -963,3 +963,13 @@ void BayesWBase::updateGlobal(const KernelPtr& kernel,
     *m_epsilon += *result->deltaEpsilon;
     *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
 }
+
+void BayesWBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
+{
+    // TODO
+}
+
+void BayesWBase::updateMpi()
+{
+    // TODO
+}

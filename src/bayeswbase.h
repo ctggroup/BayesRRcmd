@@ -84,6 +84,10 @@ public:
     void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
+    void accumulate(const KernelPtr& kernel,
+                    const ConstAsyncResultPtr& result) override;
+    void updateMpi() override;
+
 protected:
 	void init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount);
 	void sampleMu();

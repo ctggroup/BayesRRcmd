@@ -48,6 +48,11 @@ public:
     virtual void updateGlobal(const KernelPtr& kernel,
                               const ConstAsyncResultPtr& result) = 0;
 
+    // MPI
+    virtual void accumulate(const KernelPtr& kernel,
+                            const ConstAsyncResultPtr& result) = 0;
+    virtual void updateMpi() = 0;
+
 protected:
     const Data *m_data = nullptr; // data matrices
     const Options *m_opt;

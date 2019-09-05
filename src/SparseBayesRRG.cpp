@@ -91,6 +91,13 @@ void SparseBayesRRG::writeWithUniqueLock(BayesRKernel *kernel)
         m_epsilonSum += sparseKernel->epsilonSum;
 }
 
+void SparseBayesRRG::resetAccumulators()
+{
+    BayesRBase::resetAccumulators();
+
+    m_accumulatedEpsilonSum = 0;
+}
+
 void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result)
 {
     BayesRBase::updateGlobal(kernel, result);
@@ -100,6 +107,22 @@ void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResul
 
     std::unique_lock lock(m_mutex);
     m_epsilonSum += sparseKernel->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
+}
+
+void SparseBayesRRG::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
+{
+    BayesRBase::accumulate(kernel, result);
+
+    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel.get());
+    assert(sparseKernel);
+
+    std::unique_lock lock(m_accumulatorMutex);
+    m_accumulatedEpsilonSum += sparseKernel->epsilonSum;
+}
+
+void SparseBayesRRG::updateMpi()
+{
+    // TODO
 }
 
 

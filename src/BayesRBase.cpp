@@ -91,6 +91,8 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
 
     m_randomNumbers.resize(markerCount);
 
+    resetAccumulators();
+
     if(m_colLog)
     {
         m_colWriter.setFileName(m_colLogFile);
@@ -125,6 +127,12 @@ void BayesRBase::writeWithUniqueLock(BayesRKernel *kernel)
 {
     // Empty in BayesRBase
     (void) kernel; // Unused
+}
+
+void BayesRBase::resetAccumulators()
+{
+    m_accumulatedEpsilonDelta = VectorXd::Zero(m_data->numInds);
+    m_accumulatedBetaSqn = VectorXd::Zero(m_data->numGroups);
 }
 
 int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&markers)
@@ -520,6 +528,21 @@ void BayesRBase::updateGlobal(const KernelPtr& kernel,
     std::unique_lock lock(m_mutex);
     m_epsilon += *result->deltaEpsilon;
     m_betasqnG[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
+}
+
+void BayesRBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
+{
+    assert(kernel);
+    assert(result);
+
+    std::unique_lock lock(m_accumulatorMutex);
+    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
+    m_accumulatedBetaSqn[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
+}
+
+void BayesRBase::updateMpi()
+{
+    // TODO
 }
 
 void BayesRBase::printDebugInfo() const
