@@ -5,6 +5,10 @@
 #include "raggedbayesrkernel.h"
 #include "sparsemarker.h"
 
+#ifdef MPI_ENABLED
+#include <mpi.h>
+#endif
+
 SparseBayesRRG::SparseBayesRRG(const Data *data, const Options *opt)
     : BayesRBase(data, opt)
 {
@@ -122,7 +126,22 @@ void SparseBayesRRG::accumulate(const KernelPtr &kernel, const ConstAsyncResultP
 
 void SparseBayesRRG::updateMpi()
 {
-    // TODO
+#ifdef MPI_ENABLED
+    // Take a copy of the accumulated values
+    const auto localEpsilonSum = m_accumulatedEpsilonSum;
+
+    // MPI_Allreduce
+    MPI_Allreduce(&localEpsilonSum, &m_accumulatedEpsilonSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    // Subtract local accumulations for global
+    m_accumulatedEpsilonSum -= localEpsilonSum;
+
+    // Apply accumulations from other processes
+    m_epsilonSum += m_accumulatedEpsilonSum;
+
+    // Call last - it calls resetAccumulators
+    BayesRBase::updateMpi();
+#endif
 }
 
 

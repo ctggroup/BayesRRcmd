@@ -23,6 +23,23 @@
 
 using namespace std;
 
+namespace {
+
+class MpiContext {
+public:
+    MpiContext() {
+#ifdef MPI_ENABLED
+    MPI_Init(nullptr, nullptr);
+#endif
+    }
+
+    ~MpiContext() {
+#ifdef MPI_ENABLED
+    MPI_Finalize();
+#endif
+    }
+};
+
 bool preprocessBed(const Options &options) {
     assert(options.analysisType == AnalysisType::Preprocess);
     assert(options.inputType == InputType::BED);
@@ -102,8 +119,6 @@ bool preprocess(const Options &options) {
 std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *data) {
 #ifdef MPI_ENABLED
     if (options->useHybridMpi) {
-        MPI_Init(nullptr, nullptr);
-
         int worldSize;
         MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
 
@@ -152,9 +167,6 @@ std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *da
                  << " for " << data->numSnps << " markers" << endl;
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
-
-        MPI_Finalize();
-
         return subset.toMarkerIndexList(data->numSnps);
     } else
 #endif
@@ -232,7 +244,10 @@ bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
     return true;
 }
 
+
 bool runBayesAnalysis(const Options &options) {
+    MpiContext mpiContext;
+
     Data data;
     AnalysisRunner::readMetaData(data, options);
 
@@ -291,6 +306,8 @@ bool runBayesAnalysis(const Options &options) {
     return result;
 }
 
+}
+
 namespace AnalysisRunner {
 
 void readMetaData(Data &data, const Options &options) {
@@ -340,7 +357,7 @@ std::unique_ptr<AnalysisGraph> makeAnalysisGraph(const Options &options)
         auto parallelGraph = std::make_unique<ParallelGraph>(options.decompressionTokens,
                                                              options.analysisTokens,
                                                              options.useMarkerCache,
-                                                             false);
+                                                             options.useHybridMpi);
         parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
         parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
         return std::move(parallelGraph);

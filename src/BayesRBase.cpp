@@ -15,6 +15,10 @@
 #include <chrono>
 #include <mutex>
 
+#ifdef MPI_ENABLED
+#include <mpi.h>
+#endif
+
 BayesRBase::BayesRBase(const Data *data, const Options *opt)
     : Analysis(data, opt)
     , m_outputFile(opt->mcmcSampleFile)
@@ -142,6 +146,11 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         return 1;
     }
 
+    int rank = 0;
+#ifdef MPI_ENABLED
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
     setAsynchronous(analysis->isAsynchronous());
 
     const unsigned int M(m_data->numSnps);
@@ -180,8 +189,8 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     std::vector<unsigned int> xI(nF);
     std::iota(xI.begin(), xI.end(), 0);
     
-    std::cout << "Number of groups: " << nGroups << std::endl
-              << "Running Gibbs sampling" << endl;
+    std::cout << "Number of groups: " << nGroups << endl << endl
+              << "Rank " << rank << " running Gibbs sampling..." << endl;
 
     const auto t1 = std::chrono::high_resolution_clock::now();
 
@@ -195,7 +204,10 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         // Output progress
         const auto startTime = std::chrono::high_resolution_clock::now();
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
-        std::cout << "iteration " << iteration << ": ";
+
+        if (rank == 0)
+            std::cout << "iteration " << iteration << ": ";
+
         double old_mu=m_mu;
 
     // we delegate the Mu update to the descendents
@@ -255,39 +267,49 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         }
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
-    if (iteration >= m_burnIn && iteration % m_thinning == 0) {
-            sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_acum, m_epsilon;
-            writer.write(sample);
+        if (rank == 0)
+        {
+            if (iteration >= m_burnIn && iteration % m_thinning == 0) {
+                sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_acum, m_epsilon;
+                writer.write(sample);
+            }
+
+            const auto endTime = std::chrono::high_resolution_clock::now();
+            const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+            const auto flowGraphDuration = std::chrono::duration_cast<std::chrono::milliseconds>(flowGraphEndTime - flowGraphStartTime).count();
+            std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)" << std::endl;
+            meanIterationTime += iterationDuration;
+            meanFlowGraphIterationTime += flowGraphDuration;
+            if (m_showDebug)
+            {
+                const auto muDuration = std::chrono::duration_cast<std::chrono::microseconds>(muTime - startTime).count();
+                const auto sigmaGDuration = std::chrono::duration_cast<std::chrono::microseconds>(sGendTime - sGstartTime).count();
+                const auto sigmaEDuration = std::chrono::duration_cast<std::chrono::microseconds>(sEendTime - sEstartTime).count();
+                iterLog<<iteration,m_m0,m_sigmaG,m_sigmaE,m_mu
+                        ,static_cast<double>(muDuration)
+                        ,static_cast<double>(sigmaGDuration)
+                        ,static_cast<double>(sigmaEDuration)
+                        ,static_cast<double>(flowGraphDuration)
+                        ,static_cast<double>(iterationDuration);
+                iterLogger.write(iterLog);
+            }
         }
 
-        const auto endTime = std::chrono::high_resolution_clock::now();
-        const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-        const auto flowGraphDuration = std::chrono::duration_cast<std::chrono::milliseconds>(flowGraphEndTime - flowGraphStartTime).count();
-        std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)" << std::endl;
-        meanIterationTime += iterationDuration;
-        meanFlowGraphIterationTime += flowGraphDuration;
-    if (m_showDebug)
-    {
-      const auto muDuration = std::chrono::duration_cast<std::chrono::microseconds>(muTime - startTime).count();
-      const auto sigmaGDuration = std::chrono::duration_cast<std::chrono::microseconds>(sGendTime - sGstartTime).count();
-      const auto sigmaEDuration = std::chrono::duration_cast<std::chrono::microseconds>(sEendTime - sEstartTime).count();
-      iterLog<<iteration,m_m0,m_sigmaG,m_sigmaE,m_mu
-        ,static_cast<double>(muDuration)
-        ,static_cast<double>(sigmaGDuration)
-        ,static_cast<double>(sigmaEDuration)
-        ,static_cast<double>(flowGraphDuration)
-        ,static_cast<double>(iterationDuration);
-      iterLogger.write(iterLog);
-    }
+#ifdef MPI_ENABLED
+//        MPI_Barrier(MPI_COMM_WORLD); // Required?
+#endif
     }
 
-    const auto t2 = std::chrono::high_resolution_clock::now();
-    const auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    std::cout << "duration: " << duration << "s" << std::endl;
-    const double meanIterationDuration = (static_cast<double>(meanIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
-    const double meanFlowGraphIterationDuration = (static_cast<double>(meanFlowGraphIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
-    std::cout << "mean iteration duration: " << meanIterationDuration  << "s" << std::endl
-              << "mean flowgraph duration: " << meanFlowGraphIterationDuration << "s" << std::endl;
+    if (rank == 0)
+    {
+        const auto t2 = std::chrono::high_resolution_clock::now();
+        const auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        std::cout << rank << " - duration: " << duration << "s" << std::endl;
+        const double meanIterationDuration = (static_cast<double>(meanIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
+        const double meanFlowGraphIterationDuration = (static_cast<double>(meanFlowGraphIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
+        std::cout << rank << " - mean iteration duration: " << meanIterationDuration  << "s" << std::endl
+                  << "mean flowgraph duration: " << meanFlowGraphIterationDuration << "s" << std::endl;
+    }
 
     return 0;
 }
@@ -542,7 +564,26 @@ void BayesRBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &
 
 void BayesRBase::updateMpi()
 {
-    // TODO
+#ifdef MPI_ENABLED
+    // Take a copy of the accumulated values
+    const auto localEpsilonDelta = m_accumulatedEpsilonDelta;
+    const auto localBetaSqn = m_accumulatedBetaSqn;
+
+    // MPI_Allreduce
+    MPI_Allreduce(localEpsilonDelta.data(), m_accumulatedEpsilonDelta.data(), m_data->numInds, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(localBetaSqn.data(), m_accumulatedBetaSqn.data(), m_data->numGroups, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    // Subtract local accumulations for global
+    m_accumulatedEpsilonDelta -= localEpsilonDelta;
+    m_accumulatedBetaSqn -= localBetaSqn;
+
+    // Apply accumulations from other processes
+    m_epsilon += m_accumulatedEpsilonDelta;
+    m_betasqnG += m_accumulatedBetaSqn;
+
+    // Reset local accumulated values
+    resetAccumulators();
+#endif
 }
 
 void BayesRBase::printDebugInfo() const
