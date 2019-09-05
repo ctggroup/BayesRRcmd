@@ -18,68 +18,51 @@ Data::Data()
 {
 }
 
-void Data::mapPreprocessBedFile(const string &preprocessedBedFile)
+Data::~Data()
 {
-	// Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
-	// that we would otherwise get as intermediate variables!
-	const size_t ppBedSize = size_t(numInds) * size_t(numSnps) * sizeof(double);
+    unmapPreprocessedBedFile();
+}
 
-	// Open and mmap the preprocessed bed file
-	ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
-	if (ppBedFd == -1)
-		throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
+void Data::mapPreprocessBedFile(const string &preprocessedBedFile,
+                                const string &indexFile)
+{
+    // Load the index to the compressed preprocessed bed file
+    ppbedIndex.resize(numSnps);
+    ifstream indexStream(indexFile, std::ifstream::binary);
+    if (!indexStream)
+        throw("Error: Failed to open compressed preprocessed bed file index");
+    indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
+                     numSnps * 3 * sizeof(unsigned long));
 
-	ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
-	if (ppBedMap == MAP_FAILED)
-		throw("Error: Failed to mmap preprocessed bed file");
+    // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
+    // that we would otherwise get as intermediate variables!
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
 
-	// Now that the raw data is available, wrap it into the mapped Eigen types using the
-	// placement new operator.
-	// See https://eigen.tuxfamily.org/dox/group__TutorialMapClass.html#TutorialMapPlacementNew
-	new (&mappedZ) Map<MatrixXd>(ppBedMap, numInds, numSnps);
+    // Open and mmap the preprocessed bed file
+    ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
+    if (ppBedFd == -1)
+        throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
+
+    ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
+    if (ppBedMap == MAP_FAILED)
+        throw("Error: Failed to mmap preprocessed bed file");
 }
 
 void Data::unmapPreprocessedBedFile()
 {
-	// Unmap the data from the Eigen accessors
-	new (&mappedZ) Map<MatrixXd>(nullptr, 1, 1);
+    if (ppBedMap == nullptr)
+        return;
 
-	const auto ppBedSize = numInds * numSnps * sizeof(double);
-	munmap(ppBedMap, ppBedSize);
-	close(ppBedFd);
-}
+    // Unmap the data from the Eigen accessors
+    new (&mappedZ) Map<MatrixXd>(nullptr, 1, 1);
 
-void Data::mapCompressedPreprocessBedFile(const string &preprocessedBedFile,
-		const string &indexFile)
-{
-	// Load the index to the compressed preprocessed bed file
-	ppbedIndex.resize(numSnps);
-	ifstream indexStream(indexFile, std::ifstream::binary);
-	if (!indexStream)
-		throw("Error: Failed to open compressed preprocessed bed file index");
-	indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
-			numSnps * 3 * sizeof(unsigned long));
+    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
+    munmap(ppBedMap, ppBedSize);
+    ppBedMap = nullptr;
 
-	// Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
-	// that we would otherwise get as intermediate variables!
-	const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
+    close(ppBedFd);
 
-	// Open and mmap the preprocessed bed file
-	ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
-	if (ppBedFd == -1)
-		throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
-
-	ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
-	if (ppBedMap == MAP_FAILED)
-		throw("Error: Failed to mmap preprocessed bed file");
-}
-
-void Data::unmapCompressedPreprocessedBedFile()
-{
-	const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
-	munmap(ppBedMap, ppBedSize);
-	close(ppBedFd);
-	ppbedIndex.clear();
+    ppbedIndex.clear();
 }
 
 void Data::readFamFile(const string &famFile){

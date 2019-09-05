@@ -78,10 +78,11 @@ using PpBedIndex = std::vector<IndexEntry>;
 class Data {
 public:
     Data();
+    ~Data();
 
     // mmap related data
     int ppBedFd;
-    double *ppBedMap;
+    double *ppBedMap = nullptr;
     Map<MatrixXd> mappedZ;
     PpBedIndex ppbedIndex;
 
@@ -137,11 +138,9 @@ public:
     unsigned numGroups = 1; // number of groups
 
     void preprocessCSVFile(const string &csvFile, const string &preprocessedCSVFile, const string &preprovessedCSVIndexFile, bool compress);
-    void mapPreprocessBedFile(const string &preprocessedBedFile);
-    void unmapPreprocessedBedFile();
 
-    void mapCompressedPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
-    void unmapCompressedPreprocessedBedFile();
+    void mapPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
+    void unmapPreprocessedBedFile();
 
     void readCSV(const string &filename, int cols);
 

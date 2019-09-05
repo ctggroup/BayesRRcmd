@@ -193,7 +193,7 @@ bool runBayesAnalysis(const Options &options) {
 
     cout << "Start reading preprocessed bed file: " << ppFile << endl;
     clock_t start_bed = clock();
-    data.mapCompressedPreprocessBedFile(ppFile, ppIndexFile);
+    data.mapPreprocessBedFile(ppFile, ppIndexFile);
     clock_t end = clock();
     printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
     cout << endl;
@@ -212,10 +212,6 @@ bool runBayesAnalysis(const Options &options) {
 
     auto graph = AnalysisRunner::makeAnalysisGraph(options);
 
-    auto cleanup = [&data]() {
-        data.unmapCompressedPreprocessedBedFile();
-    };
-
     bool result = false;
     switch (options.analysisType) {
     case AnalysisType::PpBayes:
@@ -233,11 +229,9 @@ bool runBayesAnalysis(const Options &options) {
     default:
         cerr << "Unsupported AnalysisType: runBayesAnalysis does not support"
              << options.analysisType << endl;
-        cleanup();
         return false;
     }
 
-    cleanup();
     return result;
 }
 
