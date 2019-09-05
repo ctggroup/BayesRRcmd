@@ -151,7 +151,7 @@ protected:
 
 class PpBayesBed :
         public PpBayesBase,
-        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool>> {
+        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool, std::pair<unsigned int, unsigned int>>> {
 protected:
     void SetUp() {
         PpBayesBase::SetUp();
@@ -175,6 +175,12 @@ TEST_P(PpBayesBed, SmokeTests) {
 
     // Run analysis
     options.analysisType = std::get<0>(params);
+    options.markerSubset = std::get<4>(params);
+    {
+        const auto first = options.markerSubset.first;
+        const auto last = first + options.markerSubset.second;
+        std::cout << "Using marker range " << first  << " to " << last << endl;
+    }
     ASSERT_TRUE(AnalysisRunner::run(options));
 
     // Validate the output
@@ -190,7 +196,10 @@ INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
                                                   PreprocessDataType::SparseEigen,
                                                   PreprocessDataType::SparseRagged}),
                              ::testing::Bool(), // compress
-                             ::testing::Bool())); // useMarkerCache
+                             ::testing::Bool(), // useMarkerCache
+                             ::testing::ValuesIn({kDefaultMarkerSubset,
+                                                  {100, 200}})
+                             ));
 
 class PpBayesBedGroups :
         public PpBayesBase,
@@ -227,7 +236,7 @@ TEST_P(PpBayesBedGroups, SmokeTests) {
 }
 
 INSTANTIATE_TEST_SUITE_P(PpBayesBedGroups,
-                         PpBayesBed,
+                         PpBayesBedGroups,
                          ::testing::Combine(
                              ::testing::ValuesIn({AnalysisType::PpBayes,
                                                   AnalysisType::AsyncPpBayes}),

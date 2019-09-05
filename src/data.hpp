@@ -132,8 +132,8 @@ public:
     vector<vector<SnpInfo*> > mldmVec;
 
     unsigned numFixedEffects = 0;
-    unsigned numSnps;
-    unsigned numInds;
+    unsigned numSnps = 0;
+    unsigned numInds = 0;
 
     unsigned numGroups = 1; // number of groups
 

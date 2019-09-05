@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "options.hpp"
+#include "data.hpp"
 
 TEST(OptionsTest, VarianceFromCommandLine) {
     Options options;
@@ -180,5 +181,62 @@ TEST(OptionsTest, PreprocessDataType) {
 
         options.inputOptions(3, argv);
         ASSERT_EQ(PreprocessDataType::None, options.preprocessDataType);
+    }
+}
+
+TEST(OptionsTest, MarkerSubset) {
+    Data data;
+    data.numSnps = 100;
+
+    Options options;
+    {
+        // default markerSubset
+        ASSERT_TRUE(options.validMarkerSubset(&data));
+
+        const auto markers = options.getMarkerSubset(&data);
+        ASSERT_EQ(0, markers.front());
+        ASSERT_EQ(99, markers.back());
+    }
+
+    {
+        options.markerSubset = {0, 100};
+        ASSERT_TRUE(options.validMarkerSubset(&data));
+
+        const auto markers = options.getMarkerSubset(&data);
+        ASSERT_EQ(0, markers.front());
+        ASSERT_EQ(99, markers.back());
+    }
+
+    {
+        options.markerSubset = {99, 1};
+        ASSERT_TRUE(options.validMarkerSubset(&data));
+
+        const auto markers = options.getMarkerSubset(&data);
+        ASSERT_EQ(99, markers.front());
+        ASSERT_EQ(99, markers.back());
+    }
+
+    {
+        options.markerSubset = {0, 101};
+        ASSERT_FALSE(options.validMarkerSubset(&data));
+    }
+
+    {
+        options.markerSubset = {99, 2};
+        ASSERT_FALSE(options.validMarkerSubset(&data));
+    }
+
+    {
+        options.markerSubset = {100, 1};
+        ASSERT_FALSE(options.validMarkerSubset(&data));
+    }
+
+    {
+        options.markerSubset = {25, 50};
+        ASSERT_TRUE(options.validMarkerSubset(&data));
+
+        const auto markers = options.getMarkerSubset(&data);
+        ASSERT_EQ(25, markers.front());
+        ASSERT_EQ(74, markers.back());
     }
 }

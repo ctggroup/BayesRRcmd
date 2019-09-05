@@ -1,6 +1,10 @@
 #include "options.hpp"
 
+#include "data.hpp"
+
 #include <filesystem>
+#include <vector>
+#include <numeric>
 
 namespace fs = std::filesystem;
 
@@ -279,6 +283,28 @@ void Options::inputOptions(const int argc, const char* argv[]){
     }
 
     cout << ss.str() << endl;
+}
+
+bool Options::validMarkerSubset(const Data *data) const
+{
+    if (!data || data->numSnps == 0)
+        return false;
+
+    if (markerSubset == kDefaultMarkerSubset)
+        return true;
+
+    return markerSubset.first + markerSubset.second - 1 < data->numSnps;
+}
+
+std::vector<unsigned int> Options::getMarkerSubset(const Data *data) const
+{
+    const auto first = markerSubset.first;
+    const auto size = markerSubset.second == 0 ? data->numSnps : markerSubset.second;
+
+    std::vector<unsigned int> markers(size);
+    std::iota(markers.begin(), markers.end(), first);
+
+    return markers;
 }
 
 void Options::readFile(const string &file){  // input options from file

@@ -97,12 +97,15 @@ bool runBayesRAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
     // If there is a file for fixed effects (model matrix), then read the data
     if(!options->fixedFile.empty()) {
         data->readCSV(options->fixedFile, options->fixedEffectNumber);
-    }    
-switch (options->preprocessDataType) {
+    }
+
+    auto markers = options->getMarkerSubset(data);
+
+    switch (options->preprocessDataType) {
     case PreprocessDataType::Dense:
     {
         DenseBayesRRmz analysis(data, options);
-        analysis.runGibbs(graph);
+        analysis.runGibbs(graph, std::move(markers));
         break;
     }
 
@@ -111,7 +114,7 @@ switch (options->preprocessDataType) {
     case PreprocessDataType::SparseRagged:
     {
         SparseBayesRRG analysis(data, options);
-        analysis.runGibbs(graph);
+        analysis.runGibbs(graph, std::move(markers));
         break;
     }
 
@@ -133,18 +136,20 @@ bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
     // Read the failure indicator vector
     data->readFailureFile(options->failureFile);
 
+    auto markers = options->getMarkerSubset(data);
+
     switch (options->preprocessDataType) {
     case PreprocessDataType::Dense:
     {
         DenseBayesW analysis(data, options, sysconf(_SC_PAGE_SIZE));
-        analysis.runGibbs(graph);
+        analysis.runGibbs(graph, std::move(markers));
         break;
     }
 
     case PreprocessDataType::SparseRagged:
     {
         SparseBayesW analysis(data, options, sysconf(_SC_PAGE_SIZE));
-        analysis.runGibbs(graph);
+        analysis.runGibbs(graph, std::move(markers));
         break;
     }
 
@@ -160,6 +165,14 @@ bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
 bool runBayesAnalysis(const Options &options) {
     Data data;
     AnalysisRunner::readMetaData(data, options);
+
+    if (!options.validMarkerSubset(&data)) {
+        const auto first = options.markerSubset.first;
+        const auto last = first + options.markerSubset.second;
+        cerr << "Marker range " << first  << " to " << last << "is not valid!" << endl
+             << "Expected range is 0 to " << data.numSnps - 1 << endl;
+        return false;
+    }
 
     const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
     const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);

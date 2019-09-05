@@ -12,11 +12,16 @@
 #include "gadgets.hpp"
 #include <Eigen/Eigen>
 #include "common.h"
+#include <utility>
 
 using namespace std;
 using namespace boost;
 
+class Data;
+
 const unsigned Megabase = 1e6;
+
+static const std::pair<unsigned int, unsigned int> kDefaultMarkerSubset = {0, 0};
 
 class Options {
 public:
@@ -57,6 +62,7 @@ public:
     string colLogFile;
     bool colLog =false;
     bool useMarkerCache = false;
+    std::pair<unsigned int, unsigned int> markerSubset = kDefaultMarkerSubset; // first, count
     bool useHybridMpi = false;
 
 
@@ -98,6 +104,9 @@ public:
     }
 
     void inputOptions(const int argc, const char* argv[]);
+
+    bool validMarkerSubset(const Data* data) const;
+    std::vector<unsigned int> getMarkerSubset(const Data *data) const;
 
 private:
     void readFile(const string &file);
