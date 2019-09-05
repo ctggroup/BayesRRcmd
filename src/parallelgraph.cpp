@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTokens, bool useMarkerCache)
+ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTokens, bool useMarkerCache, bool useMpi)
     : AnalysisGraph()
     , m_graph(new graph)
     , m_decompressionTokens(maxDecompressionTokens)
@@ -88,7 +88,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     m_decisionNode.reset(new decision_node(*m_graph, unlimited, h));
 
     // Do global computation
-    auto i = [this] (global_update_node::input_type input,
+    auto i = [this, useMpi] (global_update_node::input_type input,
             global_update_node::output_ports_type &outputPorts) {
 
         auto &decompressionTuple = std::get<1>(input);
@@ -96,25 +96,46 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
 
         m_analysis->updateGlobal(msg.kernel, msg.result);
 
+        if (useMpi)
+            m_analysis->accumulate(msg.kernel, msg.result);
+
         std::get<0>(outputPorts).try_put(std::get<0>(decompressionTuple));
         std::get<1>(outputPorts).try_put(std::get<0>(input));
     };
     // Use the serial policy
     m_globalUpdateNode.reset(new global_update_node(*m_graph, serial, i));
 
-    // Force synchronisation after m_anaylsisToken analyses
-    auto j = [this](AnalysisToken t) -> continue_msg {
-        (void) t; // Unused
-        --m_analysisTokenCount;
+    if (useMpi) {
+        // Force synchronisation after m_anaylsisToken analyses
+        auto doUpdateMpi = [this](AnalysisToken t) -> continue_msg {
+            (void) t; // Unused
+            --m_analysisTokenCount;
 
-        if (m_analysisTokenCount == 0) {
-            // Allow the next set of analyses to take place
-            queueAnalysisTokens();
-        }
+            if (m_analysisTokenCount == 0) {
+                // Synchronise values from other processes
+                m_analysis->updateMpi();
+                // Allow the next set of analyses to take place
+                queueAnalysisTokens();
+            }
 
-        return continue_msg();
-    };
-    m_analysisControlNode.reset(new analysis_control_node(*m_graph, serial, j));
+            return continue_msg();
+        };
+        m_mpiAnalysisControlNode.reset(new mpi_analysis_control_node(*m_graph, serial, doUpdateMpi));
+    } else {
+        // Force synchronisation after m_anaylsisToken analyses
+        auto j = [this](AnalysisToken t) -> continue_msg {
+            (void) t; // Unused
+            --m_analysisTokenCount;
+
+            if (m_analysisTokenCount == 0) {
+                // Allow the next set of analyses to take place
+                queueAnalysisTokens();
+            }
+
+            return continue_msg();
+        };
+        m_analysisControlNode.reset(new analysis_control_node(*m_graph, serial, j));
+    }
 
 
     // Set up the graph topology:
@@ -143,10 +164,15 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
     make_edge(*m_analysisNode, *m_threadSafeUpdateNode);
     make_edge(*m_threadSafeUpdateNode, *m_decisionNode);
     make_edge(output_port<0>(*m_decisionNode), input_port<0>(*m_decompressionJoinNode));
-    make_edge(output_port<1>(*m_decisionNode), *m_analysisControlNode);
     make_edge(output_port<2>(*m_decisionNode), *m_globalUpdateNode);
     make_edge(output_port<0>(*m_globalUpdateNode), input_port<0>(*m_decompressionJoinNode));
-    make_edge(output_port<1>(*m_globalUpdateNode), *m_analysisControlNode);
+    if (useMpi) {
+        make_edge(output_port<1>(*m_decisionNode), *m_mpiAnalysisControlNode);
+        make_edge(output_port<1>(*m_globalUpdateNode), *m_mpiAnalysisControlNode);
+    } else {
+        make_edge(output_port<1>(*m_decisionNode), *m_analysisControlNode);
+        make_edge(output_port<1>(*m_globalUpdateNode), *m_analysisControlNode);
+    }
 }
 
 ParallelGraph::~ParallelGraph()

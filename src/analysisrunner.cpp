@@ -269,7 +269,8 @@ std::unique_ptr<AnalysisGraph> makeAnalysisGraph(const Options &options)
     {
         auto parallelGraph = std::make_unique<ParallelGraph>(options.decompressionTokens,
                                                              options.analysisTokens,
-                                                             options.useMarkerCache);
+                                                             options.useMarkerCache,
+                                                             false);
         parallelGraph->setDecompressionNodeConcurrency(options.decompressionNodeConcurrency);
         parallelGraph->setAnalysisNodeConcurrency(options.analysisNodeConcurrency);
         return std::move(parallelGraph);

@@ -21,7 +21,8 @@ using namespace tbb::flow;
 class ParallelGraph : public AnalysisGraph
 {
 public:
-    explicit ParallelGraph(size_t decompressionTokens, size_t analysisTokens, bool useMarkerCache);
+    explicit ParallelGraph(size_t decompressionTokens, size_t analysisTokens,
+                           bool useMarkerCache, bool useMpi);
     ~ParallelGraph();
 
     bool isAsynchronous() const override { return true; }
@@ -86,6 +87,9 @@ private:
 
     using analysis_control_node = function_node<AnalysisToken, continue_msg, lightweight>;
     std::unique_ptr<analysis_control_node> m_analysisControlNode;
+
+    using mpi_analysis_control_node = function_node<AnalysisToken, continue_msg>;
+    std::unique_ptr<mpi_analysis_control_node> m_mpiAnalysisControlNode;
 
     size_t m_decompressionNodeConcurrency = tbb::flow::unlimited;
     size_t m_decompressionTokens = 40;
