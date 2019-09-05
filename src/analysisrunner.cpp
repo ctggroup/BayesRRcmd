@@ -17,33 +17,6 @@
 
 using namespace std;
 
-void readMetaData(Data &data, const Options &options) {
-    switch (options.inputType) {
-    case InputType::BED:
-        data.readFamFile(fileWithSuffix(options.dataFile, ".fam"));
-        data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
-        data.readPhenotypeFile(options.phenotypeFile);
-        break;
-
-    case InputType::CSV:
-        data.readCSVFile(options.dataFile);
-        data.readCSVPhenFile(options.phenotypeFile);
-        break;
-
-    default:
-        cout << "Cannot read meta data for input type: " << options.inputType << endl;
-        return;
-    }
-
-    if (!options.groupFile.empty()) {
-        data.readGroupFile(options.groupFile);
-        if (options.S.rows() != data.numGroups)
-            cerr << "Number of groups " << data.numGroups
-                 << " does not match the number of variance sets: " << options.S.rows()
-                 << endl;
-    }
-};
-
 bool preprocessBed(const Options &options) {
     assert(options.analysisType == AnalysisType::Preprocess);
     assert(options.inputType == InputType::BED);
@@ -61,7 +34,7 @@ bool preprocessBed(const Options &options) {
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
     Data data;
-    readMetaData(data, options);
+    AnalysisRunner::readMetaData(data, options);
 
     PreprocessGraph graph(options.numThread);
     graph.preprocessBedFile(options.dataFile,
@@ -91,7 +64,7 @@ bool preprocessCsv(const Options &options) {
     clock_t start_bed = clock();
 
     Data data;
-    readMetaData(data, options);
+    AnalysisRunner::readMetaData(data, options);
 
     const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
     const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
@@ -186,7 +159,7 @@ bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
 
 bool runBayesAnalysis(const Options &options) {
     Data data;
-    readMetaData(data, options);
+    AnalysisRunner::readMetaData(data, options);
 
     const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
     const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
@@ -236,6 +209,33 @@ bool runBayesAnalysis(const Options &options) {
 }
 
 namespace AnalysisRunner {
+
+void readMetaData(Data &data, const Options &options) {
+    switch (options.inputType) {
+    case InputType::BED:
+        data.readFamFile(fileWithSuffix(options.dataFile, ".fam"));
+        data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
+        data.readPhenotypeFile(options.phenotypeFile);
+        break;
+
+    case InputType::CSV:
+        data.readCSVFile(options.dataFile);
+        data.readCSVPhenFile(options.phenotypeFile);
+        break;
+
+    default:
+        cout << "Cannot read meta data for input type: " << options.inputType << endl;
+        return;
+    }
+
+    if (!options.groupFile.empty()) {
+        data.readGroupFile(options.groupFile);
+        if (options.S.rows() != data.numGroups)
+            cerr << "Number of groups " << data.numGroups
+                 << " does not match the number of variance sets: " << options.S.rows()
+                 << endl;
+    }
+};
 
 std::unique_ptr<AnalysisGraph> makeAnalysisGraph(const Options &options)
 {
