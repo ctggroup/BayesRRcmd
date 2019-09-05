@@ -127,7 +127,7 @@ void BayesRBase::writeWithUniqueLock(BayesRKernel *kernel)
     (void) kernel; // Unused
 }
 
-int BayesRBase::runGibbs(AnalysisGraph *analysis)
+int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&markers)
 {
     if (!analysis) {
         std::cout << "Cannot run Gibbs analysis without a flow graph!" << std::endl;
@@ -195,7 +195,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         const auto muTime = std::chrono::high_resolution_clock::now();
         prepareForAnylsis();
 
-        std::random_shuffle(markerI.begin(), markerI.end());
+        std::random_shuffle(markers.begin(), markers.end());
 
         m_m0 = 0;
         m_v = MatrixXd::Zero(nGroups, K);
@@ -206,7 +206,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         // in turn. HOwever, within each column we make use of Intel TBB's parallel_for to parallelise the operations on the large vectors
         // of data.
         const auto flowGraphStartTime = std::chrono::high_resolution_clock::now();
-        analysis->exec(this, N, M, markerI);
+        analysis->exec(this, N, markers);
         const auto flowGraphEndTime = std::chrono::high_resolution_clock::now();
 	
         // Fixed effects estimation

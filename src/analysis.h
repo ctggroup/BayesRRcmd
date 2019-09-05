@@ -35,7 +35,9 @@ public:
     virtual unsigned char* compressedData() const;
     virtual std::string preprocessedFile() const;
 
-    virtual int runGibbs(AnalysisGraph* analysis) = 0;
+    virtual int runGibbs(AnalysisGraph* analysis);
+    virtual int runGibbs(AnalysisGraph* analysis, const std::vector<unsigned int> &markers);
+    virtual int runGibbs(AnalysisGraph* analysis, std::vector<unsigned int> &&markers) = 0;
 
     // LimitSeqeunceGraph
     virtual void processColumn(const KernelPtr &kernel) = 0;

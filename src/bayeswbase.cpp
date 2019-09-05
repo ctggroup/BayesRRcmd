@@ -734,7 +734,7 @@ void BayesWBase::sampleAlpha(){
 }
 
 /* Adaptive Gauss-Hermite version. Currently RAM solution */
-int BayesWBase::runGibbs(AnalysisGraph* analysis)
+int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&markers)
 {
     if (!analysis) {
         std::cout << "Cannot run BayesW analysis without a flow graph!" << std::endl;
@@ -766,10 +766,6 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 		writer.open_bayesW();
 	}
 
-	// Sampler variables
-	std::vector<unsigned int> markerI(M);
-	std::iota(markerI.begin(), markerI.end(), 0);
-
 	std::cout<< "Running Gibbs sampling" << endl;
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
@@ -789,14 +785,14 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
 		// Calculate the vector of exponent of the adjusted residuals
         *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
 
-		std::random_shuffle(markerI.begin(), markerI.end());
+        std::random_shuffle(markers.begin(), markers.end());
 		// This for should not be parallelized, resulting chain would not be ergodic, still, some times it may converge to the correct solution
 		// 2. Sample beta parameters
 
 		// Set counter for each mixture to be 1 ( (1,...,1) prior)
         m_v.setOnes();
         prepareForAnalysis();
-        analysis->exec(this, N, M, markerI);
+        analysis->exec(this, N, markers);
 
 		// 3. Sample alpha parameter
 		sampleAlpha();

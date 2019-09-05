@@ -17,7 +17,6 @@ public:
 
     virtual void exec(Analysis* analysis,
                       unsigned int numInds,
-                      unsigned int numSnps,
                       const std::vector<unsigned int> &markerIndices) = 0;
 
 protected:

@@ -78,7 +78,6 @@ LimitSequenceGraph::~LimitSequenceGraph()
 
 void LimitSequenceGraph::exec(Analysis *analysis,
                               unsigned int numInds,
-                              unsigned int numSnps,
                               const std::vector<unsigned int> &markerIndices)
 {
     if (!analysis) {
@@ -93,8 +92,9 @@ void LimitSequenceGraph::exec(Analysis *analysis,
     m_graph->reset();
 
     // Push some messages into the top of the graph to be processed - representing the column indices
+    const auto numSnps = markerIndices.size();
     for (unsigned int i = 0; i < numSnps; ++i) {
-        Message msg = { i, markerIndices[i], numInds };
+        Message msg = { i, markerIndices[i], numInds, nullptr };
         m_ordering->try_put(msg);
     }
 

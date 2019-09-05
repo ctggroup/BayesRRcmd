@@ -74,7 +74,9 @@ public:
     BayesWBase(const Data *data, const Options *opt, const long m_memPageSize);
     virtual ~BayesWBase();
 
-    int runGibbs(AnalysisGraph* analysis) override; // where we run Gibbs sampling over the parametrised model
+    // where we run Gibbs sampling over the parametrised model
+    using Analysis::runGibbs; // Required to prevent name hiding
+    int runGibbs(AnalysisGraph* analysis, std::vector<unsigned int> &&markers);
 
     void processColumn(const KernelPtr &kernel) override;
 

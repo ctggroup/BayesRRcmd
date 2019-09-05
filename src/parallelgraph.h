@@ -28,7 +28,6 @@ public:
 
     void exec(Analysis* analysis,
               unsigned int numKeptInds,
-              unsigned int numIncdSnps,
               const std::vector<unsigned int> &markerIndices) override;
 
     // The maximum number of decompression_node bodies which can run concurrently

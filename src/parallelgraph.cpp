@@ -156,7 +156,6 @@ ParallelGraph::~ParallelGraph()
 
 void ParallelGraph::exec(Analysis *analysis,
                               unsigned int numInds,
-                              unsigned int numSnps,
                               const std::vector<unsigned int> &markerIndices)
 {
     if (!analysis) {
@@ -176,9 +175,10 @@ void ParallelGraph::exec(Analysis *analysis,
     queueDecompressionTokens();
     queueAnalysisTokens();
 
+    const auto numSnps = markerIndices.size();
     // Push some messages into the top of the graph to be processed - representing the column indices
     for (unsigned int i = 0; i < numSnps; ++i) {
-        Message msg = { i, markerIndices[i], numInds };
+        Message msg = { i, markerIndices[i], numInds, nullptr, nullptr };
         input_port<1>(*m_decompressionJoinNode).try_put(msg);
     }
 

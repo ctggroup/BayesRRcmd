@@ -9,11 +9,9 @@
 
 void Sequential::exec(Analysis *analysis,
                       unsigned int numInds,
-                      unsigned int numSnps,
                       const std::vector<unsigned int> &markerIndices)
 {
     (void) numInds; // Unused
-    (void) numSnps; // Unused
 
     if (!analysis) {
         std::cerr << "Cannot run Sequential without bayes" << std::endl;
