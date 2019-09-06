@@ -63,18 +63,7 @@ struct IndexEntry {
 
 using MarkerIndexList = std::vector<unsigned int>;
 
-struct MarkerSubset {
-    unsigned int start = 0;
-    unsigned int size = 0;
-
-    unsigned int first() const { return start; }
-    unsigned int last() const { return start + size; }
-
-    void clamp(unsigned int markerCount);
-
-    bool isValid(unsigned int markerCount) const;
-    MarkerIndexList toMarkerIndexList(unsigned int markerCount) const;
-};
+struct MarkerSubset;
 
 //template to read csv files into an eigen vector.
 template<typename M>

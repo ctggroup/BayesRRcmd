@@ -40,6 +40,7 @@ add_library(bayes
     eigensparsemarker.cpp
     common.cpp
     markerbuilder.cpp
+    markersubset.cpp
     densemarkerbuilder.cpp
     raggedsparsemarkerbuilder.cpp
     preprocessgraph.cpp

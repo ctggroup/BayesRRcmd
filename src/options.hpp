@@ -13,6 +13,7 @@
 #include <Eigen/Eigen>
 #include "common.h"
 #include <utility>
+#include "markersubset.h"
 
 using namespace std;
 using namespace boost;
