@@ -21,6 +21,10 @@
 #include <numeric>
 #include <random>
 
+#ifdef MPI_ENABLED
+#include <mpi.h>
+#endif
+
 /* Pre-calculate used constants */
 #define PI 3.14159
 #define PI2 6.283185
@@ -466,6 +470,11 @@ void BayesWBase::prepareForAnalysis()
     });
 }
 
+void BayesWBase::resetAccumulators()
+{
+    m_accumulatedEpsilonDelta = VectorXd::Zero(m_data->numInds);
+}
+
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
 	// Component variables
@@ -537,6 +546,8 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	}
 
     m_randomNumbers.resize(markerCount);
+
+    resetAccumulators();
 }
 // Function for sampling intercept (mu)
 void BayesWBase::sampleMu(){
@@ -741,6 +752,11 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         return 1;
     }
 
+    int rank = 0;
+#ifdef MPI_ENABLED
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
     const unsigned int M(m_data->numSnps);
     const unsigned int N(m_data->numInds);
     const unsigned int numFixedEffects(m_data->numFixedEffects);
@@ -749,24 +765,26 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
 	init(M, N, numFixedEffects);
 	int marker; //Marker index
 
-	SampleWriter writer;
-    writer.setFileName(m_outputFile);
-	writer.setMarkerCount(M);
-	writer.setIndividualCount(N);
+    SampleWriter writer;
+    VectorXd sample(2*M+4); // variable containing a sample of all variables in the model: M marker effects, M mixture assignments, shape (alpha), mu, iteration number and sigma_b(sigma_g)
 
-	VectorXd sample(2*M+4); // variable containing a sample of all variables in the model: M marker effects, M mixture assignments, shape (alpha), mu, iteration number and sigma_b(sigma_g)
+    if (rank == 0) {
+        writer.setFileName(m_outputFile);
+        writer.setMarkerCount(M);
+        writer.setIndividualCount(N);
 
-	//If we have fixed effects, then record their number to samplewriter and create a different header
-	if(numFixedEffects > 0){
-		writer.setFixedCount(numFixedEffects);
-		writer.open_bayesW_fixed();
-		sample.resize(numFixedEffects+2*M+4); // all the rest + theta (fixed effects)
+        //If we have fixed effects, then record their number to samplewriter and create a different header
+        if(numFixedEffects > 0){
+            writer.setFixedCount(numFixedEffects);
+            writer.open_bayesW_fixed();
+            sample.resize(numFixedEffects+2*M+4); // all the rest + theta (fixed effects)
 
-	}else{
-		writer.open_bayesW();
-	}
+        }else{
+            writer.open_bayesW();
+        }
+    }
 
-	std::cout<< "Running Gibbs sampling" << endl;
+    std::cout << "Rank " << rank << " running Gibbs sampling..." << endl;
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
 	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
@@ -805,22 +823,26 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         m_pi_L = m_dist.dirichilet_rng(m_v.array());
 
 		// Write the result to file
-        if (iteration >= m_burn_in && iteration % m_thinning == 0) {
-			if(numFixedEffects > 0){
-                sample << iteration, m_alpha, m_mu, m_theta, m_beta,m_components.cast<double>(), m_sigma_b ;
-			}else{
-                sample << iteration, m_alpha, m_mu, m_beta,m_components.cast<double>(), m_sigma_b ;
-			}
-			writer.write(sample);
-		}
+        if (rank == 0) {
+            if (iteration >= m_burn_in && iteration % m_thinning == 0) {
+                if(numFixedEffects > 0){
+                    sample << iteration, m_alpha, m_mu, m_theta, m_beta,m_components.cast<double>(), m_sigma_b ;
+                }else{
+                    sample << iteration, m_alpha, m_mu, m_beta,m_components.cast<double>(), m_sigma_b ;
+                }
+                writer.write(sample);
+            }
 
-		//Print results
-        cout << iteration << ". " << M - m_v[0] +1 <<"; "<<m_v[1]-1 << "; "<<m_v[2]-1 << "; " << m_v[3]-1  <<"; " << m_alpha << "; " << m_sigma_b << endl;
+            //Print results
+            cout << iteration << ". " << M - m_v[0] +1 <<"; "<<m_v[1]-1 << "; "<<m_v[2]-1 << "; " << m_v[3]-1  <<"; " << m_alpha << "; " << m_sigma_b << endl;
+        }
 	}
 
-	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-	std::cout << "duration: "<<duration << "s\n";
+    if (rank == 0) {
+        std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        std::cout << "duration: "<<duration << "s\n";
+    }
 
     return 0;
 }
@@ -966,10 +988,31 @@ void BayesWBase::updateGlobal(const KernelPtr& kernel,
 
 void BayesWBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
 {
-    // TODO
+    assert(kernel);
+    assert(result);
+    (void) kernel; // Unused
+
+    std::unique_lock lock(m_accumulatorMutex);
+    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
 }
 
 void BayesWBase::updateMpi()
 {
-    // TODO
+#ifdef MPI_ENABLED
+    // Take a copy of the accumulated values
+    const auto localEpsilonDelta = m_accumulatedEpsilonDelta;
+
+    // MPI_Allreduce
+    MPI_Allreduce(localEpsilonDelta.data(), m_accumulatedEpsilonDelta.data(), m_data->numInds, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    // Subtract local accumulations for global
+    m_accumulatedEpsilonDelta -= localEpsilonDelta;
+
+    // Apply accumulations from other processes
+    *m_epsilon += m_accumulatedEpsilonDelta;
+    *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
+
+    // Reset local accumulated values
+    resetAccumulators();
+#endif
 }

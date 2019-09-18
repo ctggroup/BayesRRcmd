@@ -70,6 +70,10 @@ protected:
 
     mutable std::shared_mutex m_mutex;
 
+    // Accumulated values for MPI
+    VectorXd m_accumulatedEpsilonDelta;
+    mutable std::shared_mutex m_accumulatorMutex;
+
 public:
     BayesWBase(const Data *data, const Options *opt, const long m_memPageSize);
     virtual ~BayesWBase();
@@ -102,6 +106,8 @@ protected:
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;
+
+    virtual void resetAccumulators();
 };
 
 
