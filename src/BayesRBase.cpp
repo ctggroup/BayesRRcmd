@@ -162,18 +162,19 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     init(K, M, N);
 
     SampleWriter writer;
-    writer.setFileName(m_outputFile);
-    writer.setMarkerCount(M);
-    writer.setIndividualCount(N);
-    writer.setFixedCount(nF);
-    writer.openGroups(nGroups);
+    if (rank == 0) {
+        writer.setFileName(m_outputFile);
+        writer.setMarkerCount(M);
+        writer.setIndividualCount(N);
+        writer.setFixedCount(nF);
+        writer.openGroups(nGroups);
+    }
 
     LogWriter iterLogger;
     VectorXd  iterLog(10);
 
     if(m_showDebug)
     {
-
       iterLogger.setFileName(m_iterLogFile);
       iterLogger.open();
     }
@@ -294,10 +295,6 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
                 iterLogger.write(iterLog);
             }
         }
-
-#ifdef MPI_ENABLED
-//        MPI_Barrier(MPI_COMM_WORLD); // Required?
-#endif
     }
 
     if (rank == 0)
