@@ -1,8 +1,16 @@
 cmake_minimum_required(VERSION 3.1.3)
 
+add_custom_command ( OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h
+                     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/create-version.sh 
+                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+add_custom_target(
+  run ALL
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h
+)
+
 option(ENABLE_FLOW_GRAPH_TRACING "Enable flow graph tracing" OFF)
 option(ENABLE_UNIT_TESTS "Enable unit tests" OFF)
-option(ENABLE_FAST_OPTIMIZATONS "Enable more compiler optimizations" OFF)
+option(ENABLE_FAST_OPTIMIZATONS "Enable more compiler optimizations" ON)
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/eigen/Eigen/)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/eigen/)

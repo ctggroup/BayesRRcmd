@@ -3,6 +3,7 @@
 #include "analysisrunner.h"
 #include "gadgets.hpp"
 #include "options.hpp"
+#include "version.h"
 
 int main(int argc, const char * argv[]) {
 
@@ -26,7 +27,8 @@ int main(int argc, const char * argv[]) {
     try {
         Options options;
         options.inputOptions(argc, argv);
-
+        cout<<"Software version info: " << GIT_COMMIT << endl;
+	cout<<"Seed used: " << options.seed << endl;
         if (!AnalysisRunner::run(options))
             exit(1);
     }
