@@ -30,6 +30,7 @@ public:
     MpiContext() {
 #ifdef MPI_ENABLED
     MPI_Init(nullptr, nullptr);
+    MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI::ERRORS_THROW_EXCEPTIONS);
 #endif
     }
 
@@ -223,60 +224,90 @@ bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
 bool runBayesAnalysis(const Options &options) {
     MpiContext mpiContext;
 
-    Data data;
-    AnalysisRunner::readMetaData(data, options);
-
-    if (!options.validMarkerSubset(&data)) {
-        const auto first = options.markerSubset.first();
-        const auto last = options.markerSubset.last();
-        cerr << "Marker range " << first  << " to " << last << "is not valid!" << endl
-             << "Expected range is 0 to " << data.numSnps - 1 << endl;
-        return false;
-    }
-
-    const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
-    const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
-
-    cout << "Start reading preprocessed bed file: " << ppFile << endl;
-    clock_t start_bed = clock();
-    data.mapPreprocessBedFile(ppFile, ppIndexFile);
-    clock_t end = clock();
-    printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-    cout << endl;
-
-    std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
-    if (options.numThreadSpawned > 0)
-        taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
-
-    if (options.useMarkerCache) {
-        clock_t start_cache = clock();
-        markerCache()->populate(&data, &options);
-        clock_t end_cache = clock();
-        printf("Populated cache in %.3f sec.\n", double(end_cache - start_cache) / double(CLOCKS_PER_SEC));
-        cout << endl;
-    }
-
-    auto graph = AnalysisRunner::makeAnalysisGraph(options);
-
     bool result = false;
-    switch (options.analysisType) {
-    case AnalysisType::PpBayes:
-        // Fall through
-    case AnalysisType::AsyncPpBayes:
-        result = runBayesRAnalysis(&options, &data, graph.get());
-        break;
+    try {
+        Data data;
+        AnalysisRunner::readMetaData(data, options);
 
-    case AnalysisType::Gauss:
-        // Fall through
-    case AnalysisType::AsyncGauss:
-        result = runBayesWAnalysis(&options, &data, graph.get());
-        break;
+        if (!options.validMarkerSubset(&data)) {
+            const auto first = options.markerSubset.first();
+            const auto last = options.markerSubset.last();
+            cerr << "Marker range " << first  << " to " << last << "is not valid!" << endl
+                 << "Expected range is 0 to " << data.numSnps - 1 << endl;
+            return false;
+        }
 
-    default:
-        cerr << "Unsupported AnalysisType: runBayesAnalysis does not support"
-             << options.analysisType << endl;
+        const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
+        const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
+
+        cout << "Start reading preprocessed bed file: " << ppFile << endl;
+        clock_t start_bed = clock();
+        data.mapPreprocessBedFile(ppFile, ppIndexFile);
+        clock_t end = clock();
+        printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+        cout << endl;
+
+        std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
+        if (options.numThreadSpawned > 0)
+            taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
+
+        if (options.useMarkerCache) {
+            clock_t start_cache = clock();
+            markerCache()->populate(&data, &options);
+            clock_t end_cache = clock();
+            printf("Populated cache in %.3f sec.\n", double(end_cache - start_cache) / double(CLOCKS_PER_SEC));
+            cout << endl;
+        }
+
+        auto graph = AnalysisRunner::makeAnalysisGraph(options);
+
+        switch (options.analysisType) {
+        case AnalysisType::PpBayes:
+            // Fall through
+        case AnalysisType::AsyncPpBayes:
+            result = runBayesRAnalysis(&options, &data, graph.get());
+            break;
+
+        case AnalysisType::Gauss:
+            // Fall through
+        case AnalysisType::AsyncGauss:
+            result = runBayesWAnalysis(&options, &data, graph.get());
+            break;
+
+        default:
+            cerr << "Unsupported AnalysisType: runBayesAnalysis does not support"
+                 << options.analysisType << endl;
+            return false;
+        }
+    }
+    catch (const string &err_msg) {
+        cerr << endl << err_msg << endl;
+#ifdef MPI_ENABLED
+        MPI::COMM_WORLD.Abort(-1);
+#endif
         return false;
     }
+    catch (const char *err_msg) {
+        cerr << endl << err_msg << endl;
+#ifdef MPI_ENABLED
+        MPI::COMM_WORLD.Abort(-1);
+#endif
+        return false;
+    }
+    catch (const std::exception &e) {
+        cerr << endl << e.what() << endl;
+#ifdef MPI_ENABLED
+        MPI::COMM_WORLD.Abort(-1);
+#endif
+        return false;
+    }
+#ifdef MPI_ENABLED
+    catch (const MPI::Exception &e) {
+        cerr << endl << e.Get_error_string() << endl;
+        MPI::COMM_WORLD.Abort(e.Get_error_code());
+        return false;
+    }
+#endif
 
     return result;
 }
