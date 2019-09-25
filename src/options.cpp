@@ -2,11 +2,29 @@
 
 #include "data.hpp"
 
-#include <filesystem>
 #include <vector>
 #include <numeric>
 
 namespace fs = std::filesystem;
+
+#ifndef MAX_WRITE_ATTEMPTS
+#define MAX_WRITE_ATTEMPS 5
+#endif
+
+std::string randomString( size_t length )
+{
+    constexpr char charset[] =
+    "0123456789"
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz";
+    constexpr size_t max_index = sizeof(charset) - 1;
+
+    std::string str(length, 0);
+    std::generate_n(str.begin(), length, [&charset]() {
+        return charset[rand() % max_index];
+    });
+    return str;
+}
 
 AnalysisType parseAnalysisType(const std::string &type)
 {
@@ -235,6 +253,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             iterLogFile = argv[++i];
             ss << "--iterLog " << argv[i] << "\n";
         }
+        else if(!strcmp(argv[i], "--working-directory")) {
+            std::error_code ec;
+            workingDirectory = fs::directory_entry(argv[++i], ec);
+        }
 	else if (!strcmp(argv[i], "--colLog")) {
 	     colLog=true;
 	     colLogFile = argv[++i];
@@ -282,6 +304,9 @@ void Options::inputOptions(const int argc, const char* argv[]){
         break;
     }
 
+    populateWorkingDirectory();
+    ss << "--working-directory" << workingDirectory << "\n";
+
     cout << ss.str() << endl;
 }
 
@@ -296,6 +321,68 @@ std::vector<unsigned int> Options::getMarkerSubset(const Data *data) const
         return {};
 
     return markerSubset.toMarkerIndexList(data->numSnps);
+}
+
+bool Options::validWorkingDirectory() const
+{
+    // Local copy for non-const functions
+    fs::directory_entry dir(workingDirectory);
+    if (dir.path().empty()) {
+        std::cout << "Empty working directory!" << std::endl;
+        return false;
+    }
+
+    std::error_code ec;
+    if (!fs::exists(dir.path(), ec)) {
+        if (!fs::create_directories(dir.path(), ec)) {
+            std::cout << "Failed to create working directory: "
+                      << dir
+                      << "; error: " << ec.message()
+                      << std::endl;
+            return false;
+        }
+        dir.refresh();
+    }
+
+    if (!dir.is_directory()) {
+        std::cout << dir << " is not a directory!" << std::endl;
+        return false;
+    }
+
+    return canWriteToWorkingDirectory();
+}
+
+bool Options::canWriteToWorkingDirectory() const
+{
+    fs::path testFilePath = workingDirectory.path() / randomString(6);
+    std::error_code ec;
+    for (int i = 0; i < MAX_WRITE_ATTEMPS; ++i) {
+        if (fs::exists(testFilePath, ec)) {
+            if (i == MAX_WRITE_ATTEMPS - 1) {
+                std::cout << "Could not validate working directory "
+                          << workingDirectory << std::endl;
+                return false;
+            }
+            testFilePath = workingDirectory.path() / randomString(6);
+        } else {
+            break;
+        }
+    }
+
+    auto fp = std::fopen(testFilePath.c_str(), "w+");
+    if (fp == nullptr) {
+        if (errno == EACCES)
+            std::cout << "Working directory has incorrect permissions: "
+                      << workingDirectory << endl;
+        else
+            std::cout << "Could not write to: "
+                      << workingDirectory << ": " << strerror(errno) << endl;
+        return false;
+    }
+
+    std::fclose(fp);
+    fs::remove(testFilePath, ec);
+    return true;
 }
 
 void Options::readFile(const string &file){  // input options from file
@@ -350,4 +437,13 @@ void Options::makeTitle(void){
     if (pos != string::npos) {
         title = optionFile.substr(0,pos);
     }
+}
+
+void Options::populateWorkingDirectory()
+{
+    if (!workingDirectory.path().empty())
+        return;
+
+    fs::path dataPath(dataFile);
+    workingDirectory = fs::directory_entry(dataPath.parent_path());
 }

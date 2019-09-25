@@ -3,6 +3,8 @@
 #include "options.hpp"
 #include "data.hpp"
 
+namespace fs = std::filesystem;
+
 TEST(OptionsTest, VarianceFromCommandLine) {
     Options options;
 
@@ -238,5 +240,54 @@ TEST(OptionsTest, MarkerSubset) {
         const auto markers = options.getMarkerSubset(&data);
         ASSERT_EQ(25, markers.front());
         ASSERT_EQ(74, markers.back());
+    }
+}
+
+TEST(OptionsTest, WorkingDirectory) {
+    Options options;
+
+    constexpr const char* rootTestDir = "working-directory-test";
+    constexpr const char* testFile = "working-directory-test/file";
+    constexpr const char* testDir = "working-directory-test/dir";
+    constexpr const char* permissionsDir = "working-directory-test/permissionsDir";
+
+    if (fs::exists(rootTestDir))
+        ASSERT_TRUE(fs::remove_all(rootTestDir));
+
+    fs::create_directory(rootTestDir);
+    std::ofstream file(testFile); // create regular file
+    fs::create_directory(testDir);
+    fs::create_directory(permissionsDir);
+    fs::permissions(permissionsDir, fs::perms::owner_read);
+
+    {
+        options.workingDirectory = fs::directory_entry();
+        ASSERT_FALSE(options.validWorkingDirectory());
+    }
+
+    {
+        options.workingDirectory = fs::directory_entry(testFile);
+        ASSERT_FALSE(options.validWorkingDirectory());
+    }
+
+    {
+        options.workingDirectory = fs::directory_entry(testDir);
+        ASSERT_TRUE(options.validWorkingDirectory());
+    }
+
+    {
+        options.workingDirectory = fs::directory_entry("working-directory-test/new-dir");
+        ASSERT_TRUE(options.validWorkingDirectory());
+    }
+
+    {
+        options.workingDirectory = fs::directory_entry(permissionsDir);
+        ASSERT_FALSE(options.validWorkingDirectory());
+    }
+
+    {
+        std::error_code ec;
+        options.workingDirectory = fs::directory_entry("working-directory-test/permissionsDir/new-dir", ec);
+        ASSERT_FALSE(options.validWorkingDirectory());
     }
 }

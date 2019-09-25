@@ -14,6 +14,7 @@
 #include "common.h"
 #include <utility>
 #include "markersubset.h"
+#include <filesystem>
 
 using namespace std;
 using namespace boost;
@@ -64,6 +65,7 @@ public:
     bool useMarkerCache = false;
     MarkerSubset markerSubset = {0, 0}; // start, size
     bool useHybridMpi = false;
+    filesystem::directory_entry workingDirectory;
 
 
     double v0E  = 0.0001;
@@ -107,6 +109,10 @@ public:
 
     bool validMarkerSubset(const Data* data) const;
     std::vector<unsigned int> getMarkerSubset(const Data *data) const;
+
+    bool validWorkingDirectory() const;
+    bool canWriteToWorkingDirectory() const;
+    void populateWorkingDirectory();
 
 private:
     void readFile(const string &file);
