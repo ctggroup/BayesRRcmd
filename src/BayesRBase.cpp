@@ -220,7 +220,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
                       num_f += m_data->X(k, xI[i]) * (m_epsilon[k] + gamma_old * m_data->X(k, xI[i]));
 		    }
 		      denom_f = dNm1 + sigE_sigF;
-                      m_gamma(i) = m_dist.norm_rng(num_f/denom_f, m_sigmaE/denom_f);
+                      m_gamma(xI[i]) = m_dist.norm_rng(num_f/denom_f, m_sigmaE/denom_f);
                     
                     for (int k = 0; k<N ; k++) {
 		      m_epsilon[k] = m_epsilon[k] + (gamma_old - m_gamma(xI[i])) * m_data->X(k, xI[i]);                        
