@@ -47,11 +47,11 @@ protected:
     const unsigned int  m_maxIterations;
     const unsigned int  m_burnIn;
     const unsigned int  m_thinning;
-    const double        m_sigma0  = 0.0001;
-    const double        m_v0E     = 0.0001;
-    const double        m_s02E    = 0.0001;
-    const double        m_v0G     = 0.0001;
-    const double        m_s02G    = 0.0001;
+    const double        m_sigma0;
+    const double        m_v0E;
+    const double        m_s02E;
+    const double        m_v0G;
+    const double        m_s02G;
     MatrixXd            m_cva;
     Distributions_boost m_dist;
     bool m_showDebug;

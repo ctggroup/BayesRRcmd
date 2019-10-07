@@ -28,6 +28,10 @@ BayesRBase::BayesRBase(const Data *data, const Options *opt)
     , m_showDebug(opt->iterLog)
     , m_colLog(opt->colLog)
     , m_colLogFile(opt->colLogFile)
+    , m_v0E(opt->v0E)
+    , m_s02E(opt->s02E)
+    , m_v0G(opt->v0G)
+    , m_s02G(opt->s02G)
 {
     assert(m_data);
 }

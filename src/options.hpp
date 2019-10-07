@@ -58,6 +58,11 @@ public:
     bool colLog =false;
     bool useMarkerCache = false;
 
+
+    double v0E  = 0.0001;
+    double s02E = 0.0001;
+    double v0G  = 0.0001;
+    double s02G = 0.0001;
     Options(){
         chainLength             = 10000;
         burnin                  = 5000;
