@@ -236,6 +236,22 @@ void Options::inputOptions(const int argc, const char* argv[]){
             useMarkerCache = true;
             ss << "--marker-cache\n";
         }
+        else if(!strcmp(argv[i]), "--v0E"){
+	    v0E = static_cast<double>(atof(argv[++i]));
+	    ss << "--v0E" << argv[i] << "\n";
+	}
+	else if(!strcmp(argv[i]), "--s02E"){
+	    s02E = static_cast<double>(atof(argv[++i]));
+	    ss << "--s02E" << argv[i] << "\n";
+	}
+	else if(!strcmp(argv[i]), "--v0G"){
+	    v0G = static_cast<double>(atof(argv[++i]));
+	    ss << "--v0G" << argv[i] << "\n";
+	}
+	else if(!strcmp(argv[i]), "--s02G"){
+	   s02G = static_cast<double>(atof(argv[++i]));
+	    ss << "--s02G" << argv[i] << "\n";
+	}
         else {
             stringstream errmsg;
             errmsg << "\nError: invalid option \"" << argv[i] << "\".\n";
