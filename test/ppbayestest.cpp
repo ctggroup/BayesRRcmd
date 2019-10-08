@@ -206,7 +206,7 @@ class PpBayesBedGroups :
         public PpBayesBase,
         public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool>> {
 protected:
-    void SetUp() {
+    void SetUp() override {
         PpBayesBase::SetUp();
 
         const std::string testDataDir(GROUPS_TEST_DATA);
@@ -253,7 +253,7 @@ class PpBayesCsv :
         public PpBayesBase,
         public ::testing::WithParamInterface<std::tuple<AnalysisType, bool>> {
 protected:
-    void SetUp() {
+    void SetUp() override {
         PpBayesBase::SetUp();
 
         const std::string testDataDir(TEST_DATA);
