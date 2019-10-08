@@ -7,7 +7,7 @@
 
 namespace fs = std::filesystem;
 
-class PreprocessBed : public ::testing::TestWithParam<std::tuple<PreprocessDataType, bool>> {};
+class PreprocessBed : public ::testing::TestWithParam<std::tuple<PreprocessDataType, bool, fs::directory_entry>> {};
 
 TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     const auto params = GetParam();
@@ -16,13 +16,15 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     Options options;
     options.analysisType = AnalysisType::Preprocess;
     options.dataFile = testDataDir + "uk10k_chr1_1mb.bed";
-    options.populateWorkingDirectory();
     options.inputType = InputType::BED;
     options.phenotypeFile = testDataDir + "test.phen";
 
     // Set the test specific values
     options.preprocessDataType = std::get<0>(params);
     options.compress = std::get<1>(params);
+    options.workingDirectory = std::get<2>(params);
+    options.populateWorkingDirectory();
+    ASSERT_TRUE(options.validWorkingDirectory());
 
     // Clean up old files
     fs::path ppFile(ppFileForType(options));
@@ -51,21 +53,26 @@ INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                              ::testing::ValuesIn({PreprocessDataType::Dense,
                                                   PreprocessDataType::SparseEigen,
                                                   PreprocessDataType::SparseRagged}),
-                             ::testing::Bool()));
+                             ::testing::Bool(), // compress
+                             ::testing::ValuesIn({fs::directory_entry(),
+                                                  fs::directory_entry(WORKING_DIRECTORY)})));
 
-class PreprocessCsvDense : public ::testing::TestWithParam<bool> {};
+class PreprocessCsvDense : public ::testing::TestWithParam<std::tuple<bool, fs::directory_entry>> {};
 
 TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
     const std::string testDataDir(TEST_DATA);
     Options options;
     options.analysisType = AnalysisType::Preprocess;
     options.dataFile = testDataDir + "small_test.csv";
-    options.populateWorkingDirectory();
     options.inputType = InputType::CSV;
     options.phenotypeFile = testDataDir + "small_test.phencsv";
 
     // Set the test specific values
-    options.compress = GetParam();
+    const auto params = GetParam();
+    options.compress = std::get<0>(params);
+    options.workingDirectory = std::get<1>(params);
+    options.populateWorkingDirectory();
+    ASSERT_TRUE(options.validWorkingDirectory());
 
     // Clean up old files
     fs::path ppFile(ppFileForType(options));
@@ -90,9 +97,12 @@ TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
 
 INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                          PreprocessCsvDense,
-                         ::testing::Bool());
+                         ::testing::Combine(
+                             ::testing::Bool(), // compress
+                             ::testing::ValuesIn({fs::directory_entry(),
+                                                  fs::directory_entry(WORKING_DIRECTORY)})));
 
-class PreprocessCsvSparse : public ::testing::TestWithParam<PreprocessDataType> {};
+class PreprocessCsvSparse : public ::testing::TestWithParam<std::tuple<PreprocessDataType, fs::directory_entry>> {};
 
 TEST_P(PreprocessCsvSparse, ExpectingFailureForSparseDataTypes) {
     const std::string testDataDir(TEST_DATA);
@@ -104,7 +114,11 @@ TEST_P(PreprocessCsvSparse, ExpectingFailureForSparseDataTypes) {
     options.phenotypeFile = testDataDir + "test.csvphen";
 
     // Set the test specific values
-    options.preprocessDataType = GetParam();
+    const auto params = GetParam();
+    options.preprocessDataType = std::get<0>(params);
+    options.workingDirectory = std::get<1>(params);
+    options.populateWorkingDirectory();
+    ASSERT_TRUE(options.validWorkingDirectory());
 
     // Preprocess
     ASSERT_FALSE(AnalysisRunner::run(options)) << "Sparse preprocess data types should not be supported with CSV data";
@@ -112,8 +126,11 @@ TEST_P(PreprocessCsvSparse, ExpectingFailureForSparseDataTypes) {
 
 INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                          PreprocessCsvSparse,
-                         ::testing::ValuesIn({PreprocessDataType::SparseEigen,
-                                              PreprocessDataType::SparseRagged}));
+                         ::testing::Combine(
+                             ::testing::ValuesIn({PreprocessDataType::SparseEigen,
+                                                  PreprocessDataType::SparseRagged}),
+                             ::testing::ValuesIn({fs::directory_entry(),
+                                                  fs::directory_entry(WORKING_DIRECTORY)})));
 
 class PpBayesBase : public ::testing::Test {
 protected:
