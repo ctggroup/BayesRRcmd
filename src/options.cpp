@@ -117,6 +117,7 @@ MatrixXd Options::parseVarianceComponents(const std::string &arg)
 
 void Options::inputOptions(const int argc, const char* argv[]){
     stringstream ss;
+    bool workingDirectorProvided = false;
     for (unsigned i=1; i<argc; ++i) {
         if (!strcmp(argv[i], "--inp-file")) {
             optionFile = argv[++i];
@@ -255,8 +256,16 @@ void Options::inputOptions(const int argc, const char* argv[]){
             ss << "--iterLog " << argv[i] << "\n";
         }
         else if(!strcmp(argv[i], "--working-directory")) {
-            std::error_code ec;
-            workingDirectory = fs::directory_entry(argv[++i], ec);
+            workingDirectorProvided = true;
+            fs::path path(argv[++i]);
+            if (validateDirectory(path)) {
+                workingDirectory = fs::directory_entry(path);
+                populateWorkingDirectory();
+                ss << "--working-directory" << workingDirectory << "\n";
+            } else {
+                ss << "\nCould not validate working directory: " << path << "\n";
+                break;
+            }
         }
 	else if (!strcmp(argv[i], "--colLog")) {
 	     colLog=true;
@@ -305,8 +314,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
         break;
     }
 
-    populateWorkingDirectory();
-    ss << "--working-directory" << workingDirectory << "\n";
+    if (!workingDirectorProvided) {
+        populateWorkingDirectory();
+        ss << "--working-directory" << workingDirectory << "\n";
+    }
 
     cout << ss.str() << endl;
 }
@@ -400,24 +411,23 @@ void Options::populateWorkingDirectory()
 
 bool validateDirectory(const fs::path &path)
 {
-    fs::directory_entry directory(path);
-    if (directory.path().empty()) {
+    if (path.empty()) {
         std::cout << "Empty working directory!" << std::endl;
         return false;
     }
 
     std::error_code ec;
-    if (!fs::exists(directory.path(), ec)) {
-        if (!fs::create_directories(directory.path(), ec)) {
+    if (!fs::exists(path, ec)) {
+        if (!fs::create_directories(path, ec)) {
             std::cout << "Failed to create directory: "
-                      << directory
+                      << path
                       << "; error: " << ec.message()
                       << std::endl;
             return false;
         }
-        directory.refresh();
     }
 
+    fs::directory_entry directory(path);
     if (!directory.is_directory()) {
         std::cout << directory << " is not a directory!" << std::endl;
         return false;
