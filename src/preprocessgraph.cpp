@@ -2,6 +2,7 @@
 
 #include "marker.h"
 #include "markerbuilder.h"
+#include "options.hpp"
 
 PreprocessGraph::PreprocessGraph(size_t maxParallel)
     : m_maxParallel(maxParallel)
@@ -149,23 +150,19 @@ PreprocessGraph::~PreprocessGraph()
     m_graph->wait_for_all();
 }
 
-void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
-                                        const PreprocessDataType type,
-                                        const bool compress,
-                                        const Data *data,
-                                        const size_t chunkSize)
+void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data)
 {
     // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
     m_graph->reset();
     m_position = 0;
 
     // Verify prerequisites and BED file
-    cout << "Preprocessing bed file: " << type << ", Compress data = " << (compress ? "yes" : "no") << endl;
+    cout << "Preprocessing bed file: " << options.preprocessDataType << ", Compress data = " << (options.compress ? "yes" : "no") << endl;
     if (!data) {
         cerr << "Error: Cannot preprocess data with invalid Data*" << endl;
         return;
     }
-    if (chunkSize < 1) {
+    if (options.preprocessChunks < 1) {
         cerr << "Error: chunkSize must be at least 1" << endl;
         return;
     }
@@ -178,24 +175,24 @@ void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
         return;
     }
 
-    const auto ppFile = ppFileForType(type, dataFile);
-    const auto ppIndexFile = ppIndexFileForType(type, dataFile);
+    const auto ppFile = ppFileForType(options);
+    const auto ppIndexFile = ppIndexFileForType(options);
 
     if (ppFile.empty() || ppIndexFile.empty())
         return;
 
-    ifstream inStream(dataFile.c_str(), ios::binary);
+    ifstream inStream(options.dataFile.c_str(), ios::binary);
     if (!inStream) {
-        cerr << "Error: can not open the file [" + dataFile + "] to read." << endl;
+        cerr << "Error: can not open the file [" + options.dataFile + "] to read." << endl;
         return;
     }
 
-    cout << "Reading PLINK BED file from [" + dataFile + "] in SNP-major format ..." << endl;
+    cout << "Reading PLINK BED file from [" + options.dataFile + "] in SNP-major format ..." << endl;
 
     char header[3];
     inStream.read(header, 3);
     if (!inStream || header[0] != 0x6c || header[1] != 0x1b || header[2] != 0x01) {
-        cerr << "Error: Incorrect first three bytes of bed file: " << type << endl;
+        cerr << "Error: Incorrect first three bytes of bed file: " << options.preprocessDataType << endl;
         return;
     }
 
@@ -212,18 +209,18 @@ void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
     }
 
     size_t msgId = 0;
-    for (streamsize snp = 0; snp < data->numSnps; snp += chunkSize, ++msgId) {
+    for (streamsize snp = 0; snp < data->numSnps; snp += options.preprocessChunks, ++msgId) {
 
         Message msg {
-            type,
+            options.preprocessDataType,
             msgId,
             snp,
-            chunkSize,
-            compress,
-            dataFile,
+            options.preprocessChunks,
+            options.compress,
+            options.dataFile,
             data,
-            {chunkSize, nullptr}, // snpData
-            {chunkSize, {nullptr, 0}}, // compressedData
+            {options.preprocessChunks, nullptr}, // snpData
+            {options.preprocessChunks, {nullptr, 0}}, // compressedData
         };
 
         m_ordering->try_put(msg);
@@ -237,7 +234,7 @@ void PreprocessGraph::preprocessBedFile(const std::string &dataFile,
 
     // Clean up
     m_output.reset();
-    if (compress)
+    if (options.compress)
         m_indexOutput.reset();
 
     cout << "Finished reading PLINK BED file." << endl;

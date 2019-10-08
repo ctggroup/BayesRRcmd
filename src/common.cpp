@@ -70,52 +70,6 @@ std::string fileWithSuffix(const std::string &dataFile, const std::string &suffi
     return fileWithoutExtension(dataFile) + suffix;
 }
 
-std::string ppFileForType(PreprocessDataType type, const std::string &dataFile)
-{
-    const auto fileName = fileWithoutExtension(dataFile);
-
-    switch (type) {
-    case PreprocessDataType::Dense:
-        return fileName + ".ppbed";
-
-    case PreprocessDataType::SparseEigen:
-        return fileName +  ".eigen.sparsebed";
-
-    case PreprocessDataType::SparseRagged:
-        return fileName +  ".ragged.sparsebed";
-
-    default:
-        std::cerr << "ppFileForType - unsupported DataType: "
-             << type
-             << std::endl;
-        assert(false);
-        return {};
-    }
-}
-
-std::string ppIndexFileForType(PreprocessDataType type, const std::string &dataFile)
-{
-    const auto fileName = fileWithoutExtension(dataFile);
-
-    switch (type) {
-    case PreprocessDataType::Dense:
-        return fileName +  ".ppbedindex";
-
-    case PreprocessDataType::SparseEigen:
-        return fileName +  ".eigen.sparsebedindex";
-
-    case PreprocessDataType::SparseRagged:
-        return fileName + ".ragged.sparsebedindex";
-
-    default:
-        std::cerr << "ppIndexFileForType - unsupported DataType: "
-             << type
-             << std::endl;
-        assert(false);
-        return {};
-    }
-}
-
 InputType getInputType(const std::string &dataFile)
 {
     auto endsWith = [](std::string const & value, std::string const & ending)

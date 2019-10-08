@@ -53,6 +53,7 @@ protected:
 
         const std::string testDataDir(GAUSS_TEST_DATA);
         options.dataFile = testDataDir + "data.bed";
+        options.populateWorkingDirectory();
         options.inputType = InputType::BED;
         options.failureFile = testDataDir + "data.fail";
         options.quad_points = "7";

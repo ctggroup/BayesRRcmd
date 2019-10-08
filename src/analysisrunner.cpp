@@ -61,11 +61,7 @@ bool preprocessBed(const Options &options) {
     AnalysisRunner::readMetaData(data, options);
 
     PreprocessGraph graph(options.numThread);
-    graph.preprocessBedFile(options.dataFile,
-                            options.preprocessDataType,
-                            options.compress,
-                            &data,
-                            options.preprocessChunks);
+    graph.preprocessBedFile(options, &data);
 
     clock_t end = clock();
     printf("Finished preprocessing the bed file in %.3f sec.\n\n",
@@ -90,8 +86,8 @@ bool preprocessCsv(const Options &options) {
     Data data;
     AnalysisRunner::readMetaData(data, options);
 
-    const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
-    const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
+    const auto ppFile = ppFileForType(options);
+    const auto ppIndexFile = ppIndexFileForType(options);
     data.preprocessCSVFile(options.dataFile, ppFile, ppIndexFile, options.compress);
 
     clock_t end = clock();
@@ -237,8 +233,8 @@ bool runBayesAnalysis(const Options &options) {
             return false;
         }
 
-        const auto ppFile = ppFileForType(options.preprocessDataType, options.dataFile);
-        const auto ppIndexFile = ppIndexFileForType(options.preprocessDataType, options.dataFile);
+        const auto ppFile = ppFileForType(options);
+        const auto ppIndexFile = ppIndexFileForType(options);
 
         cout << "Start reading preprocessed bed file: " << ppFile << endl;
         clock_t start_bed = clock();
@@ -380,6 +376,10 @@ bool run(const Options &options)
 {
     if (options.inputType == InputType::Unknown) {
         cerr << "Unknown --datafile type: '" << options.dataFile << "'" << endl;
+        return false;
+    }
+
+    if (!options.validWorkingDirectory()) {
         return false;
     }
 

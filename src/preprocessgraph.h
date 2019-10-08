@@ -14,17 +14,16 @@
 
 using namespace tbb::flow;
 
+class Options;
+
 class PreprocessGraph
 {
 public:
     explicit PreprocessGraph(size_t maxParallel);
     ~PreprocessGraph();
 
-    void preprocessBedFile(const std::string &dataFile,
-                           const PreprocessDataType type,
-                           const bool compress,
-                           const Data *data,
-                           const size_t chunkSize);
+    void preprocessBedFile(const Options &options,
+                           const Data *data);
 
 protected:
     struct Message {

@@ -290,4 +290,10 @@ TEST(OptionsTest, WorkingDirectory) {
         options.workingDirectory = fs::directory_entry("working-directory-test/permissionsDir/new-dir", ec);
         ASSERT_FALSE(options.validWorkingDirectory());
     }
+
+    {
+        options.dataFile = testFile;
+        options.populateWorkingDirectory();
+        ASSERT_TRUE(options.validWorkingDirectory());
+    }
 }

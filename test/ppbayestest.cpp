@@ -16,6 +16,7 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     Options options;
     options.analysisType = AnalysisType::Preprocess;
     options.dataFile = testDataDir + "uk10k_chr1_1mb.bed";
+    options.populateWorkingDirectory();
     options.inputType = InputType::BED;
     options.phenotypeFile = testDataDir + "test.phen";
 
@@ -24,12 +25,12 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     options.compress = std::get<1>(params);
 
     // Clean up old files
-    fs::path ppFile(ppFileForType(options.preprocessDataType, options.dataFile));
+    fs::path ppFile(ppFileForType(options));
     std::error_code ec;
     if (fs::exists(ppFile))
         ASSERT_TRUE(fs::remove(ppFile, ec)) << ec.message();
 
-    fs::path ppIndexFile(ppIndexFileForType(options.preprocessDataType, options.dataFile));
+    fs::path ppIndexFile(ppIndexFileForType(options));
     if (fs::exists(ppIndexFile))
         ASSERT_TRUE(fs::remove(ppIndexFile, ec)) << ec.message();
 
@@ -59,6 +60,7 @@ TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
     Options options;
     options.analysisType = AnalysisType::Preprocess;
     options.dataFile = testDataDir + "small_test.csv";
+    options.populateWorkingDirectory();
     options.inputType = InputType::CSV;
     options.phenotypeFile = testDataDir + "small_test.phencsv";
 
@@ -66,12 +68,12 @@ TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
     options.compress = GetParam();
 
     // Clean up old files
-    fs::path ppFile(ppFileForType(options.preprocessDataType, options.dataFile));
+    fs::path ppFile(ppFileForType(options));
     std::error_code ec;
     if (fs::exists(ppFile))
         ASSERT_TRUE(fs::remove(ppFile, ec)) << ec.message();
 
-    fs::path ppIndexFile(ppIndexFileForType(options.preprocessDataType, options.dataFile));
+    fs::path ppIndexFile(ppIndexFileForType(options));
     if (fs::exists(ppIndexFile))
         ASSERT_TRUE(fs::remove(ppIndexFile, ec)) << ec.message();
 
@@ -97,6 +99,7 @@ TEST_P(PreprocessCsvSparse, ExpectingFailureForSparseDataTypes) {
     Options options;
     options.analysisType = AnalysisType::Preprocess;
     options.dataFile = testDataDir + "uk10k_chr1_1mb_transpose.csv";
+    options.populateWorkingDirectory();
     options.inputType = InputType::CSV;
     options.phenotypeFile = testDataDir + "test.csvphen";
 
@@ -158,6 +161,7 @@ protected:
 
         const std::string testDataDir(TEST_DATA);
         options.dataFile = testDataDir + "uk10k_chr1_1mb.bed";
+        options.populateWorkingDirectory();
         options.inputType = InputType::BED;
         options.phenotypeFile = testDataDir + "test.phen";
     }
@@ -207,6 +211,7 @@ protected:
 
         const std::string testDataDir(GROUPS_TEST_DATA);
         options.dataFile = testDataDir + "uk10k_chr1_1mb.bed";
+        options.populateWorkingDirectory();
         options.inputType = InputType::BED;
         options.phenotypeFile = testDataDir + "test.phen";
         options.groupFile = testDataDir + "test.group";
@@ -253,6 +258,7 @@ protected:
 
         const std::string testDataDir(TEST_DATA);
         options.dataFile = testDataDir + "small_test.csv";
+        options.populateWorkingDirectory();
         options.inputType = InputType::CSV;
         options.phenotypeFile = testDataDir + "small_test.phencsv";
     }

@@ -34,7 +34,7 @@ unsigned char* Analysis::compressedData() const
 
 std::string Analysis::preprocessedFile() const
 {
-    return ppFileForType(m_opt->preprocessDataType, m_opt->dataFile);
+    return ppFileForType(*m_opt);
 }
 
 int Analysis::runGibbs(AnalysisGraph *analysis)

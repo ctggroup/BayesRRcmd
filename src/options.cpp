@@ -1,5 +1,6 @@
 #include "options.hpp"
 
+#include "common.h"
 #include "data.hpp"
 
 #include <vector>
@@ -441,9 +442,79 @@ void Options::makeTitle(void){
 
 void Options::populateWorkingDirectory()
 {
-    if (!workingDirectory.path().empty())
-        return;
+    auto path = workingDirectory.path();
+    if (path.empty())
+        path = fs::path(dataFile).parent_path();
 
-    fs::path dataPath(dataFile);
-    workingDirectory = fs::directory_entry(dataPath.parent_path());
+    std::error_code ec;
+    const auto canonicalPath = fs::canonical(path, ec);
+    workingDirectory = fs::directory_entry(canonicalPath, ec);
+}
+
+string ppFileForType(const Options &options)
+{
+    std::string extension;
+    switch (options.preprocessDataType) {
+    case PreprocessDataType::Dense:
+    {
+        extension = ".ppbed";
+        break;
+    }
+
+    case PreprocessDataType::SparseEigen:
+    {
+        extension = ".eigen.sparsebed";
+        break;
+    }
+
+    case PreprocessDataType::SparseRagged:
+    {
+        extension = ".ragged.sparsebed";
+        break;
+    }
+
+    default:
+        std::cerr << "ppFileForType - unsupported DataType: "
+             << options.preprocessDataType
+             << std::endl;
+        assert(false);
+        return {};
+    }
+
+    const fs::path dataPath(options.dataFile);
+    return options.workingDirectory / dataPath.stem().concat(extension);
+}
+
+std::string ppIndexFileForType(const Options &options)
+{
+    std::string extension;
+    switch (options.preprocessDataType) {
+    case PreprocessDataType::Dense:
+    {
+        extension =  ".ppbedindex";
+        break;
+    }
+
+    case PreprocessDataType::SparseEigen:
+    {
+        extension =  ".eigen.sparsebedindex";
+        break;
+    }
+
+    case PreprocessDataType::SparseRagged:
+    {
+        extension = ".ragged.sparsebedindex";
+        break;
+    }
+
+    default:
+        std::cerr << "ppIndexFileForType - unsupported DataType: "
+             << options.preprocessDataType
+             << std::endl;
+        assert(false);
+        return {};
+    }
+
+    const fs::path dataPath(options.dataFile);
+    return options.workingDirectory / dataPath.stem().concat(extension);
 }

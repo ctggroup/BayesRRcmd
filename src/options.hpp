@@ -120,4 +120,7 @@ private:
     void seedEngine(void);
 };
 
+std::string ppFileForType(const Options &options);
+std::string ppIndexFileForType(const Options &options);
+
 #endif /* options_hpp */

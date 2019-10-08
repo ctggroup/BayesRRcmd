@@ -36,7 +36,7 @@ void MarkerCache::populate(const Data *data, const Options *options)
         if (options->compress) {
             builder->decompress(reinterpret_cast<unsigned char*>(data->ppBedMap), index);
         } else {
-            builder->read(ppFileForType(options->preprocessDataType, options->dataFile), index);
+            builder->read(ppFileForType(*options), index);
         }
         marker = builder->build();
         ++snp;

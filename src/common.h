@@ -49,9 +49,6 @@ MarkerBuilder* builderForType(const PreprocessDataType type);
 
 std::string fileWithSuffix(const std::string &dataFile, const std::string &suffix);
 
-std::string ppFileForType(PreprocessDataType type, const std::string &dataFile);
-std::string ppIndexFileForType(PreprocessDataType type, const std::string &dataFile);
-
 InputType getInputType(const std::string &dataFile);
 
 // An entry for the index to the compressed preprocessed bed file
