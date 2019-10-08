@@ -111,7 +111,6 @@ public:
     std::vector<unsigned int> getMarkerSubset(const Data *data) const;
 
     bool validWorkingDirectory() const;
-    bool canWriteToWorkingDirectory() const;
     void populateWorkingDirectory();
 
 private:
@@ -119,6 +118,9 @@ private:
     void makeTitle(void);
     void seedEngine(void);
 };
+
+bool validateDirectory(const filesystem::path &path);
+bool canWriteToDirectory(const filesystem::path &path);
 
 std::string ppFileForType(const Options &options);
 std::string ppIndexFileForType(const Options &options);

@@ -328,62 +328,7 @@ bool Options::validWorkingDirectory() const
 {
     // Local copy for non-const functions
     fs::directory_entry dir(workingDirectory);
-    if (dir.path().empty()) {
-        std::cout << "Empty working directory!" << std::endl;
-        return false;
-    }
-
-    std::error_code ec;
-    if (!fs::exists(dir.path(), ec)) {
-        if (!fs::create_directories(dir.path(), ec)) {
-            std::cout << "Failed to create working directory: "
-                      << dir
-                      << "; error: " << ec.message()
-                      << std::endl;
-            return false;
-        }
-        dir.refresh();
-    }
-
-    if (!dir.is_directory()) {
-        std::cout << dir << " is not a directory!" << std::endl;
-        return false;
-    }
-
-    return canWriteToWorkingDirectory();
-}
-
-bool Options::canWriteToWorkingDirectory() const
-{
-    fs::path testFilePath = workingDirectory.path() / randomString(6);
-    std::error_code ec;
-    for (int i = 0; i < MAX_WRITE_ATTEMPS; ++i) {
-        if (fs::exists(testFilePath, ec)) {
-            if (i == MAX_WRITE_ATTEMPS - 1) {
-                std::cout << "Could not validate working directory "
-                          << workingDirectory << std::endl;
-                return false;
-            }
-            testFilePath = workingDirectory.path() / randomString(6);
-        } else {
-            break;
-        }
-    }
-
-    auto fp = std::fopen(testFilePath.c_str(), "w+");
-    if (fp == nullptr) {
-        if (errno == EACCES)
-            std::cout << "Working directory has incorrect permissions: "
-                      << workingDirectory << endl;
-        else
-            std::cout << "Could not write to: "
-                      << workingDirectory << ": " << strerror(errno) << endl;
-        return false;
-    }
-
-    std::fclose(fp);
-    fs::remove(testFilePath, ec);
-    return true;
+    return validateDirectory(dir);
 }
 
 void Options::readFile(const string &file){  // input options from file
@@ -446,9 +391,73 @@ void Options::populateWorkingDirectory()
     if (path.empty())
         path = fs::path(dataFile).parent_path();
 
+    validateDirectory(path);
+
     std::error_code ec;
     const auto canonicalPath = fs::canonical(path, ec);
     workingDirectory = fs::directory_entry(canonicalPath, ec);
+}
+
+bool validateDirectory(const fs::path &path)
+{
+    fs::directory_entry directory(path);
+    if (directory.path().empty()) {
+        std::cout << "Empty working directory!" << std::endl;
+        return false;
+    }
+
+    std::error_code ec;
+    if (!fs::exists(directory.path(), ec)) {
+        if (!fs::create_directories(directory.path(), ec)) {
+            std::cout << "Failed to create directory: "
+                      << directory
+                      << "; error: " << ec.message()
+                      << std::endl;
+            return false;
+        }
+        directory.refresh();
+    }
+
+    if (!directory.is_directory()) {
+        std::cout << directory << " is not a directory!" << std::endl;
+        return false;
+    }
+
+    return canWriteToDirectory(directory);
+}
+
+bool canWriteToDirectory(const fs::path &path)
+{
+    fs::directory_entry directory(path);
+    fs::path testFilePath = directory.path() / randomString(6);
+    std::error_code ec;
+    for (int i = 0; i < MAX_WRITE_ATTEMPS; ++i) {
+        if (fs::exists(testFilePath, ec)) {
+            if (i == MAX_WRITE_ATTEMPS - 1) {
+                std::cout << "Could not validate directory "
+                          << directory << std::endl;
+                return false;
+            }
+            testFilePath = directory.path() / randomString(6);
+        } else {
+            break;
+        }
+    }
+
+    auto fp = std::fopen(testFilePath.c_str(), "w+");
+    if (fp == nullptr) {
+        if (errno == EACCES)
+            std::cout << "Directory has incorrect permissions: "
+                      << directory << endl;
+        else
+            std::cout << "Could not write to: "
+                      << directory << ": " << strerror(errno) << endl;
+        return false;
+    }
+
+    std::fclose(fp);
+    fs::remove(testFilePath, ec);
+    return true;
 }
 
 string ppFileForType(const Options &options)
