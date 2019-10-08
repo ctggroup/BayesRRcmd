@@ -103,6 +103,10 @@ void SampleWriter::openGroups(int numberGroups)
         m_outFile << "comp[" << (i+1) << "],";
     }
 
+    for (unsigned int i = 0; i < m_markerCount; ++i) {
+        m_outFile << "acum[" << (i+1) << "],";
+    }
+
     unsigned int i;
     for (i = 0; i < (m_individualCount - 1); ++i) {
         m_outFile << "epsilon[" << (i + 1) << "],";

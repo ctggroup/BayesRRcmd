@@ -69,7 +69,8 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_y_tilde = VectorXd::Zero(individualCount);    // variable containing the adjusted residuals to exclude the effects of a given marker
     m_epsilon = VectorXd(individualCount);    // variable containing the residuals
     m_betasqnG = VectorXd(groupCount);
-
+    //acum values
+    m_acum = VectorXd::Zero(markerCount);           // acum vector
     m_y = VectorXd();
     //Cx = VectorXd();
 
@@ -161,7 +162,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
     }
 
     // Sampler variables
-    VectorXd sample(2*M+3+nGroups+nF+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, sigmaE, sigmaG, mu, iteration number and Explained variance
+    VectorXd sample(3*M+3+nGroups+nF+N); // varible containg a sambple of all variables in the model, M marker effects, M component assigned to markers, M acum values, sigmaE, sigmaG, mu, iteration number and Explained variance
     std::vector<unsigned int> markerI(M);
     std::iota(markerI.begin(), markerI.end(), 0);
 
@@ -247,7 +248,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
     if (iteration >= m_burnIn && iteration % m_thinning == 0) {
-            sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_epsilon;
+            sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_acum, m_epsilon;
             writer.write(sample);
         }
 
@@ -337,6 +338,8 @@ void BayesRBase::processColumn(const KernelPtr &kernel)
         acum = 1.0 / ((logL.array() - logL[0]).exp().sum());
     }
 
+    m_acum(bayesKernel->marker->i) = acum;
+    
     const double p = m_randomNumbers.at(kernel->marker->i).at(PIndex);
     const double randomNorm = m_randomNumbers.at(kernel->marker->i).at(RandomNormIndex);
 
@@ -541,3 +544,4 @@ void BayesRBase::printGlobalDebugInfo()const
   cout << "betasqn_update"
 }
 */
+

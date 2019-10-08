@@ -77,6 +77,7 @@ protected:
 
     // Linear model variables
     VectorXd m_beta;       // effect sizes
+    VectorXd m_acum;       // acum values, posterior inclusion probabilities per locus
     VectorXd m_y_tilde;    // variable containing the adjusted residuals to exclude the effects of a given marker
     VectorXd m_epsilon;    // variable containing the residuals
     VectorXd m_betasqnG;
