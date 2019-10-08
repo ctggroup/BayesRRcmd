@@ -297,3 +297,79 @@ TEST(OptionsTest, WorkingDirectory) {
         ASSERT_TRUE(options.validWorkingDirectory());
     }
 }
+
+TEST(OptionsTest, WorkingDirectoryCommandLine) {
+    Options options;
+
+    constexpr const char* rootTestDir = "working-directory-test";
+    constexpr const char* testFile = "working-directory-test/file";
+    constexpr const char* testDir = "working-directory-test/dir";
+    constexpr const char* permissionsDir = "working-directory-test/permissionsDir";
+
+    if (fs::exists(rootTestDir))
+        ASSERT_TRUE(fs::remove_all(rootTestDir));
+
+    fs::create_directory(rootTestDir);
+    std::ofstream file(testFile); // create regular file
+    fs::create_directory(testDir);
+    fs::create_directory(permissionsDir);
+    fs::permissions(permissionsDir, fs::perms::owner_read);
+
+    {
+        const char *argv[] = {"test", "--working-directory", ""};
+
+        options.workingDirectory = fs::directory_entry();
+        options.inputOptions(3, argv);
+        ASSERT_STREQ("", options.workingDirectory.path().c_str());
+    }
+
+    {
+        const char *argv[] = {"test", "--working-directory", testFile};
+
+        options.workingDirectory = fs::directory_entry();
+        options.inputOptions(3, argv);
+        ASSERT_STREQ("", options.workingDirectory.path().c_str());
+    }
+
+    {
+        const char *argv[] = {"test", "--working-directory", testDir};
+
+        options.workingDirectory = fs::directory_entry();
+        options.inputOptions(3, argv);
+        ASSERT_STREQ(fs::canonical(testDir).c_str(), options.workingDirectory.path().c_str());
+    }
+
+    {
+        constexpr const char* newDir = "working-directory-test/new-dir";
+        const char *argv[] = {"test", "--working-directory", newDir};
+
+        options.workingDirectory = fs::directory_entry();
+        options.inputOptions(3, argv);
+        fs::path expected = fs::canonical(rootTestDir) / "new-dir";
+        ASSERT_STREQ(expected.c_str(), options.workingDirectory.path().c_str());
+    }
+
+    {
+        const char *argv[] = {"test", "--working-directory", permissionsDir};
+
+        options.workingDirectory = fs::directory_entry();
+        options.inputOptions(3, argv);
+        ASSERT_STREQ("", options.workingDirectory.path().c_str());
+    }
+
+    {
+        const char *argv[] = {"test", "--working-directory", "working-directory-test/permissionsDir/new-dir"};
+
+        options.workingDirectory = fs::directory_entry();
+        options.inputOptions(3, argv);
+        ASSERT_STREQ("", options.workingDirectory.path().c_str());
+    }
+
+    {
+        const char *argv[] = {"test", "--data-file", testFile};
+
+        options.workingDirectory = fs::directory_entry();
+        options.inputOptions(3, argv);
+        ASSERT_STREQ(fs::canonical(rootTestDir).c_str(), options.workingDirectory.path().c_str());
+    }
+}
