@@ -15,7 +15,7 @@ protected:
         const std::string testResults(TEST_RESULTS);
 
         options.analysisType = AnalysisType::Preprocess;
-        options.chainLength = 10;
+        options.chainLength = 5;
         options.burnin = 0;
         options.thin = 1;
         options.mcmcSampleFile = testResults + "bayesw_output.csv";
