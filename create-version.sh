@@ -1,4 +1,4 @@
-branch=$(git branch)
+branch=$(git rev-parse --abbrev-ref HEAD)
 ver=$(git describe --always) 
 echo "
 #ifndef VERSION_H
