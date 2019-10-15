@@ -34,9 +34,18 @@ void Data::mapPreprocessBedFile(const string &preprocessedBedFile,
     indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
                      numSnps * 3 * sizeof(unsigned long));
 
+    const auto findItr = std::find_if(ppbedIndex.rbegin(), ppbedIndex.rend(), [](const IndexEntry& index) {
+        return index.pos > 0;
+    });
+
+    if (findItr == ppbedIndex.rend())
+        throw("Error: Failed to find last valid index");
+
+    const auto lastIndex = *findItr;
+
     // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
     // that we would otherwise get as intermediate variables!
-    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
+    const size_t ppBedSize = size_t(lastIndex.pos + lastIndex.compressedSize);
 
     // Open and mmap the preprocessed bed file
     ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);

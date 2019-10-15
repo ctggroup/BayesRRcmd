@@ -150,7 +150,7 @@ PreprocessGraph::~PreprocessGraph()
     m_graph->wait_for_all();
 }
 
-void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data)
+void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data, const std::vector<unsigned int> &markers)
 {
     // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
     m_graph->reset();
@@ -208,13 +208,24 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
         return;
     }
 
-    size_t msgId = 0;
-    for (streamsize snp = 0; snp < data->numSnps; snp += options.preprocessChunks, ++msgId) {
+    auto writeUnprocessedMarker = [this] () {
+        static const IndexEntry entry;
+        m_indexOutput->write(reinterpret_cast<const char *>(&entry),
+                             sizeof(entry));
+    };
 
+    // Fill the front of the marker index
+    for (int i = 0; i < markers.front(); ++i) {
+        writeUnprocessedMarker();
+    }
+
+    // Preprocess the markers in the subset
+    const auto numSnps = markers.size();
+    for (size_t msgId = 0; msgId < numSnps; ++msgId) {
         Message msg {
             options.preprocessDataType,
             msgId,
-            snp,
+            markers[msgId],
             options.preprocessChunks,
             options.compress,
             options.dataFile,
@@ -231,6 +242,11 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
 
     // Wait for the graph to complete
     m_graph->wait_for_all();
+
+    // Fill the back of the marker index
+    for (int i = markers.back() + 1; i < data->numSnps; ++i) {
+        writeUnprocessedMarker();
+    }
 
     // Clean up
     m_output.reset();

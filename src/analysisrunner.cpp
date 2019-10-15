@@ -41,6 +41,40 @@ public:
     }
 };
 
+std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *data) {
+#ifdef MPI_ENABLED
+    if (options->useHybridMpi) {
+        int worldSize;
+        MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+
+        const auto subsets = generateEqualSubsets(worldSize, data->numSnps);
+
+        if (!isValid(subsets, data->numSnps)) {
+            cerr << "Invalid marker distribution" << endl;
+            for (const auto &s : subsets)
+                cerr << s.first() << ", " << s.last() << ": " << s.size << endl;
+            MPI_Abort(MPI_COMM_WORLD, -2);
+        }
+
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+        const auto subset = subsets.at(rank);
+        if (subset.isValid(data->numSnps)) {
+            printf("Rank %d working markers %d to %d\n", rank, subset.first(), subset.last());
+        } else {
+            cerr << "Rank " << rank << " has invalid marker subset: " << subset.first() << " to " << subset.last()
+                 << " for " << data->numSnps << " markers" << endl;
+            MPI_Abort(MPI_COMM_WORLD, -1);
+        }
+        return subset.toMarkerIndexList(data->numSnps);
+    } else
+#endif
+    {
+        return options->getMarkerSubset(data);
+    }
+}
+
 bool preprocessBed(const Options &options) {
     assert(options.analysisType == AnalysisType::Preprocess);
     assert(options.inputType == InputType::BED);
@@ -61,7 +95,7 @@ bool preprocessBed(const Options &options) {
     AnalysisRunner::readMetaData(data, options);
 
     PreprocessGraph graph(options.numThread);
-    graph.preprocessBedFile(options, &data);
+    graph.preprocessBedFile(options, &data, getMarkerSubset(&options, &data));
 
     clock_t end = clock();
     printf("Finished preprocessing the bed file in %.3f sec.\n\n",
@@ -110,40 +144,6 @@ bool preprocess(const Options &options) {
     default:
         cout << "Cannot preprocess for input type: " << options.inputType << endl;
         return false;
-    }
-}
-
-std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *data) {
-#ifdef MPI_ENABLED
-    if (options->useHybridMpi) {
-        int worldSize;
-        MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-
-        const auto subsets = generateEqualSubsets(worldSize, data->numSnps);
-
-        if (!isValid(subsets, data->numSnps)) {
-            cerr << "Invalid marker distribution" << endl;
-            for (const auto &s : subsets)
-                cerr << s.first() << ", " << s.last() << ": " << s.size << endl;
-            MPI_Abort(MPI_COMM_WORLD, -2);
-        }
-
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-        const auto subset = subsets.at(rank);
-        if (subset.isValid(data->numSnps)) {
-            printf("Rank %d working markers %d to %d\n", rank, subset.first(), subset.last());
-        } else {
-            cerr << "Rank " << rank << " has invalid marker subset: " << subset.first() << " to " << subset.last()
-                 << " for " << data->numSnps << " markers" << endl;
-            MPI_Abort(MPI_COMM_WORLD, -1);
-        }
-        return subset.toMarkerIndexList(data->numSnps);
-    } else
-#endif
-    {
-        return options->getMarkerSubset(data);
     }
 }
 

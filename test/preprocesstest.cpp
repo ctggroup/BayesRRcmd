@@ -3,11 +3,12 @@
 
 #include "analysisrunner.h"
 #include "common.h"
+#include "data.hpp"
 #include "options.hpp"
 
 namespace fs = std::filesystem;
 
-class PreprocessBed : public ::testing::TestWithParam<std::tuple<PreprocessDataType, bool, fs::directory_entry>> {};
+class PreprocessBed : public ::testing::TestWithParam<std::tuple<PreprocessDataType, bool, fs::directory_entry, MarkerSubset>> {};
 
 TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     const auto params = GetParam();
@@ -25,6 +26,7 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     options.workingDirectory = std::get<2>(params);
     options.populateWorkingDirectory();
     ASSERT_TRUE(options.validWorkingDirectory());
+    options.markerSubset = std::get<3>(params);
 
     // Clean up old files
     fs::path ppFile(ppFileForType(options));
@@ -45,6 +47,43 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
 
     ASSERT_TRUE(fs::exists(ppIndexFile));
     ASSERT_GT(fs::file_size(ppIndexFile, ec), 0) << ec.message();
+
+    // Validate the index file
+    Data data;
+    data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
+    data.mapPreprocessBedFile(ppFile, ppIndexFile);
+
+    ASSERT_EQ(data.ppbedIndex.size(), data.numSnps);
+
+    const auto subset = options.getMarkerSubset(&data);
+    ASSERT_FALSE(subset.empty());
+
+    // Test that the index entries in the subset are valid
+    for (const auto marker : subset) {
+        const auto index = data.ppbedIndex[marker];
+        if (marker == subset.front())
+            ASSERT_EQ(index.pos, 0);
+        else
+            ASSERT_TRUE(index.pos > 0);
+
+        ASSERT_GT(index.originalSize, 0);
+    }
+
+    if (subset.size() == data.numSnps)
+        return;
+
+    // Test that the index entries outside the subset are valid
+    auto isInvalidIndexEntry = [](const IndexEntry& index) {
+        return index.pos == 0 && index.originalSize == 0;
+    };
+
+    for (unsigned int i = 0; i < subset.front(); ++i) {
+        ASSERT_TRUE(isInvalidIndexEntry(data.ppbedIndex[i]));
+    }
+
+    for (unsigned int i = subset.back() + 1; i < data.numSnps; ++i) {
+        ASSERT_TRUE(isInvalidIndexEntry(data.ppbedIndex[i]));
+    }
 }
 
 INSTANTIATE_TEST_SUITE_P(PreprocessTests,
@@ -55,7 +94,8 @@ INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                                                   PreprocessDataType::SparseRagged}),
                              ::testing::Bool(), // compress
                              ::testing::ValuesIn({fs::directory_entry(),
-                                                  fs::directory_entry(WORKING_DIRECTORY)})));
+                                                  fs::directory_entry(WORKING_DIRECTORY)}),
+                             ::testing::ValuesIn({MarkerSubset{0, 0}, MarkerSubset{100, 100}})));
 
 class PreprocessCsvDense : public ::testing::TestWithParam<std::tuple<bool, fs::directory_entry>> {};
 
