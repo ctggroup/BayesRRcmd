@@ -298,7 +298,8 @@ bool runBayesAnalysis(const Options &options) {
         return false;
     }
 #ifdef MPI_ENABLED
-    catch (const MPI::Exception &e) {
+    catch (MPI::Exception e) {
+        // Not all MPI implementations mark these functions as const
         cerr << endl << e.Get_error_string() << endl;
         MPI::COMM_WORLD.Abort(e.Get_error_code());
         return false;
