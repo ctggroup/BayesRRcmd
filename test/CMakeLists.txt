@@ -31,6 +31,7 @@ add_executable(tests
     bayeswtest.cpp
     analysisrunnertest.cpp
     markersubsettest.cpp
+    preprocesstest.cpp
 )
 
 target_compile_definitions(tests PRIVATE TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test/data/")
