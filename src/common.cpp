@@ -107,3 +107,13 @@ M load_csv (const std::string & path) {
     }
     return Map<const Matrix<typename M::Scalar, M::RowsAtCompileTime, M::ColsAtCompileTime, RowMajor>>(values.data(), rows, values.size()/rows);
 }
+
+bool operator==(const IndexEntry &lhs, const IndexEntry &rhs)
+{
+    return lhs.asTuple() == rhs.asTuple();
+}
+
+bool operator!=(const IndexEntry &lhs, const IndexEntry &rhs)
+{
+    return !(lhs == rhs);
+}

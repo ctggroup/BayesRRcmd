@@ -56,7 +56,12 @@ struct IndexEntry {
     unsigned long pos = 0;
     unsigned long compressedSize = 0;
     unsigned long originalSize = 0;
+
+    auto asTuple() const { return std::tie(pos, compressedSize, originalSize); }
 };
+
+bool operator==(const IndexEntry &lhs, const IndexEntry &rhs);
+bool operator!=(const IndexEntry &lhs, const IndexEntry &rhs);
 
 using MarkerIndexList = std::vector<unsigned int>;
 
