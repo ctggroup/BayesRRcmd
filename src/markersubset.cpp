@@ -5,6 +5,18 @@
 #include <iostream>
 #include <numeric>
 
+namespace  {
+    static constexpr auto k_markerSubsetSize = sizeof (MarkerSubset);
+}
+
+unsigned long MarkerSubset::last() const
+{
+     if (start == 0 && size == 0)
+         return 0;
+
+     return start + size - 1;
+}
+
 void MarkerSubset::clamp(unsigned int markerCount)
 {
     if (last() < markerCount)
@@ -85,7 +97,7 @@ std::vector<MarkerSubset> generateEqualSubsets(unsigned int subsetCount, unsigne
 
     auto generateSubset = [&start, size]() {
         MarkerSubset s = {start, size};
-        start = s.last() + 1;
+        start = static_cast<unsigned int>(s.last()) + 1;
         return s;
     };
 
@@ -105,4 +117,16 @@ bool operator==(const MarkerSubset &lhs, const MarkerSubset &rhs)
 bool operator!=(const MarkerSubset &lhs, const MarkerSubset &rhs)
 {
     return !(lhs == rhs);
+}
+
+std::ostream& operator<<(std::ostream& out, const MarkerSubset& subset)
+{
+    out.write(reinterpret_cast<const char *>(&subset), k_markerSubsetSize);
+    return out;
+}
+
+std::istream &operator>>(std::istream &in, MarkerSubset &subset)
+{
+    in.read(reinterpret_cast<char *>(&subset), k_markerSubsetSize);
+    return in;
 }

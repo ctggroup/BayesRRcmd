@@ -10,7 +10,7 @@ struct MarkerSubset {
     auto asTuple() const { return std::tie(start, size); }
 
     unsigned int first() const { return start; }
-    unsigned int last() const { return start + size - 1; }
+    unsigned long last() const;
 
     void clamp(unsigned int markerCount);
 
@@ -20,6 +20,9 @@ struct MarkerSubset {
 
 bool operator==(const MarkerSubset &lhs, const MarkerSubset &rhs);
 bool operator!=(const MarkerSubset &lhs, const MarkerSubset &rhs);
+
+std::ostream& operator<<(std::ostream& out, const MarkerSubset& subset);
+std::istream& operator>>(std::istream &in,  MarkerSubset& subset);
 
 // Checks that each marker is sampled exactly once
 bool isValid(const std::vector<MarkerSubset> subsets, unsigned int markerCount);
