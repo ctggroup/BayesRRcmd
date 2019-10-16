@@ -5,6 +5,10 @@
 #include "markerbuilder.h"
 #include "options.hpp"
 
+#ifdef MPI_ENABLED
+#include <mpi.h>
+#endif
+
 const std::shared_ptr<MarkerCache> markerCache()
 {
     static const auto cache = std::make_shared<MarkerCache>();
@@ -29,11 +33,16 @@ void MarkerCache::populate(const Data *data, const Options *options)
 
     std::unique_ptr<MarkerBuilder> builder{builderForType(options->preprocessDataType)};
 
-    unsigned int snp = data->markerSubset().first();
+    const auto first = data->markerSubset().first();
+    const auto last = data->markerSubset().last();
+    unsigned int snp = first;
+
     auto beginItr = m_markers.begin();
     std::advance(beginItr, snp);
+
     auto endItr = m_markers.begin();
-    std::advance(endItr, data->markerSubset().last() + 1);
+    std::advance(endItr, last + 1);
+
     std::for_each(beginItr, endItr, [&snp, &builder, &data, &options](ConstMarkerPtr &marker) {
         builder->initialise(snp, data->numInds);
         const auto index = data->ppbedIndex[snp];
@@ -45,13 +54,21 @@ void MarkerCache::populate(const Data *data, const Options *options)
         marker = builder->build();
         ++snp;
     });
-    std::cout << "Cached " << snp << " markers" << std::endl;
+    int rank = 0;
+#ifdef MPI_ENABLED
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+    std::cout << rank << " Cached markers " << first << " to " << last << std::endl;
 }
 
 ConstMarkerPtr MarkerCache::marker(unsigned int i) const
 {
     if (i > m_markers.size()) {
-        std::cerr << "Requesting marker out of bounds: " << i << ". "
+        int rank = 0;
+#ifdef MPI_ENABLED
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+        std::cerr << rank << " Requesting marker out of bounds: " << i << ". "
                   << m_markers.size() << " cached markers." << std::endl;
         assert(false);
         return {};
