@@ -3,6 +3,7 @@
 
 #include "analysisrunner.h"
 #include "common.h"
+#include "markersubset.h"
 #include "options.hpp"
 
 namespace fs = std::filesystem;
@@ -65,15 +66,15 @@ TEST_P(PpBayesBed, SmokeTests) {
     options.preprocessDataType = std::get<1>(params);
     options.compress = std::get<2>(params);
     options.useMarkerCache = std::get<3>(params);
+    const auto subset = std::get<4>(params);
+    options.preprocessSubset = subset;
+    std::cout << "Using marker range " << subset.first()  << " to " << subset.last() << endl;
 
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
 
     // Run analysis
     options.analysisType = std::get<0>(params);
-    const auto subset = std::get<4>(params);
-    options.markerSubset = subset;
-    std::cout << "Using marker range " << subset.first()  << " to " << subset.last() << endl;
     ASSERT_TRUE(AnalysisRunner::run(options));
 
     // Validate the output

@@ -322,19 +322,6 @@ void Options::inputOptions(const int argc, const char* argv[]){
     cout << ss.str() << endl;
 }
 
-bool Options::validMarkerSubset(const Data *data) const
-{
-    return data && markerSubset.isValid(data->numSnps);
-}
-
-std::vector<unsigned int> Options::getMarkerSubset(const Data *data) const
-{
-    if (!data)
-        return {};
-
-    return markerSubset.toMarkerIndexList(data->numSnps);
-}
-
 bool Options::validWorkingDirectory() const
 {
     // Local copy for non-const functions
@@ -523,6 +510,40 @@ std::string ppIndexFileForType(const Options &options)
     case PreprocessDataType::SparseRagged:
     {
         extension = ".ragged.sparsebedindex";
+        break;
+    }
+
+    default:
+        std::cerr << "ppIndexFileForType - unsupported DataType: "
+             << options.preprocessDataType
+             << std::endl;
+        assert(false);
+        return {};
+    }
+
+    const fs::path dataPath(options.dataFile);
+    return options.workingDirectory / dataPath.stem().concat(extension);
+}
+
+string ppSubsetFileForType(const Options &options)
+{
+    std::string extension;
+    switch (options.preprocessDataType) {
+    case PreprocessDataType::Dense:
+    {
+        extension =  ".ppbedsubset";
+        break;
+    }
+
+    case PreprocessDataType::SparseEigen:
+    {
+        extension =  ".eigen.sparsebedsubset";
+        break;
+    }
+
+    case PreprocessDataType::SparseRagged:
+    {
+        extension = ".ragged.sparsebedsubset";
         break;
     }
 

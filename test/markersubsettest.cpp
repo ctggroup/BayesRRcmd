@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "markersubset.h"
+#include "data.hpp"
 
 TEST(MarkerSubset, MarkerSubset) {
     MarkerSubset s = {0, 2};
@@ -94,6 +95,59 @@ TEST(MarkerSubset, isValidSubsetList) {
         // Too many markers
         subsets = {{0, 75}, {75, 75}};
         ASSERT_FALSE(isValid(subsets, 100));
+    }
+}
+
+TEST(MarkerSubset, getMarkerSubset) {
+    Data data;
+    data.numSnps = 100;
+
+    {
+        // default markerSubset
+        ASSERT_TRUE(data.validMarkerSubset());
+
+        const auto markers = data.getMarkerIndexList();
+        ASSERT_EQ(0, markers.front());
+        ASSERT_EQ(99, markers.back());
+    }
+
+    {
+        ASSERT_TRUE(data.setMarkerSubset({0, 100}));
+        ASSERT_TRUE(data.validMarkerSubset());
+
+        const auto markers = data.getMarkerIndexList();
+        ASSERT_EQ(0, markers.front());
+        ASSERT_EQ(99, markers.back());
+    }
+
+    {
+        ASSERT_TRUE(data.setMarkerSubset({99, 1}));
+        ASSERT_TRUE(data.validMarkerSubset());
+
+        const auto markers = data.getMarkerIndexList();
+        ASSERT_EQ(99, markers.front());
+        ASSERT_EQ(99, markers.back());
+    }
+
+    {
+        ASSERT_FALSE(data.setMarkerSubset({0, 101}));
+    }
+
+    {
+        ASSERT_FALSE(data.setMarkerSubset({99, 2}));
+    }
+
+    {
+        ASSERT_FALSE(data.setMarkerSubset({100, 1}));
+    }
+
+    {
+        ASSERT_TRUE(data.setMarkerSubset({25, 50}));
+        ASSERT_TRUE(data.validMarkerSubset());
+
+        const auto markers = data.getMarkerIndexList();
+        ASSERT_EQ(25, markers.front());
+        ASSERT_EQ(74, markers.back());
     }
 }
 

@@ -29,8 +29,12 @@ void MarkerCache::populate(const Data *data, const Options *options)
 
     std::unique_ptr<MarkerBuilder> builder{builderForType(options->preprocessDataType)};
 
-    unsigned int snp = 0;
-    std::for_each(m_markers.begin(), m_markers.end(), [&snp, &builder, &data, &options](ConstMarkerPtr &marker) {
+    unsigned int snp = data->markerSubset().first();
+    auto beginItr = m_markers.begin();
+    std::advance(beginItr, snp);
+    auto endItr = m_markers.begin();
+    std::advance(endItr, data->markerSubset().last() + 1);
+    std::for_each(beginItr, endItr, [&snp, &builder, &data, &options](ConstMarkerPtr &marker) {
         builder->initialise(snp, data->numInds);
         const auto index = data->ppbedIndex[snp];
         if (options->compress) {

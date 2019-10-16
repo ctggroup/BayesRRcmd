@@ -150,7 +150,7 @@ PreprocessGraph::~PreprocessGraph()
     m_graph->wait_for_all();
 }
 
-void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data, const std::vector<unsigned int> &markers)
+void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data)
 {
     // Reset the graph from the previous iteration. This resets the sequencer node current index etc.
     m_graph->reset();
@@ -177,8 +177,9 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
 
     const auto ppFile = ppFileForType(options);
     const auto ppIndexFile = ppIndexFileForType(options);
+    const auto ppSubsetFile = ppSubsetFileForType(options);
 
-    if (ppFile.empty() || ppIndexFile.empty())
+    if (ppFile.empty() || ppIndexFile.empty() || ppSubsetFile.empty())
         return;
 
     ifstream inStream(options.dataFile.c_str(), ios::binary);
@@ -208,14 +209,26 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
         return;
     }
 
+    // Write the MarkerSubset this preprocessed file contains
+    std::ofstream subsetStream = std::ofstream(ppSubsetFile.c_str(), ios::binary);
+    if (subsetStream.fail()) {
+        cerr << "Error: Unable to open the preprocessed bed subset file [" + ppSubsetFile + "] for writing." << endl;
+        return;
+    }
+
+    subsetStream << data->markerSubset();
+    subsetStream.close();
+
     auto writeUnprocessedMarker = [this] () {
         static const IndexEntry entry;
         m_indexOutput->write(reinterpret_cast<const char *>(&entry),
                              sizeof(entry));
     };
 
+    const auto markers = data->getMarkerIndexList();
+
     // Fill the front of the marker index
-    for (int i = 0; i < markers.front(); ++i) {
+    for (unsigned int i = 0; i < markers.front(); ++i) {
         writeUnprocessedMarker();
     }
 
@@ -244,7 +257,7 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
     m_graph->wait_for_all();
 
     // Fill the back of the marker index
-    for (int i = markers.back() + 1; i < data->numSnps; ++i) {
+    for (unsigned int i = markers.back() + 1; i < data->numSnps; ++i) {
         writeUnprocessedMarker();
     }
 

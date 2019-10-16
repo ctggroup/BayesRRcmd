@@ -13,7 +13,9 @@
 #include <boost/format.hpp>
 #include "gadgets.hpp"
 #include "common.h"
+#include "markersubset.h"
 
+class Options;
 
 using namespace std;
 using namespace Eigen;
@@ -139,7 +141,12 @@ public:
 
     void preprocessCSVFile(const string &csvFile, const string &preprocessedCSVFile, const string &preprovessedCSVIndexFile, bool compress);
 
-    void mapPreprocessBedFile(const string &preprocessedBedFile, const string &indexFile);
+    const MarkerSubset& markerSubset() const { return m_markerSubset; }
+    bool setMarkerSubset(const MarkerSubset &subset);
+    bool validMarkerSubset() const;
+    std::vector<unsigned int> getMarkerIndexList() const;
+
+    void mapPreprocessBedFile(const Options &options);
     void unmapPreprocessedBedFile();
 
     void readCSV(const string &filename, int cols);
@@ -156,6 +163,9 @@ public:
     void readmSFile(const string& mSfile);
     //BayesW variables
     void readFailureFile(const string &failureFile);
+
+private:
+    MarkerSubset m_markerSubset = {0, 0}; // start, size
 };
 
 #endif /* data_hpp */

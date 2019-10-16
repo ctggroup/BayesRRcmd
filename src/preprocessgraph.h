@@ -23,8 +23,7 @@ public:
     ~PreprocessGraph();
 
     void preprocessBedFile(const Options &options,
-                           const Data *data,
-                           const std::vector<unsigned int> &markers);
+                           const Data *data);
 protected:
     struct Message {
         PreprocessDataType type = PreprocessDataType::None;

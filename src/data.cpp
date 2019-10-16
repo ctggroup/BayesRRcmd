@@ -4,8 +4,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <iterator>
+#include <filesystem>
 #include "compression.h"
+#include "markersubset.h"
+#include "options.hpp"
 
+namespace fs = std::filesystem;
 
 #define handle_error(msg)                               \
 		do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -23,31 +27,40 @@ Data::~Data()
     unmapPreprocessedBedFile();
 }
 
-void Data::mapPreprocessBedFile(const string &preprocessedBedFile,
-                                const string &indexFile)
+void Data::mapPreprocessBedFile(const Options &options)
 {
+    // Read the MarkerSubset this preprocessed file contains
+    MarkerSubset subset = {0, 0};
+    const auto ppSubsetFile = ppSubsetFileForType(options);
+    if (fs::exists(ppSubsetFile)) {
+        ifstream subsetStream(ppSubsetFile, std::ifstream::binary);
+        if (!subsetStream)
+            throw("Error: Failed to open preprocessed subset file");
+
+        subsetStream >> subset;
+        if (subsetStream.fail())
+            throw("Error: Failed to read preprocessed subset file");
+    }
+    setMarkerSubset(subset);
+
     // Load the index to the compressed preprocessed bed file
     ppbedIndex.resize(numSnps);
+    const auto indexFile = ppIndexFileForType(options);
     ifstream indexStream(indexFile, std::ifstream::binary);
     if (!indexStream)
         throw("Error: Failed to open compressed preprocessed bed file index");
+
     indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
                      numSnps * 3 * sizeof(unsigned long));
 
-    const auto findItr = std::find_if(ppbedIndex.rbegin(), ppbedIndex.rend(), [](const IndexEntry& index) {
-        return index.pos > 0;
-    });
-
-    if (findItr == ppbedIndex.rend())
-        throw("Error: Failed to find last valid index");
-
-    const auto lastIndex = *findItr;
+    const auto lastIndex = ppbedIndex[m_markerSubset.last()];
 
     // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
     // that we would otherwise get as intermediate variables!
     const size_t ppBedSize = size_t(lastIndex.pos + lastIndex.compressedSize);
 
     // Open and mmap the preprocessed bed file
+    const auto preprocessedBedFile = ppFileForType(options);
     ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
     if (ppBedFd == -1)
         throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
@@ -500,6 +513,30 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
   indata.close();
 
   cout << "csv file for" << numInds << " individuals and " << numSnps << " Variables are included from [" +  csvFile + "]." << endl;
+}
+
+bool Data::setMarkerSubset(const MarkerSubset &subset)
+{
+    if (!subset.isValid(numSnps))
+        return false;
+
+    m_markerSubset = subset;
+
+    if (m_markerSubset.start == 0 && m_markerSubset.size == 0) {
+        m_markerSubset.size = numSnps;
+    }
+
+    return true;
+}
+
+bool Data::validMarkerSubset() const
+{
+    return m_markerSubset.isValid(numSnps);
+}
+
+std::vector<unsigned int> Data::getMarkerIndexList() const
+{
+    return m_markerSubset.toMarkerIndexList(numSnps);
 }
 
 //We asume the csv is well formed and individuals are columns and  markers are rows

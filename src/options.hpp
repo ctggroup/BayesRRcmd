@@ -63,7 +63,7 @@ public:
     string colLogFile;
     bool colLog =false;
     bool useMarkerCache = false;
-    MarkerSubset markerSubset = {0, 0}; // start, size
+    MarkerSubset preprocessSubset = {0, 0}; // start, size
     bool useHybridMpi = false;
     filesystem::directory_entry workingDirectory;
 
@@ -107,9 +107,6 @@ public:
 
     void inputOptions(const int argc, const char* argv[]);
 
-    bool validMarkerSubset(const Data* data) const;
-    std::vector<unsigned int> getMarkerSubset(const Data *data) const;
-
     bool validWorkingDirectory() const;
     void populateWorkingDirectory();
 
@@ -124,5 +121,6 @@ bool canWriteToDirectory(const filesystem::path &path);
 
 std::string ppFileForType(const Options &options);
 std::string ppIndexFileForType(const Options &options);
+std::string ppSubsetFileForType(const Options &options);
 
 #endif /* options_hpp */

@@ -41,7 +41,7 @@ public:
     }
 };
 
-std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *data) {
+MarkerSubset getMarkerSubset(const Options *options, const Data *data) {
 #ifdef MPI_ENABLED
     if (options->useHybridMpi) {
         int worldSize;
@@ -61,17 +61,17 @@ std::vector<unsigned int> getMarkerSubset(const Options *options, const Data *da
 
         const auto subset = subsets.at(rank);
         if (subset.isValid(data->numSnps)) {
-            printf("Rank %d working markers %d to %d\n", rank, subset.first(), subset.last());
+            printf("Rank %d working markers %d to %lo\n", rank, subset.first(), subset.last());
         } else {
             cerr << "Rank " << rank << " has invalid marker subset: " << subset.first() << " to " << subset.last()
                  << " for " << data->numSnps << " markers" << endl;
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
-        return subset.toMarkerIndexList(data->numSnps);
+        return subset;
     } else
 #endif
     {
-        return options->getMarkerSubset(data);
+        return options->preprocessSubset;
     }
 }
 
@@ -94,8 +94,10 @@ bool preprocessBed(const Options &options) {
     Data data;
     AnalysisRunner::readMetaData(data, options);
 
+    data.setMarkerSubset(getMarkerSubset(&options, &data));
+
     PreprocessGraph graph(options.numThread);
-    graph.preprocessBedFile(options, &data, getMarkerSubset(&options, &data));
+    graph.preprocessBedFile(options, &data);
 
     clock_t end = clock();
     printf("Finished preprocessing the bed file in %.3f sec.\n\n",
@@ -153,7 +155,7 @@ bool runBayesRAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
         data->readCSV(options->fixedFile, options->fixedEffectNumber);
     }
 
-    auto markers = getMarkerSubset(options, data);
+    auto markers = data->getMarkerIndexList();
 
     switch (options->preprocessDataType) {
     case PreprocessDataType::Dense:
@@ -190,7 +192,7 @@ bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
     // Read the failure indicator vector
     data->readFailureFile(options->failureFile);
 
-    auto markers = getMarkerSubset(options, data);
+    auto markers = data->getMarkerIndexList();
 
     switch (options->preprocessDataType) {
     case PreprocessDataType::Dense:
@@ -221,23 +223,20 @@ bool runBayesAnalysis(const Options &options) {
     Data data;
     AnalysisRunner::readMetaData(data, options);
 
-    if (!options.validMarkerSubset(&data)) {
-        const auto first = options.markerSubset.first();
-        const auto last = options.markerSubset.last();
+    cout << "Start reading preprocessed bed file: " << ppFileForType(options) << endl;
+    clock_t start_bed = clock();
+    data.mapPreprocessBedFile(options);
+    clock_t end = clock();
+    printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
+    cout << endl;
+
+    if (!data.validMarkerSubset()) {
+        const auto first = data.markerSubset().first();
+        const auto last = data.markerSubset().last();
         cerr << "Marker range " << first  << " to " << last << "is not valid!" << endl
              << "Expected range is 0 to " << data.numSnps - 1 << endl;
         return false;
     }
-
-    const auto ppFile = ppFileForType(options);
-    const auto ppIndexFile = ppIndexFileForType(options);
-
-    cout << "Start reading preprocessed bed file: " << ppFile << endl;
-    clock_t start_bed = clock();
-    data.mapPreprocessBedFile(ppFile, ppIndexFile);
-    clock_t end = clock();
-    printf("Finished reading preprocessed bed file in %.3f sec.\n", double(end - start_bed) / double(CLOCKS_PER_SEC));
-    cout << endl;
 
     std::unique_ptr<tbb::task_scheduler_init> taskScheduler { nullptr };
     if (options.numThreadSpawned > 0)

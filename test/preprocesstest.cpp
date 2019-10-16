@@ -26,7 +26,7 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     options.workingDirectory = std::get<2>(params);
     options.populateWorkingDirectory();
     ASSERT_TRUE(options.validWorkingDirectory());
-    options.markerSubset = std::get<3>(params);
+    options.preprocessSubset = std::get<3>(params);
 
     // Clean up old files
     fs::path ppFile(ppFileForType(options));
@@ -51,11 +51,11 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     // Validate the index file
     Data data;
     data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
-    data.mapPreprocessBedFile(ppFile, ppIndexFile);
+    data.mapPreprocessBedFile(options);
 
     ASSERT_EQ(data.ppbedIndex.size(), data.numSnps);
 
-    const auto subset = options.getMarkerSubset(&data);
+    const auto subset = data.getMarkerIndexList();
     ASSERT_FALSE(subset.empty());
 
     // Test that the index entries in the subset are valid
