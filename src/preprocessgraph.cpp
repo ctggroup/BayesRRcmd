@@ -234,17 +234,22 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
 
     // Preprocess the markers in the subset
     const auto numSnps = markers.size();
-    for (size_t msgId = 0; msgId < numSnps; ++msgId) {
+    size_t msgId = 0;
+    for (size_t i = 0; i < numSnps; i += options.preprocessChunks, ++msgId) {
+        size_t chunkSize = options.preprocessChunks;
+        if (i + chunkSize >= numSnps)
+            chunkSize = numSnps - i;
+
         Message msg {
             options.preprocessDataType,
             msgId,
-            markers[msgId],
-            options.preprocessChunks,
+            markers[i],
+            chunkSize,
             options.compress,
             options.dataFile,
             data,
-            {options.preprocessChunks, nullptr}, // snpData
-            {options.preprocessChunks, {nullptr, 0}}, // compressedData
+            {chunkSize, nullptr}, // snpData
+            {chunkSize, {nullptr, 0}}, // compressedData
         };
 
         m_ordering->try_put(msg);
