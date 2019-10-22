@@ -8,7 +8,7 @@
 
 namespace fs = std::filesystem;
 
-class PreprocessBed : public ::testing::TestWithParam<std::tuple<PreprocessDataType, bool, fs::directory_entry, MarkerSubset>> {};
+class PreprocessBed : public ::testing::TestWithParam<std::tuple<PreprocessDataType, bool, fs::directory_entry, MarkerSubset, int>> {};
 
 TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     const auto params = GetParam();
@@ -27,6 +27,7 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     options.populateWorkingDirectory();
     ASSERT_TRUE(options.validWorkingDirectory());
     options.preprocessSubset = std::get<3>(params);
+    options.preprocessChunks = std::get<4>(params);
 
     // Clean up old files
     fs::path ppFile(ppFileForType(options));
@@ -45,12 +46,14 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     ASSERT_TRUE(fs::exists(ppFile));
     ASSERT_GT(fs::file_size(ppFile, ec), 0) << ec.message();
 
-    ASSERT_TRUE(fs::exists(ppIndexFile));
-    ASSERT_GT(fs::file_size(ppIndexFile, ec), 0) << ec.message();
-
     // Validate the index file
     Data data;
     data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
+
+    ASSERT_TRUE(fs::exists(ppIndexFile));
+    const auto expectedSize = sizeof (IndexEntry) * data.numSnps;
+    ASSERT_EQ(fs::file_size(ppIndexFile, ec), expectedSize) << ec.message();
+
     data.mapPreprocessBedFile(options);
 
     ASSERT_EQ(data.ppbedIndex.size(), data.numSnps);
@@ -95,7 +98,8 @@ INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                              ::testing::Bool(), // compress
                              ::testing::ValuesIn({fs::directory_entry(),
                                                   fs::directory_entry(WORKING_DIRECTORY)}),
-                             ::testing::ValuesIn({MarkerSubset{0, 0}, MarkerSubset{100, 100}})));
+                             ::testing::ValuesIn({MarkerSubset{0, 0}, MarkerSubset{100, 100}}),
+                             ::testing::ValuesIn({1, 3, 7})));
 
 class PreprocessCsvDense : public ::testing::TestWithParam<std::tuple<bool, fs::directory_entry>> {};
 
