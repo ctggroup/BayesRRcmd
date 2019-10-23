@@ -66,6 +66,7 @@ public:
     MarkerSubset preprocessSubset = {0, 0}; // start, size
     bool useHybridMpi = false;
     filesystem::directory_entry workingDirectory;
+    string splitDestination;
 
 
     double v0E  = 0.0001;

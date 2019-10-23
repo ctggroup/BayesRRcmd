@@ -138,7 +138,8 @@ void Options::inputOptions(const int argc, const char* argv[]){
         }
         else if (!strcmp(argv[i], "--split")) {
             analysisType = AnalysisType::Split;
-            ss << "--split " << "\n";
+            splitDestination = argv[++i];
+            ss << "--split " << argv[i] << "\n";
         }
         else if (!strcmp(argv[i], "--compress")) {
             compress = true;
