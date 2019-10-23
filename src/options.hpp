@@ -120,7 +120,10 @@ bool validateDirectory(const filesystem::path &path);
 bool canWriteToDirectory(const filesystem::path &path);
 
 std::string ppFileForType(const Options &options);
+std::string ppFileForType(const Options &options, const filesystem::path &parentDirectory);
 std::string ppIndexFileForType(const Options &options);
+std::string ppIndexFileForType(const Options &options, const filesystem::path &parentDirectory);
 std::string ppSubsetFileForType(const Options &options);
+std::string ppSubsetFileForType(const Options &options, const filesystem::path &parentDirectory);
 
 #endif /* options_hpp */

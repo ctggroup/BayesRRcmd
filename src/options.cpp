@@ -463,6 +463,11 @@ bool canWriteToDirectory(const fs::path &path)
 
 string ppFileForType(const Options &options)
 {
+    return ppFileForType(options, options.workingDirectory);
+}
+
+string ppFileForType(const Options &options, const fs::path &parentDirectory)
+{
     std::string extension;
     switch (options.preprocessDataType) {
     case PreprocessDataType::Dense:
@@ -492,10 +497,15 @@ string ppFileForType(const Options &options)
     }
 
     const fs::path dataPath(options.dataFile);
-    return options.workingDirectory / dataPath.stem().concat(extension);
+    return parentDirectory / dataPath.stem().concat(extension);
 }
 
 std::string ppIndexFileForType(const Options &options)
+{
+    return ppIndexFileForType(options, options.workingDirectory);
+}
+
+string ppIndexFileForType(const Options &options, const fs::path &parentDirectory)
 {
     std::string extension;
     switch (options.preprocessDataType) {
@@ -526,10 +536,15 @@ std::string ppIndexFileForType(const Options &options)
     }
 
     const fs::path dataPath(options.dataFile);
-    return options.workingDirectory / dataPath.stem().concat(extension);
+    return parentDirectory / dataPath.stem().concat(extension);
 }
 
 string ppSubsetFileForType(const Options &options)
+{
+    return ppSubsetFileForType(options, options.workingDirectory);
+}
+
+string ppSubsetFileForType(const Options &options, const fs::path &parentDirectory)
 {
     std::string extension;
     switch (options.preprocessDataType) {
@@ -560,5 +575,5 @@ string ppSubsetFileForType(const Options &options)
     }
 
     const fs::path dataPath(options.dataFile);
-    return options.workingDirectory / dataPath.stem().concat(extension);
+    return parentDirectory / dataPath.stem().concat(extension);
 }
