@@ -62,21 +62,15 @@ TEST_P(PreprocessedFileSplitterTest, SplitPreprocessedFile) {
     options.analysisType = AnalysisType::Split;
     const std::string destination = std::get<2>(params);
     options.splitDestination = destination;
-
-    Data data;
-    AnalysisRunner::readMetaData(data, options);
-    data.mapPreprocessBedFile(options);
-
-    PreprocessedFileSplitter splitter;
+    options.preprocessSubset = std::get<3>(params);
 
     if (destination.empty() || (destination == workingDirectory)) {
-        ASSERT_FALSE(splitter.canSplit(options, &data));
+        ASSERT_FALSE(AnalysisRunner::run(options));
         return;
     } else {
-        ASSERT_TRUE(splitter.canSplit(options, &data));
+        ASSERT_TRUE(AnalysisRunner::run(options));
     }
 
-    ASSERT_TRUE(splitter.split(options, &data, std::get<3>(params)));
     options.workingDirectory = fs::directory_entry(destination);
     options.populateWorkingDirectory();
     ASSERT_TRUE(testing::IsValidPreprocessOutPut(options));

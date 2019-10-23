@@ -3,6 +3,10 @@
 #include "data.hpp"
 #include "options.hpp"
 
+#ifdef MPI_ENABLED
+#include <mpi.h>
+#endif
+
 #include <iostream>
 
 namespace fs = std::filesystem;
@@ -54,6 +58,15 @@ bool PreprocessedFileSplitter::split(const Options &options, const Data *data, c
         std::cerr << "Invalid marker subset:" << subset << std::endl;
         return false;
     }
+
+    int rank = 0;
+#ifdef MPI_ENABLED
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+    std::cout << rank << " Splitting preprocessed data:" << std::endl
+              << " - source: " << ppFileForType(options) << std::endl
+              << " - destination: " << ppFileForType(options, options.splitDestination) << std::endl
+              << " - markers: " << markers.front() << " to " << markers.back() << " of " << data->numSnps << std::endl;
 
     if (!splitPpFile(options, data, markers))
         return false;

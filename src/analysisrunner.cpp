@@ -14,6 +14,7 @@
 #include "SparseBayesRRG.hpp"
 #include "sequential.h"
 #include "sparsebayesw.h"
+#include "preprocessedfilesplitter.h"
 
 #ifdef MPI_ENABLED
 #include <mpi.h>
@@ -73,6 +74,17 @@ MarkerSubset getMarkerSubset(const Options *options, const Data *data) {
     {
         return options->preprocessSubset;
     }
+}
+
+bool split(const Options& options) {
+    assert(options.analysisType == AnalysisType::Split);
+
+    Data data;
+    AnalysisRunner::readMetaData(data, options);
+    data.mapPreprocessBedFile(options);
+
+    PreprocessedFileSplitter splitter;
+    return splitter.split(options, &data, getMarkerSubset(&options, &data));
 }
 
 bool preprocessBed(const Options &options) {
@@ -367,6 +379,9 @@ bool run(const Options &options)
                 return false;
             }
             return runBayesAnalysis(options);
+
+        case AnalysisType::Split:
+            return split(options);
 
         default:
             cerr << "Unknown --analyis-type" << endl;
