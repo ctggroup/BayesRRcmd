@@ -124,6 +124,14 @@ TEST(OptionsTest, AnalysisType) {
     }
 
     {
+        // --analysis-type split
+        const char *argv[] = {"test", "--analysis-type", "split"};
+
+        options.inputOptions(3, argv);
+        ASSERT_EQ(AnalysisType::Unknown, options.analysisType);
+    }
+
+    {
         // --analysis-type ppbayes
         const char *argv[] = {"test", "--analysis-type", "ppbayes"};
 

@@ -32,6 +32,7 @@ add_executable(tests
     analysisrunnertest.cpp
     markersubsettest.cpp
     preprocesstest.cpp
+    splittertest.cpp
 )
 
 target_compile_definitions(tests PRIVATE TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test/data/")

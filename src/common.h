@@ -12,7 +12,8 @@ enum class AnalysisType : unsigned int {
     PpBayes,
     AsyncPpBayes,
     Gauss,
-    AsyncGauss
+    AsyncGauss,
+    Split
 };
 
 std::ostream &operator<<(std::ostream &os, const AnalysisType &obj);

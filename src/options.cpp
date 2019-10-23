@@ -136,6 +136,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             analysisType = AnalysisType::Preprocess;
             ss << "--preprocess " << "\n";
         }
+        else if (!strcmp(argv[i], "--split")) {
+            analysisType = AnalysisType::Split;
+            ss << "--split " << "\n";
+        }
         else if (!strcmp(argv[i], "--compress")) {
             compress = true;
             ss << "--compress " << "\n";
