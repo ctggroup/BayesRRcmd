@@ -5,6 +5,7 @@
 #include "common.h"
 #include "data.hpp"
 #include "options.hpp"
+#include "testhelpers.h"
 
 namespace fs = std::filesystem;
 
@@ -41,52 +42,7 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
 
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
-
-    // Validate the output
-    ASSERT_TRUE(fs::exists(ppFile));
-    ASSERT_GT(fs::file_size(ppFile, ec), 0) << ec.message();
-
-    // Validate the index file
-    Data data;
-    data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
-
-    ASSERT_TRUE(fs::exists(ppIndexFile));
-    const auto expectedSize = sizeof (IndexEntry) * data.numSnps;
-    ASSERT_EQ(fs::file_size(ppIndexFile, ec), expectedSize) << ec.message();
-
-    data.mapPreprocessBedFile(options);
-
-    ASSERT_EQ(data.ppbedIndex.size(), data.numSnps);
-
-    const auto subset = data.getMarkerIndexList();
-    ASSERT_FALSE(subset.empty());
-
-    // Test that the index entries in the subset are valid
-    for (const auto marker : subset) {
-        const auto index = data.ppbedIndex[marker];
-        if (marker == subset.front())
-            ASSERT_EQ(index.pos, 0);
-        else
-            ASSERT_TRUE(index.pos > 0);
-
-        ASSERT_GT(index.originalSize, 0);
-    }
-
-    if (subset.size() == data.numSnps)
-        return;
-
-    // Test that the index entries outside the subset are valid
-    auto isInvalidIndexEntry = [](const IndexEntry& index) {
-        return index.pos == 0 && index.originalSize == 0;
-    };
-
-    for (unsigned int i = 0; i < subset.front(); ++i) {
-        ASSERT_TRUE(isInvalidIndexEntry(data.ppbedIndex[i]));
-    }
-
-    for (unsigned int i = subset.back() + 1; i < data.numSnps; ++i) {
-        ASSERT_TRUE(isInvalidIndexEntry(data.ppbedIndex[i]));
-    }
+    ASSERT_TRUE(testing::IsValidPreprocessOutPut(options));
 }
 
 INSTANTIATE_TEST_SUITE_P(PreprocessTests,
@@ -130,13 +86,7 @@ TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
 
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
-
-    // Validate the output
-    ASSERT_TRUE(fs::exists(ppFile));
-    ASSERT_GT(fs::file_size(ppFile, ec), 0) << ec.message();
-
-    ASSERT_TRUE(fs::exists(ppIndexFile));
-    ASSERT_GT(fs::file_size(ppIndexFile, ec), 0) << ec.message();
+    ASSERT_TRUE(testing::IsValidPreprocessOutPut(options));
 }
 
 INSTANTIATE_TEST_SUITE_P(PreprocessTests,
