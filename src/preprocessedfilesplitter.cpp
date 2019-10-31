@@ -61,7 +61,8 @@ bool PreprocessedFileSplitter::split(const Options &options, const Data *data, c
 
     int rank = 0;
 #ifdef MPI_ENABLED
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (options.useHybridMpi)
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
     std::cout << rank << " Splitting preprocessed data:" << std::endl
               << " - source: " << ppFileForType(options) << std::endl

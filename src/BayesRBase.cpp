@@ -148,7 +148,8 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
 
     int rank = 0;
 #ifdef MPI_ENABLED
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (m_opt->useHybridMpi)
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
 
     setAsynchronous(analysis->isAsynchronous());

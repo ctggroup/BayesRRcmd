@@ -18,6 +18,7 @@ public:
 protected:
     using MarkerPtrList = std::vector<ConstMarkerPtr>;
     MarkerPtrList m_markers;
+    bool m_useMpi = false;
 };
 
 const std::shared_ptr<MarkerCache> markerCache();

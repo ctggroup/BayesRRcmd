@@ -28,6 +28,8 @@ void MarkerCache::populate(const Data *data, const Options *options)
     if (!data || !options)
         return;
 
+    m_useMpi = options->useHybridMpi;
+
     clear();
     m_markers.resize(data->numSnps);
 
@@ -56,7 +58,8 @@ void MarkerCache::populate(const Data *data, const Options *options)
     });
     int rank = 0;
 #ifdef MPI_ENABLED
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (m_useMpi)
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
     std::cout << rank << " Cached markers " << first << " to " << last << std::endl;
 }
@@ -66,7 +69,8 @@ ConstMarkerPtr MarkerCache::marker(unsigned int i) const
     if (i > m_markers.size()) {
         int rank = 0;
 #ifdef MPI_ENABLED
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (m_useMpi)
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
         std::cerr << rank << " Requesting marker out of bounds: " << i << ". "
                   << m_markers.size() << " cached markers." << std::endl;

@@ -28,18 +28,26 @@ namespace {
 
 class MpiContext {
 public:
-    MpiContext() {
+    MpiContext(bool useMpi)
+        : m_useMpi(useMpi)
+    {
 #ifdef MPI_ENABLED
-    MPI_Init(nullptr, nullptr);
-    MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI::ERRORS_THROW_EXCEPTIONS);
+        if (m_useMpi) {
+            MPI_Init(nullptr, nullptr);
+            MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI::ERRORS_THROW_EXCEPTIONS);
+        }
 #endif
     }
 
     ~MpiContext() {
 #ifdef MPI_ENABLED
-    MPI_Finalize();
+        if (m_useMpi)
+            MPI_Finalize();
 #endif
     }
+
+private:
+    bool m_useMpi = false;
 };
 
 MarkerSubset getMarkerSubset(const Options *options, const Data *data) {
@@ -359,7 +367,7 @@ bool run(const Options &options)
         return false;
     }
 
-    MpiContext mpiContext;
+    MpiContext mpiContext(options.useHybridMpi);
 
     bool result = false;
     try {
@@ -391,26 +399,30 @@ bool run(const Options &options)
     catch (const string &err_msg) {
         cerr << endl << err_msg << endl;
 #ifdef MPI_ENABLED
-        MPI::COMM_WORLD.Abort(-1);
+        if (options.useHybridMpi)
+            MPI::COMM_WORLD.Abort(-1);
 #endif
     }
     catch (const char *err_msg) {
         cerr << endl << err_msg << endl;
 #ifdef MPI_ENABLED
-        MPI::COMM_WORLD.Abort(-1);
+        if (options.useHybridMpi)
+            MPI::COMM_WORLD.Abort(-1);
 #endif
     }
     catch (const std::exception &e) {
         cerr << endl << e.what() << endl;
 #ifdef MPI_ENABLED
-        MPI::COMM_WORLD.Abort(-1);
+        if (options.useHybridMpi)
+            MPI::COMM_WORLD.Abort(-1);
 #endif
     }
 #ifdef MPI_ENABLED
     catch (MPI::Exception e) {
         // Not all MPI implementations mark these functions as const
         cerr << endl << e.Get_error_string() << endl;
-        MPI::COMM_WORLD.Abort(e.Get_error_code());
+        if (options.useHybridMpi)
+            MPI::COMM_WORLD.Abort(e.Get_error_code());
     }
 #endif
 
