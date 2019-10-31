@@ -484,7 +484,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
     const double p = m_randomNumbers.at(kernel->marker->i).at(PIndex);
     const double randomNorm = m_randomNumbers.at(kernel->marker->i).at(RandomNormIndex);
 
-    result->v = std::make_unique<VectorXd>(VectorXd::Zero(K));
+    result->v = std::make_unique<MatrixXd>(MatrixXd::Zero(m_data->numGroups, K));
     for (int k = 0; k < K; k++) {
         if (p <= acum) {
             //if zeroth component
@@ -493,7 +493,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
             } else {
                 result->beta = randomNorm * std::sqrt(m_sigmaE/denom[k-1]) + muk[k];
             }
-            (*result->v)(k) += 1.0;
+            (*result->v).row(group)(k) += 1.0;
             component = k;
             break;
         } else {

@@ -19,7 +19,7 @@ struct AsyncResult {
     double betaOld = 0.0;
     double beta = 0.0;
     std::unique_ptr<VectorXd> deltaEpsilon;
-    std::unique_ptr<VectorXd> v;
+    std::unique_ptr<MatrixXd> v;
 };
 
 class Analysis {

@@ -31,6 +31,12 @@
 #define sqrtPI 1.77245385090552
 #define EuMasc 0.577215664901532
 
+namespace  {
+    // There is only one group in BayesWBase
+    static constexpr size_t k_numGroups = 1;
+    static constexpr size_t k_groupIndex = 0;
+}
+
 BayesWBase::BayesWBase(const Data *data, const Options *opt, const long memPageSize)
 : Analysis(data, opt)
 , m_seed(opt->seed)
@@ -900,7 +906,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
     // Calculate the probability that marker is 0
     double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
-    result->v = std::make_unique<VectorXd>(VectorXd::Zero(m_K));
+    result->v = std::make_unique<MatrixXd>(MatrixXd::Zero(k_numGroups, m_K));
     int component = 0;
     //Loop through the possible mixture classes
     for (int k = 0; k < m_K; k++) {
@@ -940,7 +946,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
                 result->beta = xsamp[0]; // Save the new result
             }
 
-            (*result->v)(k) += 1.0;
+            (*result->v).row(k_groupIndex)(k) += 1.0;
             component = k;
             break;
         } else {
