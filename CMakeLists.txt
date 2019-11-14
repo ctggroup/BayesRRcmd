@@ -10,6 +10,7 @@ add_custom_target(
 
 option(ENABLE_FLOW_GRAPH_TRACING "Enable flow graph tracing" OFF)
 option(ENABLE_UNIT_TESTS "Enable unit tests" OFF)
+option(ENABLE_BENCHMARKS "Enable benchmarks" OFF)
 option(ENABLE_FAST_OPTIMIZATONS "Enable more compiler optimizations" ON)
 option(ENABLE_MPI "Enable algorithms that require MPI" OFF)
 
@@ -70,4 +71,8 @@ add_subdirectory(src)
 
 if(ENABLE_UNIT_TESTS)
     add_subdirectory(test)
+endif()
+
+if(ENABLE_BENCHMARKS)
+    add_subdirectory(benchmarks)
 endif()
