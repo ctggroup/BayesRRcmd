@@ -6,6 +6,22 @@
 
 using namespace Eigen;
 
+/*
+ * dataTransfer
+ *
+ * Reports the mean duration in seconds of the MPI_Allreduce using MPI_DOUBLE
+ * data type and the MPI_SUM operation, across the MPI_COMM_WORLD communicator.
+ *
+ * Expects to be run using MPI.
+ *
+ * --size <long>
+ * Specify the number of doubles to transfer (default 500,000).
+ *
+ * --iterations <size_t>
+ * Specify the number of iterations to use (default 100).
+ *
+ */
+
 struct BenchOptions
 {
     size_t iterations = 100;
@@ -48,7 +64,7 @@ int main(int argc, const char* argv[]) {
                   << "hosts: " << worldSize << std::endl;
     }
 
-    std::chrono::milliseconds duration(0);
+    std::chrono::microseconds duration(0);
     VectorXd data = VectorXd::Ones(options.size);\
 
     for (size_t i = 0; i < options.iterations; ++i) {
@@ -57,18 +73,18 @@ int main(int argc, const char* argv[]) {
         benchmark(options, data);
 
         const auto end = std::chrono::steady_clock::now();
-        duration += std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        duration += std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     }
 
-    std::chrono::milliseconds meanDuration = duration / options.iterations;
-    const auto count = meanDuration.count();
+    std::chrono::microseconds meanDuration = duration / options.iterations;
+    const auto count = static_cast<double>(meanDuration.count()) / 1000000.0;
 
-    std::vector<long> results(worldSize);
+    std::vector<double> results(worldSize);
 
-    MPI_Gather(&count, 1, MPI_LONG, results.data(), 1, MPI_LONG, 0, MPI_COMM_WORLD);
+    MPI_Gather(&count, 1, MPI_DOUBLE, results.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     if (rank == 0) {
-        std::cout << "Mean benchmark duration (ms): ";
+        std::cout << "Mean benchmark duration (s): ";
         std::copy(results.begin(), std::prev(results.end()), std::ostream_iterator<long>(std::cout, ", "));
         std::cout << results.back() << std::endl;
     }
