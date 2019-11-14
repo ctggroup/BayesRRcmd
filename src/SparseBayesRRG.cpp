@@ -115,6 +115,10 @@ void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResul
 
 void SparseBayesRRG::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
 {
+#ifdef MPI_TIMING_ENABLED
+    const auto start = std::chrono::steady_clock::now();
+#endif
+
     BayesRBase::accumulate(kernel, result);
 
     auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel.get());
@@ -122,16 +126,28 @@ void SparseBayesRRG::accumulate(const KernelPtr &kernel, const ConstAsyncResultP
 
     std::unique_lock lock(m_accumulatorMutex);
     m_accumulatedEpsilonSum += sparseKernel->epsilonSum;
+
+#ifdef MPI_TIMING_ENABLED
+    const auto end = std::chrono::steady_clock::now();
+    m_accumulateTime += static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
+#endif
 }
 
 void SparseBayesRRG::updateMpi()
 {
 #ifdef MPI_ENABLED
+#ifdef MPI_TIMING_ENABLED
+    const auto start = std::chrono::steady_clock::now();
+#endif
     // Take a copy of the accumulated values
     const auto localEpsilonSum = m_accumulatedEpsilonSum;
 
     // MPI_Allreduce
     MPI_Allreduce(&localEpsilonSum, &m_accumulatedEpsilonSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+#ifdef MPI_TIMING_ENABLED
+    const auto mpiSync = std::chrono::steady_clock::now();
+#endif
 
     // Subtract local accumulations for global
     m_accumulatedEpsilonSum -= localEpsilonSum;
@@ -141,6 +157,28 @@ void SparseBayesRRG::updateMpi()
 
     // Call last - it calls resetAccumulators
     BayesRBase::updateMpi();
+
+#ifdef MPI_TIMING_ENABLED
+    const auto end = std::chrono::steady_clock::now();
+
+    const auto mpiCount = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(mpiSync - start).count()) / 1000000.0;
+
+    int worldSize;
+    MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+    std::vector<double> waitTime(worldSize);
+    MPI_Gather(&mpiCount, 1, MPI_DOUBLE, waitTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    std::transform(m_waitTime.begin(), m_waitTime.end(), waitTime.begin(),
+                   m_waitTime.begin(), std::plus<double>());
+
+    const auto totalCount = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
+
+    std::vector<double> mpiTime(worldSize);
+    MPI_Gather(&totalCount, 1, MPI_DOUBLE, mpiTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    std::transform(m_mpiTime.begin(), m_mpiTime.end(), mpiTime.begin(),
+                   m_mpiTime.begin(), std::plus<double>());
+#endif
 #endif
 }
 

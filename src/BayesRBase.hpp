@@ -110,6 +110,12 @@ protected:
     VectorXd m_accumulatedBetaSqn;
     mutable std::shared_mutex m_accumulatorMutex;
 
+#if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
+    std::vector<double> m_waitTime;
+    std::vector<double> m_mpiTime;
+    double m_accumulateTime;
+#endif
+
     void setAsynchronous(bool async) { m_isAsync = async; }
 
     virtual void init(int K, unsigned int markerCount, unsigned int individualCount);

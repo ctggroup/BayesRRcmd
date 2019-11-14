@@ -147,9 +147,12 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     }
 
     int rank = 0;
+    int worldSize = 1;
 #ifdef MPI_ENABLED
-    if (m_opt->useHybridMpi)
+    if (m_opt->useHybridMpi) {
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+    }
 #endif
 
     setAsynchronous(analysis->isAsynchronous());
@@ -217,6 +220,12 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         const auto muTime = std::chrono::high_resolution_clock::now();
         prepareForAnylsis();
 
+#if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
+        m_waitTime.assign(static_cast<size_t>(worldSize), 0);
+        m_mpiTime.assign(static_cast<size_t>(worldSize), 0);
+        m_accumulateTime = 0;
+#endif
+
         std::random_shuffle(markers.begin(), markers.end());
 
         m_m0 = 0;
@@ -269,6 +278,13 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         }
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
+#if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
+        std::vector<double> accumulateTime(worldSize, 0.0);
+        if (m_opt->useHybridMpi) {
+            MPI_Gather(&m_accumulateTime, 1, MPI_DOUBLE, accumulateTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        }
+#endif
+
         if (rank == 0)
         {
             if (iteration >= m_burnIn && iteration % m_thinning == 0) {
@@ -279,7 +295,21 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
             const auto endTime = std::chrono::high_resolution_clock::now();
             const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
             const auto flowGraphDuration = std::chrono::duration_cast<std::chrono::milliseconds>(flowGraphEndTime - flowGraphStartTime).count();
+
+#if !(defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED))
             std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)" << std::endl;
+#else
+            std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s) | ";
+            std::copy(m_waitTime.begin(), std::prev(m_waitTime.end()), std::ostream_iterator<double>(std::cout, ", "));
+            std::cout << m_waitTime.back() << " | ";
+
+            std::copy(m_mpiTime.begin(), std::prev(m_mpiTime.end()), std::ostream_iterator<double>(std::cout, ", "));
+            std::cout << m_mpiTime.back() << " | ";
+
+            std::copy(accumulateTime.begin(), std::prev(accumulateTime.end()), std::ostream_iterator<double>(std::cout, ", "));
+            std::cout << accumulateTime.back() << std::endl;
+#endif
+
             meanIterationTime += iterationDuration;
             meanFlowGraphIterationTime += flowGraphDuration;
             if (m_showDebug)

@@ -13,6 +13,7 @@ option(ENABLE_UNIT_TESTS "Enable unit tests" OFF)
 option(ENABLE_BENCHMARKS "Enable benchmarks" OFF)
 option(ENABLE_FAST_OPTIMIZATONS "Enable more compiler optimizations" ON)
 option(ENABLE_MPI "Enable algorithms that require MPI" OFF)
+option(ENABLE_MPI_TIMING "Enable MPI debug logging (temporary)" OFF)
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/eigen/Eigen/)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/eigen/)
@@ -65,6 +66,10 @@ if (ENABLE_MPI)
     find_package(MPI REQUIRED)
     include_directories(${MPI_INCLUDE_PATH})
     add_definitions(-DMPI_ENABLED)
+
+    if (ENABLE_MPI_TIMING)
+        add_definitions(-DMPI_TIMING_ENABLED)
+    endif()
 endif()
 
 add_subdirectory(src)
