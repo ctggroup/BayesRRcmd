@@ -116,6 +116,11 @@ protected:
     double m_accumulateTime;
 #endif
 
+#if defined(EPSILON_TIMING_ENABLED)
+    double m_epsilonUpdateCount;
+    double m_epsilonUpdateTime;
+#endif
+
     void setAsynchronous(bool async) { m_isAsync = async; }
 
     virtual void init(int K, unsigned int markerCount, unsigned int individualCount);

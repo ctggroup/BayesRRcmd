@@ -196,6 +196,14 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     
     std::cout << "Number of groups: " << nGroups << endl << endl
               << "Rank " << rank << " running Gibbs sampling..." << endl;
+    std::cout << "itr: totalTime (flowGraphTime)";
+#if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
+    std::cout << " | updateMpi initial | updateMpi total | accumulate total";
+#endif
+#if defined(EPSILON_TIMING_ENABLED)
+    std::cout << " | deltaEpsilon mean | deltaEpsilon total | deltaEpsilon count";
+#endif
+    std::cout << endl;
 
     const auto t1 = std::chrono::high_resolution_clock::now();
 
@@ -224,6 +232,10 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         m_waitTime.assign(static_cast<size_t>(worldSize), 0);
         m_mpiTime.assign(static_cast<size_t>(worldSize), 0);
         m_accumulateTime = 0;
+#endif
+#if defined(EPSILON_TIMING_ENABLED)
+        m_epsilonUpdateCount = 0.0;
+        m_epsilonUpdateTime = 0.0;
 #endif
 
         std::random_shuffle(markers.begin(), markers.end());
@@ -284,6 +296,20 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
             MPI_Gather(&m_accumulateTime, 1, MPI_DOUBLE, accumulateTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         }
 #endif
+#if defined(EPSILON_TIMING_ENABLED)
+        double meanEpsilonTime = m_epsilonUpdateTime / m_epsilonUpdateCount;
+#if defined(MPI_ENABLED)
+        std::vector<double> accumulatedMeanEpsilonTime(worldSize, 0.0);
+        std::vector<double> accumulatedEpsilonTime(worldSize, 0.0);
+        std::vector<double> accumulatedEpsilonCount(worldSize, 0.0);
+        if (m_opt->useHybridMpi) {
+            MPI_Gather(&meanEpsilonTime, 1, MPI_DOUBLE, accumulatedMeanEpsilonTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            MPI_Gather(&m_epsilonUpdateTime, 1, MPI_DOUBLE, accumulatedEpsilonTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            MPI_Gather(&m_epsilonUpdateCount, 1, MPI_DOUBLE, accumulatedEpsilonCount.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        }
+#endif
+#endif
 
         if (rank == 0)
         {
@@ -296,10 +322,9 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
             const auto iterationDuration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
             const auto flowGraphDuration = std::chrono::duration_cast<std::chrono::milliseconds>(flowGraphEndTime - flowGraphStartTime).count();
 
-#if !(defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED))
-            std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)" << std::endl;
-#else
-            std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s) | ";
+            std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)";
+#if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
+            std::cout << " | ";
             std::copy(m_waitTime.begin(), std::prev(m_waitTime.end()), std::ostream_iterator<double>(std::cout, ", "));
             std::cout << m_waitTime.back() << " | ";
 
@@ -307,8 +332,25 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
             std::cout << m_mpiTime.back() << " | ";
 
             std::copy(accumulateTime.begin(), std::prev(accumulateTime.end()), std::ostream_iterator<double>(std::cout, ", "));
-            std::cout << accumulateTime.back() << std::endl;
+            std::cout << accumulateTime.back();
 #endif
+#if defined(EPSILON_TIMING_ENABLED)
+            std::cout << " | ";
+#if defined(MPI_ENABLED)
+            if (m_opt->useHybridMpi) {
+                std::copy(accumulatedMeanEpsilonTime.begin(), std::prev(accumulatedMeanEpsilonTime.end()), std::ostream_iterator<double>(std::cout, ", "));
+                std::cout << accumulatedMeanEpsilonTime.back() << " | ";
+
+                std::copy(accumulatedEpsilonTime.begin(), std::prev(accumulatedEpsilonTime.end()), std::ostream_iterator<double>(std::cout, ", "));
+                std::cout << accumulatedEpsilonTime.back() << " | ";
+
+                std::copy(accumulatedEpsilonCount.begin(), std::prev(accumulatedEpsilonCount.end()), std::ostream_iterator<double>(std::cout, ", "));
+                std::cout << accumulatedEpsilonCount.back();
+            } else
+#endif
+            std::cout << meanEpsilonTime << " | " << m_epsilonUpdateTime << " | " << m_epsilonUpdateCount;
+#endif
+            std::cout << std::endl;
 
             meanIterationTime += iterationDuration;
             meanFlowGraphIterationTime += flowGraphDuration;
@@ -541,9 +583,17 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
 
     // Update our local copy of epsilon to minimise the amount of time we need to hold the unique lock for.
     if (!skipUpdate) {
-          // this  also updates epsilonSum!
+#if defined(EPSILON_TIMING_ENABLED)
+        const auto start = std::chrono::steady_clock::now();
+#endif
+        // this  also updates epsilonSum!
         result->deltaEpsilon = bayesKernel->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum
+
+#if defined(EPSILON_TIMING_ENABLED)
+        const auto end = std::chrono::steady_clock::now();
+        result->count = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
+#endif
     }
 
     // These updates do not need to be atomic
@@ -578,6 +628,11 @@ void BayesRBase::updateGlobal(const KernelPtr& kernel,
     std::unique_lock lock(m_mutex);
     m_epsilon += *result->deltaEpsilon;
     m_betasqnG[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
+
+#if defined(EPSILON_TIMING_ENABLED)
+    m_epsilonUpdateCount += 1;
+    m_epsilonUpdateTime += result->count;
+#endif
 }
 
 void BayesRBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)

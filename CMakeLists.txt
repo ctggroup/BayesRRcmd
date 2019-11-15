@@ -14,6 +14,7 @@ option(ENABLE_BENCHMARKS "Enable benchmarks" OFF)
 option(ENABLE_FAST_OPTIMIZATONS "Enable more compiler optimizations" ON)
 option(ENABLE_MPI "Enable algorithms that require MPI" OFF)
 option(ENABLE_MPI_TIMING "Enable MPI debug logging (temporary)" OFF)
+option(ENABLE_EPSILON_TIMING "Enable calculateEpsilonChange time logging (temporary)" OFF)
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/eigen/Eigen/)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/eigen/)
@@ -70,6 +71,10 @@ if (ENABLE_MPI)
     if (ENABLE_MPI_TIMING)
         add_definitions(-DMPI_TIMING_ENABLED)
     endif()
+endif()
+
+if (ENABLE_EPSILON_TIMING)
+    add_definitions(-DEPSILON_TIMING_ENABLED)
 endif()
 
 add_subdirectory(src)

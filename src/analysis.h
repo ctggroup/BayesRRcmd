@@ -20,6 +20,10 @@ struct AsyncResult {
     double beta = 0.0;
     std::unique_ptr<VectorXd> deltaEpsilon;
     std::unique_ptr<MatrixXd> v;
+
+#if defined(EPSILON_TIMING_ENABLED)
+    double count = 0.0;
+#endif
 };
 
 class Analysis {
