@@ -520,10 +520,10 @@ bool Data::setMarkerSubset(const MarkerSubset &subset)
     if (!subset.isValid(numSnps))
         return false;
 
-    m_markerSubset = subset;
-
-    if (m_markerSubset.first() == 0 && m_markerSubset.size() == 0) {
-        m_markerSubset.clamp(numSnps);
+    if (subset.first() == 0 && subset.size() == 0) {
+        m_markerSubset = MarkerSubset(0, numSnps);
+    } else {
+        m_markerSubset = subset;
     }
 
     return true;

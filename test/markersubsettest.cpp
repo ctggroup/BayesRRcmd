@@ -7,7 +7,7 @@ TEST(MarkerSubset, MarkerSubset) {
     MarkerSubset s = {0, 2};
     ASSERT_EQ(0, s.first());
     ASSERT_EQ(1, s.last());
-    ASSERT_EQ(2, s.size);
+    ASSERT_EQ(2, s.size());
 }
 
 TEST(MarkerSubset, isValid) {
