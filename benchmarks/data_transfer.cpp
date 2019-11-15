@@ -85,7 +85,7 @@ int main(int argc, const char* argv[]) {
 
     if (rank == 0) {
         std::cout << "Mean benchmark duration (s): ";
-        std::copy(results.begin(), std::prev(results.end()), std::ostream_iterator<long>(std::cout, ", "));
+        std::copy(results.begin(), std::prev(results.end()), std::ostream_iterator<double>(std::cout, ", "));
         std::cout << results.back() << std::endl;
     }
 
