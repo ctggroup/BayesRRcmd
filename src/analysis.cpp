@@ -77,9 +77,9 @@ bool Analysis::didAccumulate() const
 
 void Analysis::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
 {
-    (void) kernel; // Unused
-    (void) result; // Unused
+    std::unique_lock lock(m_accumulatorMutex);
     m_didAccumulate = true;
+    accumulateWithLock(kernel, result);
 }
 
 void Analysis::resetAccumulators()

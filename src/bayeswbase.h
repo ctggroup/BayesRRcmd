@@ -88,8 +88,6 @@ public:
     void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
-    void accumulate(const KernelPtr& kernel,
-                    const ConstAsyncResultPtr& result) override;
     void updateMpi() override;
 
 protected:
@@ -108,6 +106,8 @@ protected:
                           int ncent, int *neval) = 0;
 
     void resetAccumulators() override;
+    virtual void accumulateWithLock(const KernelPtr& kernel,
+                                    const ConstAsyncResultPtr& result) override;
 };
 
 

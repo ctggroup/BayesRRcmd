@@ -102,6 +102,24 @@ void SparseBayesRRG::resetAccumulators()
     m_accumulatedEpsilonSum = 0;
 }
 
+void SparseBayesRRG::accumulateWithLock(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
+{
+#ifdef MPI_TIMING_ENABLED
+    const auto start = std::chrono::steady_clock::now();
+#endif
+    BayesRBase::accumulateWithLock(kernel, result);
+
+    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel.get());
+    assert(sparseKernel);
+
+    m_accumulatedEpsilonSum += sparseKernel->epsilonSum;
+
+#ifdef MPI_TIMING_ENABLED
+    const auto end = std::chrono::steady_clock::now();
+    m_accumulateTime += static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
+#endif
+}
+
 void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result)
 {
     BayesRBase::updateGlobal(kernel, result);
@@ -111,26 +129,6 @@ void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResul
 
     std::unique_lock lock(m_mutex);
     m_epsilonSum += sparseKernel->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
-}
-
-void SparseBayesRRG::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
-{
-#ifdef MPI_TIMING_ENABLED
-    const auto start = std::chrono::steady_clock::now();
-#endif
-
-    BayesRBase::accumulate(kernel, result);
-
-    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel.get());
-    assert(sparseKernel);
-
-    std::unique_lock lock(m_accumulatorMutex);
-    m_accumulatedEpsilonSum += sparseKernel->epsilonSum;
-
-#ifdef MPI_TIMING_ENABLED
-    const auto end = std::chrono::steady_clock::now();
-    m_accumulateTime += static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
-#endif
 }
 
 void SparseBayesRRG::updateMpi()

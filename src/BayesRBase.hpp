@@ -16,7 +16,6 @@
 
 #include <Eigen/Eigen>
 #include <memory>
-#include <shared_mutex>
 
 class AnalysisGraph;
 
@@ -37,7 +36,6 @@ public:
     void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
-    void accumulate(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
     void updateMpi() override;
 
     virtual void updateMu(double old_mu, double N)=0;
@@ -108,7 +106,6 @@ protected:
     // Accumulated values for MPI
     VectorXd m_accumulatedEpsilonDelta;
     VectorXd m_accumulatedBetaSqn;
-    mutable std::shared_mutex m_accumulatorMutex;
 
 #if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
     size_t m_updateMpiCount;
@@ -133,6 +130,7 @@ protected:
     virtual void writeWithUniqueLock(BayesRKernel *kernel);
 
     void resetAccumulators() override;
+    void accumulateWithLock(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
     void printDebugInfo() const;
 };

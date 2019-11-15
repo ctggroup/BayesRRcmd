@@ -482,6 +482,14 @@ void BayesWBase::resetAccumulators()
     m_accumulatedEpsilonDelta = VectorXd::Zero(m_data->numInds);
 }
 
+void BayesWBase::accumulateWithLock(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
+{
+    assert(kernel);
+    assert(result);
+    (void) kernel; // Unused
+    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
+}
+
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
 	// Component variables
@@ -986,17 +994,6 @@ void BayesWBase::updateGlobal(const KernelPtr& kernel,
 
     *m_epsilon += *result->deltaEpsilon;
     *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
-}
-
-void BayesWBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
-{
-    assert(kernel);
-    assert(result);
-    (void) kernel; // Unused
-
-    std::unique_lock lock(m_accumulatorMutex);
-    Analysis::accumulate(kernel, result);
-    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
 }
 
 void BayesWBase::updateMpi()

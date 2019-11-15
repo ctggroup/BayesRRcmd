@@ -7,6 +7,7 @@
 
 #include <Eigen/Eigen>
 #include <memory>
+#include <shared_mutex>
 
 using namespace Eigen;
 
@@ -65,9 +66,12 @@ protected:
     // MPI
     int m_rank = 0;
     int m_worldSize = 1;
+    mutable std::shared_mutex m_accumulatorMutex;
     bool m_didAccumulate = false;
 
     virtual void resetAccumulators();
+    virtual void accumulateWithLock(const KernelPtr& kernel,
+                                    const ConstAsyncResultPtr& result) = 0;
 };
 
 #endif // ANALYSIS_H

@@ -140,6 +140,14 @@ void BayesRBase::resetAccumulators()
     m_accumulatedBetaSqn = VectorXd::Zero(m_data->numGroups);
 }
 
+void BayesRBase::accumulateWithLock(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
+{
+    assert(kernel);
+    assert(result);
+    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
+    m_accumulatedBetaSqn[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
+}
+
 int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&markers)
 {
     if (!analysis) {
@@ -631,17 +639,6 @@ void BayesRBase::updateGlobal(const KernelPtr& kernel,
     m_epsilonUpdateCount += 1;
     m_epsilonUpdateTime += result->count;
 #endif
-}
-
-void BayesRBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
-{
-    assert(kernel);
-    assert(result);
-
-    std::unique_lock lock(m_accumulatorMutex);
-    Analysis::accumulate(kernel, result);
-    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
-    m_accumulatedBetaSqn[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
 }
 
 void BayesRBase::updateMpi()
