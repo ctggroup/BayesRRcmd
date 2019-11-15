@@ -478,6 +478,7 @@ void BayesWBase::prepareForAnalysis()
 
 void BayesWBase::resetAccumulators()
 {
+    Analysis::resetAccumulators();
     m_accumulatedEpsilonDelta = VectorXd::Zero(m_data->numInds);
 }
 
@@ -758,12 +759,6 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         return 1;
     }
 
-    int rank = 0;
-#ifdef MPI_ENABLED
-    if (m_opt->useHybridMpi)
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
     const unsigned int M(m_data->numSnps);
     const unsigned int N(m_data->numInds);
     const unsigned int numFixedEffects(m_data->numFixedEffects);
@@ -775,7 +770,7 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     SampleWriter writer;
     VectorXd sample(2*M+4); // variable containing a sample of all variables in the model: M marker effects, M mixture assignments, shape (alpha), mu, iteration number and sigma_b(sigma_g)
 
-    if (rank == 0) {
+    if (m_rank == 0) {
         writer.setFileName(m_outputFile);
         writer.setMarkerCount(M);
         writer.setIndividualCount(N);
@@ -791,7 +786,7 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         }
     }
 
-    std::cout << "Rank " << rank << " running Gibbs sampling..." << endl;
+    std::cout << "Rank " << m_rank << " running Gibbs sampling..." << endl;
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
 	// This for MUST NOT BE PARALLELIZED, IT IS THE MARKOV CHAIN
@@ -830,7 +825,7 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         m_pi_L = m_dist.dirichilet_rng(m_v.array());
 
 		// Write the result to file
-        if (rank == 0) {
+        if (m_rank == 0) {
             if (iteration >= m_burn_in && iteration % m_thinning == 0) {
                 if(numFixedEffects > 0){
                     sample << iteration, m_alpha, m_mu, m_theta, m_beta,m_components.cast<double>(), m_sigma_b ;
@@ -845,7 +840,7 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         }
 	}
 
-    if (rank == 0) {
+    if (m_rank == 0) {
         std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
         std::cout << "duration: "<<duration << "s\n";
@@ -1000,6 +995,7 @@ void BayesWBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &
     (void) kernel; // Unused
 
     std::unique_lock lock(m_accumulatorMutex);
+    Analysis::accumulate(kernel, result);
     m_accumulatedEpsilonDelta += *result->deltaEpsilon;
 }
 

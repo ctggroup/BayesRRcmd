@@ -107,7 +107,7 @@ protected:
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;
 
-    virtual void resetAccumulators();
+    void resetAccumulators() override;
 };
 
 

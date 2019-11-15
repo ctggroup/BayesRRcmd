@@ -111,6 +111,7 @@ protected:
     mutable std::shared_mutex m_accumulatorMutex;
 
 #if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
+    size_t m_updateMpiCount;
     std::vector<double> m_waitTime;
     std::vector<double> m_mpiTime;
     double m_accumulateTime;
@@ -131,7 +132,7 @@ protected:
     virtual void readWithSharedLock(BayesRKernel *kernel);
     virtual void writeWithUniqueLock(BayesRKernel *kernel);
 
-    virtual void resetAccumulators();
+    void resetAccumulators() override;
 
     void printDebugInfo() const;
 };

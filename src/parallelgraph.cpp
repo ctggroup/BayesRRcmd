@@ -113,7 +113,8 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
 
             if (m_analysisTokenCount == 0) {
                 // Synchronise values from other processes
-                m_analysis->updateMpi();
+                if (m_analysis->didAccumulate())
+                    m_analysis->updateMpi();
                 // Allow the next set of analyses to take place
                 queueAnalysisTokens();
             }

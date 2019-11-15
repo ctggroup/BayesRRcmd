@@ -53,13 +53,21 @@ public:
                               const ConstAsyncResultPtr& result) = 0;
 
     // MPI
+    virtual bool didAccumulate() const;
     virtual void accumulate(const KernelPtr& kernel,
-                            const ConstAsyncResultPtr& result) = 0;
+                            const ConstAsyncResultPtr& result);
     virtual void updateMpi() = 0;
 
 protected:
     const Data *m_data = nullptr; // data matrices
     const Options *m_opt;
+
+    // MPI
+    int m_rank = 0;
+    int m_worldSize = 1;
+    bool m_didAccumulate = false;
+
+    virtual void resetAccumulators();
 };
 
 #endif // ANALYSIS_H

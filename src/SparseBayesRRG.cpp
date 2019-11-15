@@ -137,6 +137,7 @@ void SparseBayesRRG::updateMpi()
 {
 #ifdef MPI_ENABLED
 #ifdef MPI_TIMING_ENABLED
+    ++m_updateMpiCount;
     const auto start = std::chrono::steady_clock::now();
 #endif
     // Take a copy of the accumulated values
@@ -163,9 +164,7 @@ void SparseBayesRRG::updateMpi()
 
     const auto mpiCount = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(mpiSync - start).count()) / 1000000.0;
 
-    int worldSize;
-    MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-    std::vector<double> waitTime(worldSize);
+    std::vector<double> waitTime(m_worldSize);
     MPI_Gather(&mpiCount, 1, MPI_DOUBLE, waitTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     std::transform(m_waitTime.begin(), m_waitTime.end(), waitTime.begin(),
@@ -173,7 +172,7 @@ void SparseBayesRRG::updateMpi()
 
     const auto totalCount = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
 
-    std::vector<double> mpiTime(worldSize);
+    std::vector<double> mpiTime(m_worldSize);
     MPI_Gather(&totalCount, 1, MPI_DOUBLE, mpiTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     std::transform(m_mpiTime.begin(), m_mpiTime.end(), mpiTime.begin(),

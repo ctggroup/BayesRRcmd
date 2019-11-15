@@ -135,6 +135,7 @@ void BayesRBase::writeWithUniqueLock(BayesRKernel *kernel)
 
 void BayesRBase::resetAccumulators()
 {
+    Analysis::resetAccumulators();
     m_accumulatedEpsilonDelta = VectorXd::Zero(m_data->numInds);
     m_accumulatedBetaSqn = VectorXd::Zero(m_data->numGroups);
 }
@@ -145,15 +146,6 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         std::cout << "Cannot run Gibbs analysis without a flow graph!" << std::endl;
         return 1;
     }
-
-    int rank = 0;
-    int worldSize = 1;
-#ifdef MPI_ENABLED
-    if (m_opt->useHybridMpi) {
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-    }
-#endif
 
     setAsynchronous(analysis->isAsynchronous());
 
@@ -166,7 +158,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     init(K, M, N);
 
     SampleWriter writer;
-    if (rank == 0) {
+    if (m_rank == 0) {
         writer.setFileName(m_outputFile);
         writer.setMarkerCount(M);
         writer.setIndividualCount(N);
@@ -195,10 +187,10 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     std::iota(xI.begin(), xI.end(), 0);
     
     std::cout << "Number of groups: " << nGroups << endl << endl
-              << "Rank " << rank << " running Gibbs sampling..." << endl;
+              << "Rank " << m_rank << " running Gibbs sampling..." << endl;
     std::cout << "itr: totalTime (flowGraphTime)";
 #if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
-    std::cout << " | updateMpi initial | updateMpi total | accumulate total";
+    std::cout << " | updateMpi initial | updateMpi total | updateMpi count | accumulate total";
 #endif
 #if defined(EPSILON_TIMING_ENABLED)
     std::cout << " | deltaEpsilon mean | deltaEpsilon total | deltaEpsilon count";
@@ -218,7 +210,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         const auto startTime = std::chrono::high_resolution_clock::now();
         //if (iteration > 0 && iteration % unsigned(std::ceil(max_iterations / 10)) == 0)
 
-        if (rank == 0)
+        if (m_rank == 0)
             std::cout << "iteration " << iteration << ": ";
 
         double old_mu=m_mu;
@@ -229,8 +221,9 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         prepareForAnylsis();
 
 #if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
-        m_waitTime.assign(static_cast<size_t>(worldSize), 0);
-        m_mpiTime.assign(static_cast<size_t>(worldSize), 0);
+        m_updateMpiCount = 0;
+        m_waitTime.assign(static_cast<size_t>(m_worldSize), 0);
+        m_mpiTime.assign(static_cast<size_t>(m_worldSize), 0);
         m_accumulateTime = 0;
 #endif
 #if defined(EPSILON_TIMING_ENABLED)
@@ -291,17 +284,20 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
 #if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
-        std::vector<double> accumulateTime(worldSize, 0.0);
+        std::vector<double> accumulateTime(m_worldSize, 0.0);
         if (m_opt->useHybridMpi) {
             MPI_Gather(&m_accumulateTime, 1, MPI_DOUBLE, accumulateTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         }
 #endif
 #if defined(EPSILON_TIMING_ENABLED)
-        double meanEpsilonTime = m_epsilonUpdateTime / m_epsilonUpdateCount;
+        double meanEpsilonTime = 0;
+        if (m_epsilonUpdateCount > 0)
+             meanEpsilonTime = m_epsilonUpdateTime / m_epsilonUpdateCount;
+
 #if defined(MPI_ENABLED)
-        std::vector<double> accumulatedMeanEpsilonTime(worldSize, 0.0);
-        std::vector<double> accumulatedEpsilonTime(worldSize, 0.0);
-        std::vector<double> accumulatedEpsilonCount(worldSize, 0.0);
+        std::vector<double> accumulatedMeanEpsilonTime(m_worldSize, 0.0);
+        std::vector<double> accumulatedEpsilonTime(m_worldSize, 0.0);
+        std::vector<double> accumulatedEpsilonCount(m_worldSize, 0.0);
         if (m_opt->useHybridMpi) {
             MPI_Gather(&meanEpsilonTime, 1, MPI_DOUBLE, accumulatedMeanEpsilonTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
             MPI_Gather(&m_epsilonUpdateTime, 1, MPI_DOUBLE, accumulatedEpsilonTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -311,7 +307,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
 #endif
 #endif
 
-        if (rank == 0)
+        if (m_rank == 0)
         {
             if (iteration >= m_burnIn && iteration % m_thinning == 0) {
                 sample << iteration, m_mu, m_beta, m_sigmaE, m_sigmaG, m_gamma, m_components, m_acum, m_epsilon;
@@ -330,6 +326,8 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
 
             std::copy(m_mpiTime.begin(), std::prev(m_mpiTime.end()), std::ostream_iterator<double>(std::cout, ", "));
             std::cout << m_mpiTime.back() << " | ";
+
+            std::cout << m_updateMpiCount << " | ";
 
             std::copy(accumulateTime.begin(), std::prev(accumulateTime.end()), std::ostream_iterator<double>(std::cout, ", "));
             std::cout << accumulateTime.back();
@@ -370,14 +368,14 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         }
     }
 
-    if (rank == 0)
+    if (m_rank == 0)
     {
         const auto t2 = std::chrono::high_resolution_clock::now();
         const auto duration = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-        std::cout << rank << " - duration: " << duration << "s" << std::endl;
+        std::cout << m_rank << " - duration: " << duration << "s" << std::endl;
         const double meanIterationDuration = (static_cast<double>(meanIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
         const double meanFlowGraphIterationDuration = (static_cast<double>(meanFlowGraphIterationTime) / 1000.0) / static_cast<double>(m_maxIterations);
-        std::cout << rank << " - mean iteration duration: " << meanIterationDuration  << "s" << std::endl
+        std::cout << m_rank << " - mean iteration duration: " << meanIterationDuration  << "s" << std::endl
                   << "mean flowgraph duration: " << meanFlowGraphIterationDuration << "s" << std::endl;
     }
 
@@ -641,6 +639,7 @@ void BayesRBase::accumulate(const KernelPtr &kernel, const ConstAsyncResultPtr &
     assert(result);
 
     std::unique_lock lock(m_accumulatorMutex);
+    Analysis::accumulate(kernel, result);
     m_accumulatedEpsilonDelta += *result->deltaEpsilon;
     m_accumulatedBetaSqn[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
 }
