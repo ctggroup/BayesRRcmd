@@ -61,7 +61,7 @@ MarkerSubset getMarkerSubset(const Options *options, const Data *data) {
         if (!isValid(subsets, data->numSnps)) {
             cerr << "Invalid marker distribution" << endl;
             for (const auto &s : subsets)
-                cerr << s.first() << ", " << s.last() << ": " << s.size << endl;
+                cerr << s.first() << ", " << s.last() << ": " << s.size() << endl;
             MPI_Abort(MPI_COMM_WORLD, -2);
         }
 
@@ -263,11 +263,7 @@ bool runBayesAnalysis(const Options &options) {
         taskScheduler = std::make_unique<tbb::task_scheduler_init>(options.numThreadSpawned);
 
     if (options.useMarkerCache) {
-        clock_t start_cache = clock();
         markerCache()->populate(&data, &options);
-        clock_t end_cache = clock();
-        printf("Populated cache in %.3f sec.\n", double(end_cache - start_cache) / double(CLOCKS_PER_SEC));
-        cout << endl;
     }
 
     auto graph = AnalysisRunner::makeAnalysisGraph(options);

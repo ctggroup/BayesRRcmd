@@ -522,8 +522,8 @@ bool Data::setMarkerSubset(const MarkerSubset &subset)
 
     m_markerSubset = subset;
 
-    if (m_markerSubset.start == 0 && m_markerSubset.size == 0) {
-        m_markerSubset.size = numSnps;
+    if (m_markerSubset.first() == 0 && m_markerSubset.size() == 0) {
+        m_markerSubset.clamp(numSnps);
     }
 
     return true;

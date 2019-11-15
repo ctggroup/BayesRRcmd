@@ -11,10 +11,10 @@ namespace  {
 
 unsigned long MarkerSubset::last() const
 {
-     if (start == 0 && size == 0)
+     if (m_start == 0 && m_size == 0)
          return 0;
 
-     return start + size - 1;
+     return m_start + m_size - 1;
 }
 
 void MarkerSubset::clamp(unsigned int markerCount)
@@ -22,7 +22,7 @@ void MarkerSubset::clamp(unsigned int markerCount)
     if (last() < markerCount)
         return;
 
-    size = markerCount - start;
+    m_size = markerCount - m_start;
 }
 
 bool MarkerSubset::isValid(unsigned int markerCount) const
@@ -30,10 +30,10 @@ bool MarkerSubset::isValid(unsigned int markerCount) const
     if (markerCount == 0)
         return false;
 
-    if (start == 0 && size == 0)
+    if (m_start == 0 && m_size == 0)
         return true;
 
-    return start + size - 1 < markerCount;
+    return m_start + m_size - 1 < markerCount;
 }
 
 MarkerIndexList MarkerSubset::toMarkerIndexList(unsigned int markerCount) const
@@ -41,9 +41,9 @@ MarkerIndexList MarkerSubset::toMarkerIndexList(unsigned int markerCount) const
     if (!isValid(markerCount))
         return {};
 
-    const auto listSize = size == 0 ? markerCount : size;
+    const auto listSize = m_size == 0 ? markerCount : m_size;
     std::vector<unsigned int> markers(listSize);
-    std::iota(markers.begin(), markers.end(), start);
+    std::iota(markers.begin(), markers.end(), m_start);
 
     return markers;
 }
@@ -55,9 +55,9 @@ bool isValid(const std::vector<MarkerSubset> subsets, unsigned int markerCount)
         return false;
     }
 
-    unsigned int sum = subsets.front().size;
+    unsigned int sum = subsets.front().size();
     auto overlapCheck = [&sum](const MarkerSubset &a, const MarkerSubset &b) {
-        sum += b.size;
+        sum += b.size();
         return a.last() != (b.first() - 1);
     };
 
