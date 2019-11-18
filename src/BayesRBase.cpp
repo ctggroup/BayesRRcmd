@@ -198,7 +198,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
               << "Rank " << m_rank << " running Gibbs sampling..." << endl;
     std::cout << "itr: totalTime (flowGraphTime)";
 #if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
-    std::cout << " | updateMpi initial | updateMpi total | updateMpi count | accumulate total";
+    std::cout << " | updateMpi idle | updateMpi total | updateMpi count | accumulate total";
 #endif
 #if defined(EPSILON_TIMING_ENABLED)
     std::cout << " | deltaEpsilon mean | deltaEpsilon total | deltaEpsilon count";
@@ -329,8 +329,9 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
             std::cout << static_cast<double>(iterationDuration) / 1000.0 << "s (" << static_cast<double>(flowGraphDuration) / 1000.0 << "s)";
 #if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
             std::cout << " | ";
-            std::copy(m_waitTime.begin(), std::prev(m_waitTime.end()), std::ostream_iterator<double>(std::cout, ", "));
-            std::cout << m_waitTime.back() << " | ";
+            std::sort(m_waitTime.begin(), m_waitTime.end());
+            std::cout << m_waitTime.back() - m_waitTime.front() << " | ";
+
 
             std::copy(m_mpiTime.begin(), std::prev(m_mpiTime.end()), std::ostream_iterator<double>(std::cout, ", "));
             std::cout << m_mpiTime.back() << " | ";
