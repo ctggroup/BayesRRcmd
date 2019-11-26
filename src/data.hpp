@@ -89,7 +89,7 @@ public:
     MatrixXf X;              // coefficient matrix for fixed effects
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
-    VectorXf y;              // phenotypes
+    VectorXd y;              // phenotypes
     VectorXi G; // groups
     VectorXd fail;			 // Failure indicator
 

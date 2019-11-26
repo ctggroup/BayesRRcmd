@@ -374,8 +374,8 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
 	SnpInfo *snpInfo = NULL;
 	unsigned snp = 0, ind = 0;
 	unsigned nmiss = 0;
-	float mean = 0.0;
-	float sqn = 0.0;
+	double mean = 0.0;
+	double sqn = 0.0;
 
 	for (j = 0, snp = 0; j < numSnps; j++) { // Read genotype in SNP-major mode, 00: homozygote AA; 11: homozygote BB; 10: hetezygote; 01: missing
 		snpInfo = snpInfoVec[j];
@@ -422,7 +422,7 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
 			}
 		}
 		// fill missing values with the mean
-		mean /= float(numInds-nmiss);
+		mean /= double(numInds-nmiss);
 
 		//Assume non-missingness
 
@@ -440,7 +440,7 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
 
 		sqn -= numInds * mean * mean;
 		means(j) = mean;
-		sds(j) = sqrt(sqn / float(numInds));
+		sds(j) = sqrt(sqn / double(numInds));
 
 		mean_sd_ratio(j) = means(j)/sds(j);
 
@@ -453,6 +453,48 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
 }
 
 
+void Data::readPhenotypeFile(const string &phenFile) {
+    // NA: missing phenotype
+    ifstream in(phenFile.c_str());
+    if (!in) throw ("Error: can not open the phenotype file [" + phenFile + "] to read.");
+#ifndef USE_MPI
+    //cout << "Reading phenotypes from [" + phenFile + "]." << endl;
+#endif
+    map<string, IndInfo*>::iterator it, end=indInfoMap.end();
+    IndInfo *ind = NULL;
+    Gadget::Tokenizer colData;
+    string inputStr;
+    string sep(" \t");
+    string id;
+    double tmp = 0.0;
+    //correct loop to go through numInds
+    y.setZero(numInds);
+    uint line = 0, nas = 0, nonas = 0;
+
+    while (getline(in,inputStr)) {
+        colData.getTokens(inputStr, sep);
+        id = colData[0] + ":" + colData[1];
+        it = indInfoMap.find(id);
+        // First one corresponded to mphen variable (1+1)
+        if (it != end) {
+            ind = it->second;
+                tmp = double(atof(colData[1+1].c_str()));
+                ind->phenotype = tmp;
+                y[nonas]       = tmp;
+                nonas += 1;
+            line += 1;
+        }
+    }
+    in.close();
+    //printf("nonas = %d + nas = %d = numInds = %d\n", nonas, nas, numInds);
+    assert(nonas + nas == numInds);
+
+    //numNAs = nas;
+    y.conservativeResize(numInds);
+}
+
+
+/*
 void Data::readPhenotypeFile(const string &phenFile) {
 	// NA: missing phenotype
 	ifstream in(phenFile.c_str());
@@ -484,7 +526,7 @@ void Data::readPhenotypeFile(const string &phenFile) {
 	}
 
 	in.close();
-}
+}*/
 
 //Copied from
 //https://gist.github.com/infusion/43bd2aa421790d5b4582

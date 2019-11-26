@@ -1,0 +1,11 @@
+#define __TBB_VERSION_STRINGS(N) \
+#N": BUILD_HOST\t\tlogin2 (x86_64)" ENDL \
+#N": BUILD_OS\t\tCentOS Linux release 7.6.1810 (Core) " ENDL \
+#N": BUILD_KERNEL\tLinux 3.10.0-957.12.2.el7.x86_64 #1 SMP Tue May 14 21:24:32 UTC 2019" ENDL \
+#N": BUILD_GCC\t\tg++ (GCC) 9.2.1 20190827 (Red Hat 9.2.1-1)" ENDL \
+#N": BUILD_LIBC\t2.23.90" ENDL \
+#N": BUILD_LD\t\tGNU ld version 2.26.20160125" ENDL \
+#N": BUILD_TARGET\tintel64 on cc9_libc2.23.90_kernel3.10.0" ENDL \
+#N": BUILD_COMMAND\t/software/Development/gcc/9.2.1/bin/c++ -DTBB_USE_DEBUG -DDO_ITT_NOTIFY -g -O0 -DUSE_PTHREAD -m64 -mrtm -fPIC -flifetime-dse=1 -D__TBB_BUILD=1 -Wall -Wextra -Wno-parentheses -Wno-sized-deallocation -D__TBB_CPF_BUILD=1 -std=c++17 -I/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/tbb/./src -I/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/tbb/./src/rml/include -I/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/tbb/./include -I." ENDL \
+
+#define __TBB_DATETIME "Tue Nov 19 10:41:30 UTC 2019"

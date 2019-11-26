@@ -15,9 +15,10 @@
 #include "boost/random.hpp"
 #include "boost/generator_iterator.hpp"
 class Distributions_boost{
-    boost::mt19937 rng;
+   // boost::mt19937 rng;
     unsigned int seed;
 public:
+	boost::mt19937 rng;
     Distributions_boost(unsigned int seed);
     virtual ~Distributions_boost();
     double rgamma(double shape, double scale);

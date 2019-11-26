@@ -139,6 +139,8 @@ private:
 	void sampleMu();
 	void sampleTheta(int fix_i);
 	void sampleBeta(int marker);
+        void sampleBeta_test(int marker);
+
 	void sampleAlpha();
 
 	void marginal_likelihood_vec_calc(VectorXd prior_prob, VectorXd &post_marginals, string n, double vi_sum, double vi_2,double vi_1, double vi_0,double mean, double sd, double mean_sd_ratio);

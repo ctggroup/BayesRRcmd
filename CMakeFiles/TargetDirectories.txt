@@ -1,0 +1,6 @@
+/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/rebuild_cache.dir
+/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/edit_cache.dir
+/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/src/CMakeFiles/rebuild_cache.dir
+/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/src/CMakeFiles/libbrr-dev.dir
+/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/src/CMakeFiles/edit_cache.dir
+/users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/src/CMakeFiles/brr.dir
