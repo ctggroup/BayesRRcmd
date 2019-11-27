@@ -1,6 +1,7 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#include "asyncresult.h"
 #include "common.h"
 #include "data.hpp"
 #include "options.hpp"
@@ -11,21 +12,8 @@
 
 using namespace Eigen;
 
-struct IndexEntry;
-
 class AnalysisGraph;
 class MarkerBuilder;
-
-struct AsyncResult {
-    double betaOld = 0.0;
-    double beta = 0.0;
-    std::unique_ptr<VectorXd> deltaEpsilon;
-    std::unique_ptr<MatrixXd> v;
-
-#if defined(EPSILON_TIMING_ENABLED)
-    double count = 0.0;
-#endif
-};
 
 class Analysis {
 public:
