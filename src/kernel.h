@@ -11,6 +11,9 @@ struct Kernel
     virtual ~Kernel();
 
     ConstMarkerPtr marker = nullptr;
+
+    virtual VectorXdPtr calculateEpsilonChange(const double beta_old,
+                                               const double beta) = 0;
 };
 
 #endif // KERNEL_H

@@ -33,7 +33,8 @@ public:
 
     void processColumn(const KernelPtr &kernel) override;
 
-    std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) override;
+    AsyncResultPtr processColumnAsync(const KernelPtr &kernel) override;
+    void processResult(const KernelPtr& kernel, const AsyncResultPtr& result) override;
     void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 

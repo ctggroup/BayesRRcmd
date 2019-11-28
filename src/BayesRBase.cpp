@@ -472,14 +472,14 @@ void BayesRBase::processColumn(const KernelPtr &kernel)
 
 }
 
-std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &kernel)
+AsyncResultPtr BayesRBase::processColumnAsync(const KernelPtr &kernel)
 {
     auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel.get());
     assert(bayesKernel);
 
     const auto group = m_data->G[bayesKernel->marker->i];
     const double sigmaG = m_sigmaG[group];
-    auto result = std::make_unique<AsyncResult>();
+    auto result = std::make_shared<AsyncResult>();
     // to keep track of the column processing time
     const auto t1c = std::chrono::high_resolution_clock::now();
     prepare(bayesKernel);
@@ -557,6 +557,19 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
         }
     }
 
+    processResult(kernel, result);
+
+    //info on the running time of the column processing, would be very useful to have it as an option, and output it to a file
+    //const auto t2c = std::chrono::high_resolution_clock::now();
+   // const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
+
+   // cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
+
+    return result;
+}
+
+void BayesRBase::processResult(const KernelPtr &kernel, const AsyncResultPtr &result)
+{
     // Only update m_epsilon if required
     const bool skipUpdate = result->betaOld == 0.0 && result->beta == 0.0;
 
@@ -566,7 +579,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
         const auto start = std::chrono::steady_clock::now();
 #endif
         // this  also updates epsilonSum!
-        result->deltaEpsilon = bayesKernel->calculateEpsilonChange(result->betaOld, result->beta);
+        result->deltaEpsilon = kernel->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum
 
 #if defined(EPSILON_TIMING_ENABLED)
@@ -576,16 +589,8 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
     }
 
     // These updates do not need to be atomic
-    m_beta(bayesKernel->marker->i) = result->beta;
-    m_components(bayesKernel->marker->i) = result->component;
-
-    //info on the running time of the column processing, would be very useful to have it as an option, and output it to a file
-    //const auto t2c = std::chrono::high_resolution_clock::now();
-   // const auto durationc = std::chrono::duration_cast<std::chrono::microseconds>(t2c - t1c).count();
-
-   // cout<<"marker : "<< marker->i << " duration : " <<durationc<<endl;
-
-    return result;
+    m_beta(kernel->marker->i) = result->beta;
+    m_components(kernel->marker->i) = result->component;
 }
 
 void BayesRBase::doThreadSafeUpdates(const ConstAsyncResultPtr &result)

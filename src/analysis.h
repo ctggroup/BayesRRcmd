@@ -35,7 +35,9 @@ public:
     virtual void processColumn(const KernelPtr &kernel) = 0;
 
     // ParallelGraph
-    virtual std::unique_ptr<AsyncResult> processColumnAsync(const KernelPtr &kernel) = 0;
+    virtual AsyncResultPtr processColumnAsync(const KernelPtr &kernel) = 0;
+    virtual void processResult(const KernelPtr& kernel,
+                               const AsyncResultPtr& result) = 0;
     virtual void doThreadSafeUpdates(const ConstAsyncResultPtr& result) = 0;
     virtual void updateGlobal(const KernelPtr& kernel,
                               const ConstAsyncResultPtr& result) = 0;

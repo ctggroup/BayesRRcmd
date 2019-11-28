@@ -841,7 +841,7 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     return 0;
 }
 
-std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &kernel)
+AsyncResultPtr BayesWBase::processColumnAsync(const KernelPtr &kernel)
 {
     auto * gaussKernel = dynamic_cast<BayesWKernel*>(kernel.get());
     assert(gaussKernel);
@@ -860,7 +860,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
 
     const double beta_old = m_beta(gaussKernel->marker->i);
 
-    auto result = std::make_unique<AsyncResult>();
+    auto result = std::make_shared<AsyncResult>();
     result->betaOld = beta_old;
     result->beta = beta_old;
 
@@ -945,16 +945,21 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
         }
     }
 
+    processResult(kernel, result);
+
+    return result;
+}
+
+void BayesWBase::processResult(const KernelPtr &kernel, const AsyncResultPtr &result)
+{
     // Only update m_epsilon if required
     const bool skipUpdate = result->betaOld == 0.0 && result->beta == 0.0;
     if (!skipUpdate) {
-        result->deltaEpsilon = gaussKernel->calculateEpsilonChange(result->betaOld, result->beta);
+        result->deltaEpsilon = kernel->calculateEpsilonChange(result->betaOld, result->beta);
     }
 
-    m_components(gaussKernel->marker->i) = result->component;
-    m_beta(gaussKernel->marker->i) = result->beta;
-
-    return result;
+    m_components(kernel->marker->i) = result->component;
+    m_beta(kernel->marker->i) = result->beta;
 }
 
 void BayesWBase::doThreadSafeUpdates(const ConstAsyncResultPtr &result)
