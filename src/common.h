@@ -43,6 +43,7 @@ struct Kernel;
 using KernelPtr = std::shared_ptr<Kernel>;
 
 struct AsyncResult;
+using AsyncResultPtr = std::shared_ptr<AsyncResult>;
 using ConstAsyncResultPtr = std::shared_ptr<const AsyncResult>;
 
 class MarkerBuilder;

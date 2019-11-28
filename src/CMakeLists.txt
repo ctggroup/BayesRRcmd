@@ -49,6 +49,7 @@ add_library(bayes
     logwriter.cpp
     colwriter.cpp
     preprocessedfilesplitter.cpp
+    hybridmpisyncmanager.cpp
 )
 
 set_property(TARGET bayes PROPERTY CXX_STANDARD_REQUIRED ON)
