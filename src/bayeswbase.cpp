@@ -476,20 +476,6 @@ void BayesWBase::prepareForAnalysis()
     });
 }
 
-void BayesWBase::resetAccumulators()
-{
-    Analysis::resetAccumulators();
-    m_accumulatedEpsilonDelta = VectorXd::Zero(m_data->numInds);
-}
-
-void BayesWBase::accumulateWithLock(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
-{
-    assert(kernel);
-    assert(result);
-    (void) kernel; // Unused
-    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
-}
-
 void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount)
 {
 	// Component variables
@@ -561,8 +547,6 @@ void BayesWBase::init(unsigned int markerCount, unsigned int individualCount, un
 	}
 
     m_randomNumbers.resize(markerCount);
-
-    resetAccumulators();
 }
 // Function for sampling intercept (mu)
 void BayesWBase::sampleMu(){
@@ -996,23 +980,3 @@ void BayesWBase::updateGlobal(const KernelPtr& kernel,
     *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
 }
 
-void BayesWBase::updateMpi()
-{
-#ifdef MPI_ENABLED
-    // Take a copy of the accumulated values
-    const auto localEpsilonDelta = m_accumulatedEpsilonDelta;
-
-    // MPI_Allreduce
-    MPI_Allreduce(localEpsilonDelta.data(), m_accumulatedEpsilonDelta.data(), m_data->numInds, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    // Subtract local accumulations for global
-    m_accumulatedEpsilonDelta -= localEpsilonDelta;
-
-    // Apply accumulations from other processes
-    *m_epsilon += m_accumulatedEpsilonDelta;
-    *m_vi = (m_alpha*m_epsilon->array()-EuMasc).exp();
-
-    // Reset local accumulated values
-    resetAccumulators();
-#endif
-}

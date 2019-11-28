@@ -70,10 +70,6 @@ protected:
 
     mutable std::shared_mutex m_mutex;
 
-    // Accumulated values for MPI
-    VectorXd m_accumulatedEpsilonDelta;
-    mutable std::shared_mutex m_accumulatorMutex;
-
 public:
     BayesWBase(const Data *data, const Options *opt, const long m_memPageSize);
     virtual ~BayesWBase();
@@ -88,7 +84,6 @@ public:
     void doThreadSafeUpdates(const ConstAsyncResultPtr& result) override;
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
 
-    void updateMpi() override;
 
 protected:
 	void init(unsigned int markerCount, unsigned int individualCount, unsigned int fixedCount);
@@ -104,10 +99,6 @@ protected:
                           double *convex, int npoint, int dometrop, double *xprev, double *xsamp,
                           int nsamp, double *qcent, double *xcent,
                           int ncent, int *neval) = 0;
-
-    void resetAccumulators() override;
-    virtual void accumulateWithLock(const KernelPtr& kernel,
-                                    const ConstAsyncResultPtr& result) override;
 };
 
 

@@ -95,8 +95,6 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
 
     m_randomNumbers.resize(markerCount);
 
-    resetAccumulators();
-
     if(m_colLog)
     {
         m_colWriter.setFileName(m_colLogFile);
@@ -131,21 +129,6 @@ void BayesRBase::writeWithUniqueLock(BayesRKernel *kernel)
 {
     // Empty in BayesRBase
     (void) kernel; // Unused
-}
-
-void BayesRBase::resetAccumulators()
-{
-    Analysis::resetAccumulators();
-    m_accumulatedEpsilonDelta = VectorXd::Zero(m_data->numInds);
-    m_accumulatedBetaSqn = VectorXd::Zero(m_data->numGroups);
-}
-
-void BayesRBase::accumulateWithLock(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
-{
-    assert(kernel);
-    assert(result);
-    m_accumulatedEpsilonDelta += *result->deltaEpsilon;
-    m_accumulatedBetaSqn[m_data->G[kernel->marker->i]] += pow(result->beta, 2);
 }
 
 int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&markers)
@@ -232,7 +215,6 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         m_updateMpiCount = 0;
         m_waitTime.assign(static_cast<size_t>(m_worldSize), 0);
         m_mpiTime.assign(static_cast<size_t>(m_worldSize), 0);
-        m_accumulateTime = 0;
 #endif
 #if defined(EPSILON_TIMING_ENABLED)
         m_epsilonUpdateCount = 0.0;
@@ -291,12 +273,6 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
         }
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
-#if defined(MPI_ENABLED) && defined(MPI_TIMING_ENABLED)
-        std::vector<double> accumulateTime(m_worldSize, 0.0);
-        if (m_opt->useHybridMpi) {
-            MPI_Gather(&m_accumulateTime, 1, MPI_DOUBLE, accumulateTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        }
-#endif
 #if defined(EPSILON_TIMING_ENABLED)
         double meanEpsilonTime = 0;
         if (m_epsilonUpdateCount > 0)
@@ -338,8 +314,6 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
 
             std::cout << m_updateMpiCount << " | ";
 
-            std::copy(accumulateTime.begin(), std::prev(accumulateTime.end()), std::ostream_iterator<double>(std::cout, ", "));
-            std::cout << accumulateTime.back();
 #endif
 #if defined(EPSILON_TIMING_ENABLED)
             std::cout << " | ";
@@ -640,29 +614,6 @@ void BayesRBase::updateGlobal(const KernelPtr& kernel,
 #endif
 }
 
-void BayesRBase::updateMpi()
-{
-#ifdef MPI_ENABLED
-    // Take a copy of the accumulated values
-    const auto localEpsilonDelta = m_accumulatedEpsilonDelta;
-    const auto localBetaSqn = m_accumulatedBetaSqn;
-
-    // MPI_Allreduce
-    MPI_Allreduce(localEpsilonDelta.data(), m_accumulatedEpsilonDelta.data(), m_data->numInds, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(localBetaSqn.data(), m_accumulatedBetaSqn.data(), m_data->numGroups, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-    // Subtract local accumulations for global
-    m_accumulatedEpsilonDelta -= localEpsilonDelta;
-    m_accumulatedBetaSqn -= localBetaSqn;
-
-    // Apply accumulations from other processes
-    m_epsilon += m_accumulatedEpsilonDelta;
-    m_betasqnG += m_accumulatedBetaSqn;
-
-    // Reset local accumulated values
-    resetAccumulators();
-#endif
-}
 
 void BayesRBase::printDebugInfo() const
 {

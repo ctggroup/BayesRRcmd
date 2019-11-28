@@ -17,23 +17,15 @@ public:
     MarkerBuilder *markerBuilder() const override;
 
     void updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result) override;
-    void updateMpi() override;
     void updateMu(double old_mu,double N);
 protected:
     VectorXd m_ones;
-
-    // Accumulated values for MPI
-    double m_accumulatedEpsilonSum = 0;
 
     void init(int K, unsigned int markerCount, unsigned int individualCount) override;
 
     void prepare(BayesRKernel *kernel) override;
     void readWithSharedLock(BayesRKernel *kernel) override;
     void writeWithUniqueLock(BayesRKernel *kernel) override;
-
-    void resetAccumulators() override;
-    virtual void accumulateWithLock(const KernelPtr& kernel,
-                                    const ConstAsyncResultPtr& result) override;
 };
 
 #endif /* SRC_SPARSEBAYESRRG_H_ */

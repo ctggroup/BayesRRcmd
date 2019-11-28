@@ -96,8 +96,6 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
 
         m_analysis->updateGlobal(msg.kernel, msg.result);
 
-        if (useMpi)
-            m_analysis->accumulate(msg.kernel, msg.result);
 
         std::get<0>(outputPorts).try_put(std::get<0>(decompressionTuple));
         std::get<1>(outputPorts).try_put(std::get<0>(input));
@@ -113,8 +111,7 @@ ParallelGraph::ParallelGraph(size_t maxDecompressionTokens, size_t maxAnalysisTo
 
             if (m_analysisTokenCount == 0) {
                 // Synchronise values from other processes
-                if (m_analysis->didAccumulate())
-                    m_analysis->updateMpi();
+
                 // Allow the next set of analyses to take place
                 queueAnalysisTokens();
             }

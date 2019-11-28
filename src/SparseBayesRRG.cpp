@@ -95,31 +95,6 @@ void SparseBayesRRG::writeWithUniqueLock(BayesRKernel *kernel)
         m_epsilonSum += sparseKernel->epsilonSum;
 }
 
-void SparseBayesRRG::resetAccumulators()
-{
-    BayesRBase::resetAccumulators();
-
-    m_accumulatedEpsilonSum = 0;
-}
-
-void SparseBayesRRG::accumulateWithLock(const KernelPtr &kernel, const ConstAsyncResultPtr &result)
-{
-#ifdef MPI_TIMING_ENABLED
-    const auto start = std::chrono::steady_clock::now();
-#endif
-    BayesRBase::accumulateWithLock(kernel, result);
-
-    auto* sparseKernel = dynamic_cast<SparseBayesRKernel*>(kernel.get());
-    assert(sparseKernel);
-
-    m_accumulatedEpsilonSum += sparseKernel->epsilonSum;
-
-#ifdef MPI_TIMING_ENABLED
-    const auto end = std::chrono::steady_clock::now();
-    m_accumulateTime += static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
-#endif
-}
-
 void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResultPtr &result)
 {
     BayesRBase::updateGlobal(kernel, result);
@@ -131,53 +106,6 @@ void SparseBayesRRG::updateGlobal(const KernelPtr& kernel, const ConstAsyncResul
     m_epsilonSum += sparseKernel->epsilonSum; // now epsilonSum contains only deltaEpsilonSum
 }
 
-void SparseBayesRRG::updateMpi()
-{
-#ifdef MPI_ENABLED
-#ifdef MPI_TIMING_ENABLED
-    ++m_updateMpiCount;
-    const auto start = std::chrono::steady_clock::now();
-#endif
-    // Take a copy of the accumulated values
-    const auto localEpsilonSum = m_accumulatedEpsilonSum;
-
-    // MPI_Allreduce
-    MPI_Allreduce(&localEpsilonSum, &m_accumulatedEpsilonSum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-
-#ifdef MPI_TIMING_ENABLED
-    const auto mpiSync = std::chrono::steady_clock::now();
-#endif
-
-    // Subtract local accumulations for global
-    m_accumulatedEpsilonSum -= localEpsilonSum;
-
-    // Apply accumulations from other processes
-    m_epsilonSum += m_accumulatedEpsilonSum;
-
-    // Call last - it calls resetAccumulators
-    BayesRBase::updateMpi();
-
-#ifdef MPI_TIMING_ENABLED
-    const auto end = std::chrono::steady_clock::now();
-
-    const auto mpiCount = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(mpiSync - start).count()) / 1000000.0;
-
-    std::vector<double> waitTime(m_worldSize);
-    MPI_Gather(&mpiCount, 1, MPI_DOUBLE, waitTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    std::transform(m_waitTime.begin(), m_waitTime.end(), waitTime.begin(),
-                   m_waitTime.begin(), std::plus<double>());
-
-    const auto totalCount = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) / 1000000.0;
-
-    std::vector<double> mpiTime(m_worldSize);
-    MPI_Gather(&totalCount, 1, MPI_DOUBLE, mpiTime.data(), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-
-    std::transform(m_mpiTime.begin(), m_mpiTime.end(), mpiTime.begin(),
-                   m_mpiTime.begin(), std::plus<double>());
-#endif
-#endif
-}
 
 
 void SparseBayesRRG::updateMu(double old_mu,double N)
