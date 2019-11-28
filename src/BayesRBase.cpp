@@ -505,7 +505,6 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
 
     const auto group = m_data->G[bayesKernel->marker->i];
     const double sigmaG = m_sigmaG[group];
-    double component = 0;
     auto result = std::make_unique<AsyncResult>();
     // to keep track of the column processing time
     const auto t1c = std::chrono::high_resolution_clock::now();
@@ -514,7 +513,6 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
     // The elements of these members are only accessed by the thread we are in
     result->beta = m_beta(bayesKernel->marker->i);
     result->betaOld = result->beta;
-    component = m_components(bayesKernel->marker->i);
 
     double num = 0;
     {
@@ -573,7 +571,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
                 result->beta = randomNorm * std::sqrt(m_sigmaE/denom[k-1]) + muk[k];
             }
             (*result->v).row(group)(k) += 1.0;
-            component = k;
+            result->component = k;
             break;
         } else {
             //if too big or too small
@@ -605,7 +603,7 @@ std::unique_ptr<AsyncResult> BayesRBase::processColumnAsync(const KernelPtr &ker
 
     // These updates do not need to be atomic
     m_beta(bayesKernel->marker->i) = result->beta;
-    m_components(bayesKernel->marker->i) = component;
+    m_components(bayesKernel->marker->i) = result->component;
 
     //info on the running time of the column processing, would be very useful to have it as an option, and output it to a file
     //const auto t2c = std::chrono::high_resolution_clock::now();

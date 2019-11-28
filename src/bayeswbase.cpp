@@ -910,7 +910,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
     double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
 
     result->v = std::make_unique<MatrixXd>(MatrixXd::Zero(k_numGroups, m_K));
-    int component = 0;
+
     //Loop through the possible mixture classes
     for (int k = 0; k < m_K; k++) {
         if (p <= acum) {
@@ -950,7 +950,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
             }
 
             (*result->v).row(k_groupIndex)(k) += 1.0;
-            component = k;
+            result->component = k;
             break;
         } else {
             if((k+1) == (m_K-1)){
@@ -967,7 +967,7 @@ std::unique_ptr<AsyncResult> BayesWBase::processColumnAsync(const KernelPtr &ker
         result->deltaEpsilon = gaussKernel->calculateEpsilonChange(result->betaOld, result->beta);
     }
 
-    m_components(gaussKernel->marker->i) = component;
+    m_components(gaussKernel->marker->i) = result->component;
     m_beta(gaussKernel->marker->i) = result->beta;
 
     return result;
