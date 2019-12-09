@@ -130,6 +130,25 @@ SynchronisedMarkers SyncManager::synchroniseMarkers()
 #endif
 }
 
+AsyncResultPtr SyncManager::resultForMarker(unsigned int marker) const
+{
+    if (m_remoteResults.empty()) {
+        std::cerr << "Remote results are empty!" << std::endl;
+        return nullptr;
+    }
+
+    const auto findItr = std::find_if(m_remoteResults.cbegin(), m_remoteResults.cend(), [&marker](const IndexResultPair& p) {
+        return p.first == marker;
+    });
+
+    if (findItr == m_remoteResults.cend()) {
+        std::cerr << "Failed to find remote result for marker:" << marker << std::endl;
+        return nullptr;
+    }
+
+    return findItr->second;
+}
+
 void SyncManager::reset()
 {
     m_localResults.clear();

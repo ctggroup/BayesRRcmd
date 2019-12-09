@@ -10,6 +10,9 @@
 #include <Eigen/Eigen>
 
 class BayesRBase;
+namespace HybridMpi {
+    class SyncManager;
+}
 
 struct AsyncResult;
 
@@ -51,7 +54,6 @@ private:
     struct Message {
         unsigned int id = 0;
         unsigned int snp = 0;
-        unsigned int numInds = 0;
         KernelPtr kernel = nullptr;
         ConstAsyncResultPtr result = nullptr;
     };
@@ -60,21 +62,27 @@ private:
     using AnalysisTuple = tbb::flow::tuple<AnalysisToken, DecompressionTuple>;
 
     std::unique_ptr<graph> m_graph;
+    std::unique_ptr<graph> m_mpiGraph;
+    std::shared_ptr<HybridMpi::SyncManager> m_syncManager;
 
     using decompression_join_node = join_node<DecompressionTuple, queueing>;
     std::unique_ptr<decompression_join_node> m_decompressionJoinNode;
+    std::unique_ptr<decompression_join_node> m_mpiDecompressionJoinNode;
 
     using decompression_node = function_node<DecompressionTuple, DecompressionTuple>;
     std::unique_ptr<decompression_node> m_decompressionNode;
+    std::unique_ptr<decompression_node> m_mpiDecompressionNode;
 
     using cache_reader_node = function_node<DecompressionTuple, DecompressionTuple, lightweight>;
     std::unique_ptr<cache_reader_node> m_cacheReaderNode;
 
     using analysis_join_node = join_node<AnalysisTuple, queueing>;
     std::unique_ptr<analysis_join_node> m_analysisJoinNode;
+    std::unique_ptr<analysis_join_node> m_mpiAnalysisJoinNode;
 
     using analysis_node = function_node<AnalysisTuple, AnalysisTuple>;
     std::unique_ptr<analysis_node> m_analysisNode;
+    std::unique_ptr<analysis_node> m_mpiAnalysisNode;
 
     using thread_safe_update_node = function_node<AnalysisTuple, AnalysisTuple, lightweight>;
     std::unique_ptr<thread_safe_update_node> m_threadSafeUpdateNode;
@@ -84,9 +92,11 @@ private:
 
     using global_update_node = multifunction_node<AnalysisTuple, tbb::flow::tuple<DecompressionToken, AnalysisToken>>;
     std::unique_ptr<global_update_node> m_globalUpdateNode;
+    std::unique_ptr<global_update_node> m_mpiGlobalUpdateNode;
 
     using analysis_control_node = function_node<AnalysisToken, continue_msg, lightweight>;
     std::unique_ptr<analysis_control_node> m_analysisControlNode;
+    std::unique_ptr<analysis_control_node> m_mpiInternalAnalysisControlNode;
 
     using mpi_analysis_control_node = function_node<AnalysisToken, continue_msg>;
     std::unique_ptr<mpi_analysis_control_node> m_mpiAnalysisControlNode;
@@ -97,6 +107,9 @@ private:
     size_t m_analysisNodeConcurrency = tbb::flow::unlimited;
     size_t m_analysisTokens = 20;
     size_t m_analysisTokenCount = 0;
+
+    unsigned int m_numInds = 0;
+    unsigned int m_markersRemaining = 0;
 
     void queueDecompressionTokens();
     void queueAnalysisTokens();

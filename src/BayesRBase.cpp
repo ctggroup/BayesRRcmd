@@ -381,7 +381,6 @@ void BayesRBase::processColumn(const KernelPtr &kernel)
     beta_old = m_beta(bayesKernel->marker->i);
     const auto group = m_data->G[bayesKernel->marker->i];
 
-    prepare(bayesKernel);
     readWithSharedLock(bayesKernel);
 
     // muk for the zeroth component=0
@@ -454,6 +453,7 @@ void BayesRBase::processColumn(const KernelPtr &kernel)
 
     const auto eps_begin = std::chrono::high_resolution_clock::now();
     if (!skipUpdate) {
+        prepare(bayesKernel);
         m_epsilon += *bayesKernel->calculateEpsilonChange(beta_old, beta_new);
         writeWithUniqueLock(bayesKernel);
     }
@@ -482,7 +482,6 @@ AsyncResultPtr BayesRBase::processColumnAsync(const KernelPtr &kernel)
     auto result = std::make_shared<AsyncResult>();
     // to keep track of the column processing time
     const auto t1c = std::chrono::high_resolution_clock::now();
-    prepare(bayesKernel);
 
     // The elements of these members are only accessed by the thread we are in
     result->beta = m_beta(bayesKernel->marker->i);
@@ -578,6 +577,8 @@ void BayesRBase::processResult(const KernelPtr &kernel, const AsyncResultPtr &re
 #if defined(EPSILON_TIMING_ENABLED)
         const auto start = std::chrono::steady_clock::now();
 #endif
+        auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel.get());
+        prepare(bayesKernel);
         // this  also updates epsilonSum!
         result->deltaEpsilon = kernel->calculateEpsilonChange(result->betaOld, result->beta);
         // now marker->epsilonSum now contains only delta_epsilonSum

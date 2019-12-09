@@ -19,6 +19,7 @@ namespace HybridMpi {
 
         void accumulate(const KernelPtr& kernel, const ConstAsyncResultPtr& result);
         SynchronisedMarkers synchroniseMarkers();
+        AsyncResultPtr resultForMarker(unsigned int marker) const;
         void reset();
 
     private:
