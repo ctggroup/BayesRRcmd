@@ -363,6 +363,13 @@ bool run(const Options &options)
         return false;
     }
 
+#if !defined(MPI_ENABLED)
+    if (options.useHybridMpi) {
+        cerr << "--hybrid-mpi flag has been used but MPI support was not compiled in!" << endl;
+        return false;
+    }
+#endif
+
     MpiContext mpiContext(options.useHybridMpi);
 
     bool result = false;
