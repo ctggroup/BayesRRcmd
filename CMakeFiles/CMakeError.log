@@ -285,3 +285,372 @@ collect2: error: ld returned 1 exit status
 ninja: build stopped: subcommand failed.
 
 
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_8816f"
+[1/2] Building C object CMakeFiles/cmTC_8816f.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_8816f
+FAILED: cmTC_8816f 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_8816f.dir/CheckSymbolExists.c.o  -o cmTC_8816f   && :
+CMakeFiles/cmTC_8816f.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_d00b8"
+[1/2] Building C object CMakeFiles/cmTC_d00b8.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_d00b8
+FAILED: cmTC_d00b8 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_d00b8.dir/CheckFunctionExists.c.o  -o cmTC_d00b8  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_6980a"
+[1/2] Building C object CMakeFiles/cmTC_6980a.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_6980a
+FAILED: cmTC_6980a 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_6980a.dir/CheckSymbolExists.c.o  -o cmTC_6980a   && :
+CMakeFiles/cmTC_6980a.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_240b9"
+[1/2] Building C object CMakeFiles/cmTC_240b9.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_240b9
+FAILED: cmTC_240b9 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_240b9.dir/CheckFunctionExists.c.o  -o cmTC_240b9  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_453e9"
+[1/2] Building C object CMakeFiles/cmTC_453e9.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_453e9
+FAILED: cmTC_453e9 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_453e9.dir/CheckSymbolExists.c.o  -o cmTC_453e9   && :
+CMakeFiles/cmTC_453e9.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_df65f"
+[1/2] Building C object CMakeFiles/cmTC_df65f.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_df65f
+FAILED: cmTC_df65f 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_df65f.dir/CheckFunctionExists.c.o  -o cmTC_df65f  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_8e35b"
+[1/2] Building C object CMakeFiles/cmTC_8e35b.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_8e35b
+FAILED: cmTC_8e35b 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_8e35b.dir/CheckSymbolExists.c.o  -o cmTC_8e35b   && :
+CMakeFiles/cmTC_8e35b.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_6c072"
+[1/2] Building C object CMakeFiles/cmTC_6c072.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_6c072
+FAILED: cmTC_6c072 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_6c072.dir/CheckFunctionExists.c.o  -o cmTC_6c072  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_95d5b"
+[1/2] Building C object CMakeFiles/cmTC_95d5b.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_95d5b
+FAILED: cmTC_95d5b 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_95d5b.dir/CheckSymbolExists.c.o  -o cmTC_95d5b   && :
+CMakeFiles/cmTC_95d5b.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_803e3"
+[1/2] Building C object CMakeFiles/cmTC_803e3.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_803e3
+FAILED: cmTC_803e3 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_803e3.dir/CheckFunctionExists.c.o  -o cmTC_803e3  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_903d0"
+[1/2] Building C object CMakeFiles/cmTC_903d0.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_903d0
+FAILED: cmTC_903d0 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_903d0.dir/CheckSymbolExists.c.o  -o cmTC_903d0   && :
+CMakeFiles/cmTC_903d0.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_8d0a4"
+[1/2] Building C object CMakeFiles/cmTC_8d0a4.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_8d0a4
+FAILED: cmTC_8d0a4 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_8d0a4.dir/CheckFunctionExists.c.o  -o cmTC_8d0a4  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_63245"
+[1/2] Building C object CMakeFiles/cmTC_63245.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_63245
+FAILED: cmTC_63245 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_63245.dir/CheckSymbolExists.c.o  -o cmTC_63245   && :
+CMakeFiles/cmTC_63245.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_ee744"
+[1/2] Building C object CMakeFiles/cmTC_ee744.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_ee744
+FAILED: cmTC_ee744 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_ee744.dir/CheckFunctionExists.c.o  -o cmTC_ee744  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_59311"
+[1/2] Building C object CMakeFiles/cmTC_59311.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_59311
+FAILED: cmTC_59311 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_59311.dir/CheckSymbolExists.c.o  -o cmTC_59311   && :
+CMakeFiles/cmTC_59311.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_3c8d8"
+[1/2] Building C object CMakeFiles/cmTC_3c8d8.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_3c8d8
+FAILED: cmTC_3c8d8 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_3c8d8.dir/CheckFunctionExists.c.o  -o cmTC_3c8d8  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_62fc1"
+[1/2] Building C object CMakeFiles/cmTC_62fc1.dir/CheckSymbolExists.c.o
+[2/2] Linking C executable cmTC_62fc1
+FAILED: cmTC_62fc1 
+: && /software/Development/gcc/9.2.1/bin/cc   -rdynamic CMakeFiles/cmTC_62fc1.dir/CheckSymbolExists.c.o  -o cmTC_62fc1   && :
+CMakeFiles/cmTC_62fc1.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+File /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /users/sojavee/BayesRRcmd_genSparse/BayesRRcmd/CMakeFiles/CMakeTmp
+
+Run Build Command:"/software/bin/ninja-build" "cmTC_245ec"
+[1/2] Building C object CMakeFiles/cmTC_245ec.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_245ec
+FAILED: cmTC_245ec 
+: && /software/Development/gcc/9.2.1/bin/cc -DCHECK_FUNCTION_EXISTS=pthread_create  -rdynamic CMakeFiles/cmTC_245ec.dir/CheckFunctionExists.c.o  -o cmTC_245ec  -lpthreads && :
+/software/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+

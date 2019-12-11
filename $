@@ -632,6 +632,7 @@ void BayesW::sampleMu(){
         for(int eps_i=0; eps_i < epsilon.size(); eps_i++){
                 eps_temp += epsilon[eps_i] * epsilon[eps_i];
         }
+        cout <<"Eps before=" << setprecision(17) <<eps_temp << endl;
 
 	used_data.epsilon = epsilon.array() + mu;// we add to epsilon =Y+mu-X*beta
 
@@ -647,6 +648,7 @@ void BayesW::sampleMu(){
         for(int eps_i=0; eps_i < epsilon.size(); eps_i++){
                 eps_temp += epsilon[eps_i] * epsilon[eps_i];
         }
+        cout <<"Eps after=" << setprecision(17) <<eps_temp << endl;
 
 }
 
@@ -691,10 +693,7 @@ void BayesW::sampleBeta_test(int marker){
 
         //Change the residual vector only if the previous beta was non-zero
         if(beta(marker) != 0){
-		for(int i=0; i< epsilon.size(); ++i){
-                        epsilon[i] = epsilon[i] - used_data_beta.mean_sd_ratio * beta(marker);
-                }
-                //epsilon = epsilon.array() - used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+                epsilon = epsilon.array() - used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
                 //And adjust even further for specific 1 and 2 allele values
                 for(int i=0; i < data.Zones[marker].size(); i++){
                         epsilon[data.Zones[marker][i]] += beta(marker)/used_data_beta.sd;
@@ -703,33 +702,14 @@ void BayesW::sampleBeta_test(int marker){
                         epsilon[data.Ztwos[marker][i]] += 2*beta(marker)/used_data_beta.sd;
                 }
                 //Also find the transformed residuals
-                //vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
-		for(int i=0; i< vi.size(); ++i){
-                        vi[i] = exp(used_data.alpha * epsilon[i] - EuMasc) ;
-//			if(i==100){
-//				cout <<vi[i] <<", "<< epsilon[i] << endl;
-//			}
-                }
+                vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
         }
 
         // Calculate the sums of vi elements
-        //double vi_sum = vi.sum();
-        //double vi_2 = vi(data.Ztwos[marker]).sum();
-        //double vi_1 = vi(data.Zones[marker]).sum();
-        double vi_sum = 0;
-	double vi_2 = 0;
-	double vi_1 = 0;
-             for (int i=0; i < vi.size(); i++){
-                       vi_sum += vi[i];
-                }
-                for (int i=0; i < data.Ztwos[marker].size(); i++){
-                        vi_2 += vi[data.Ztwos[marker][i]];
-                }
-                for (int i=0; i < data.Zones[marker].size(); i++){
-                        vi_1 += vi[data.Zones[marker][i]];
-                }
-
-	double vi_0 = vi_sum - vi_1 - vi_2;
+        double vi_sum = vi.sum();
+        double vi_2 = vi(data.Ztwos[marker]).sum();
+        double vi_1 = vi(data.Zones[marker]).sum();
+        double vi_0 = vi_sum - vi_1 - vi_2;
 
         /* Calculate the mixture probability */
         double p = dist.unif_rng();  //Generate number from uniform distribution (for sampling from categorical distribution)
@@ -738,15 +718,6 @@ void BayesW::sampleBeta_test(int marker){
         marginal_likelihood_vec_calc(pi_L, marginal_likelihoods, quad_points, vi_sum, vi_2, vi_1, vi_0, data.means(marker),data.sds(marker),data.mean_sd_ratio(marker));
         // Calculate the probability that marker is 0
         double acum = marginal_likelihoods(0)/marginal_likelihoods.sum();
-
-	double tmp_eps_sum = 0.0;
-        for(int vi_ind=0; vi_ind < epsilon.size(); vi_ind++){
-                  tmp_eps_sum += epsilon[vi_ind] * epsilon[vi_ind];
-	//	cout << vi[vi_ind] << endl;
-	}
-
-        //cout << marker << ". "<< setprecision(17) << vi_sum << ", " << tmp_eps_sum <<  endl;
-
        //Loop through the possible mixture classes
         for (int k = 0; k < K; k++) {
                 if (p <= acum) {
@@ -783,14 +754,11 @@ void BayesW::sampleBeta_test(int marker){
                                 err = arms(xinit,ninit,&xl,&xr,beta_dens,&used_data_beta,&convex,
                                                 npoint,dometrop,&xprev,xsamp,nsamp,qcent,xcent,ncent,&neval);
                                 errorCheck(err);
+
                                 beta(marker) = xsamp[0];  // Save the new result
                                 //Re-update the residual vector
                         //      used_data.epsilon = used_data.epsilon - data.Z.col(marker).cast<double>() * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
-                         //       epsilon = epsilon.array() + used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
-
-				for(int i=0; i < epsilon.size(); i++){
-					epsilon[i] = epsilon[i] + used_data_beta.mean_sd_ratio * beta(marker);
-				}
+                                epsilon = epsilon.array() + used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
                                 //And adjust even further for specific 1 and 2 allele values
                                 for(int i=0; i < data.Zones[marker].size(); i++){
                                         epsilon[data.Zones[marker][i]] -= beta(marker)/used_data_beta.sd;
@@ -798,19 +766,16 @@ void BayesW::sampleBeta_test(int marker){
                                 for(int i=0; i < data.Ztwos[marker].size(); i++){
                                         epsilon[data.Ztwos[marker][i]] -= 2*beta(marker)/used_data_beta.sd;
                                 }
-                 		
-				double tmp_eps_sum = 0.0;
-                       		for(int vi_ind=0; vi_ind < epsilon.size(); vi_ind++){
+                 		       double tmp_eps_sum = 0.0;
+                       		for(int vi_ind=0; vi_ind < Ntot; vi_ind++){
                                 	tmp_eps_sum += epsilon[vi_ind] * epsilon[vi_ind];
                         	}
-                        //	cout << marker << ". "<< setprecision(17) << vi_0 << ", " << vi_1 << ", " << vi_2 << ", "<<  beta(marker) <<", " <<  tmp_eps_sum << endl;
-                               // cout << marker << ". "<< setprecision(17) <<  beta(marker) <<", " <<  tmp_eps_sum << endl;
-
+                        	cout << marker << ". "<< setprecision(17) <<tmp_eps_sum << endl;
                 
-			     //   vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
-    		for(int vi_ind=0; vi_ind < vi.size(); vi_ind++){
-                        vi[vi_ind] = exp(used_data.alpha * epsilon[vi_ind] - EuMasc);
-                }
+				 
+			        cout << marker << ". " << (epsilon.array() * epsilon.array()).sum() << endl;
+                        
+			        vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
 
                                 v[k] += 1.0;
                                 components[marker] = k;
@@ -848,30 +813,13 @@ void BayesW::sampleBeta(int marker){
 			epsilon[data.Ztwos[marker][i]] += 2*beta(marker)/used_data_beta.sd;
 		}
 		//Also find the transformed residuals
-		//vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
-		for(int i=0; i< vi.size(); ++i){
-                        vi[i] = exp(used_data.alpha * epsilon[i] - EuMasc) ;
-                }
+		vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
 	}
 
 	// Calculate the sums of vi elements
-//	double vi_sum = vi.sum();
-//	double vi_2 = vi(data.Ztwos[marker]).sum();
-//	double vi_1 = vi(data.Zones[marker]).sum();
-
-       double vi_sum = 0;
-        double vi_2 = 0;
-        double vi_1 = 0;
-             for (int i=0; i < vi.size(); i++){
-                       vi_sum += vi[i];
-                }
-                for (int i=0; i < data.Ztwos[marker].size(); i++){
-                        vi_2 += vi[data.Ztwos[marker][i]];
-                }
-                for (int i=0; i < data.Zones[marker].size(); i++){
-                        vi_1 += vi[data.Zones[marker][i]];
-                }
-
+	double vi_sum = vi.sum();
+	double vi_2 = vi(data.Ztwos[marker]).sum();
+	double vi_1 = vi(data.Zones[marker]).sum();
 	double vi_0 = vi_sum - vi_1 - vi_2;
 
 	/* Calculate the mixture probability */
@@ -922,33 +870,17 @@ void BayesW::sampleBeta(int marker){
 				beta(marker) = xsamp[0];  // Save the new result
 				//Re-update the residual vector
 			//	used_data.epsilon = used_data.epsilon - data.Z.col(marker).cast<double>() * beta(marker); //now epsilon contains Y-mu - X*beta+ X.col(marker)*beta(marker)_old- X.col(marker)*beta(marker)_new
-		//		epsilon = epsilon.array() + used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
+				epsilon = epsilon.array() + used_data_beta.mean_sd_ratio * beta(marker);  //Adjust for every memeber
 				//And adjust even further for specific 1 and 2 allele values
-		/*
 				for(int i=0; i < data.Zones[marker].size(); i++){
 					epsilon[data.Zones[marker][i]] -= beta(marker)/used_data_beta.sd;
 				}
 				for(int i=0; i < data.Ztwos[marker].size(); i++){
 					epsilon[data.Ztwos[marker][i]] -= 2*beta(marker)/used_data_beta.sd;
 				}
-		*/
+				
+				vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
 
-
-				for(int i=0; i < epsilon.size(); i++){
-                                        epsilon[i] = epsilon[i] + used_data_beta.mean_sd_ratio * beta(marker);
-                                }
-                                //And adjust even further for specific 1 and 2 allele values
-                                for(int i=0; i < data.Zones[marker].size(); i++){
-                                        epsilon[data.Zones[marker][i]] -= beta(marker)/used_data_beta.sd;
-                                }
-                                for(int i=0; i < data.Ztwos[marker].size(); i++){
-                                        epsilon[data.Ztwos[marker][i]] -= 2*beta(marker)/used_data_beta.sd;
-                                }
-		
-				//vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
- 				for(int vi_ind=0; vi_ind < vi.size(); vi_ind++){
-                        		vi[vi_ind] = exp(used_data.alpha * epsilon[vi_ind] - EuMasc);
-                		}
 				v[k] += 1.0;
 				components[marker] = k;
 			}
@@ -1041,9 +973,6 @@ int BayesW::runGibbs_Gauss()
 		}
 		// Calculate the vector of exponent of the adjusted residuals
 		vi = (used_data.alpha*epsilon.array()-EuMasc).exp();
-		for(int i=0; i< N; ++i){
-                	vi[i] = exp(used_data.alpha * epsilon[i] - EuMasc);
-        	}
 
 	//	std::random_shuffle(markerI.begin(), markerI.end());
 //		In MPI code it is :
@@ -1059,11 +988,11 @@ int BayesW::runGibbs_Gauss()
 		marginal_likelihoods(0) = pi_L(0) * sqrtPI;
 		for (int j = 0; j < M; j++) {
 			marker = markerI[j];
-		//	if(j == 38501 and j >=38500 and iteration == 4){
-		//		sampleBeta_test(marker);
-		//	}else{
+			if(j<1000){
+				sampleBeta_test(marker);
+			}else{
         	                sampleBeta(marker);
-		//	}
+			}
 		}
 		// 3. Sample alpha parameter
 		sampleAlpha();
