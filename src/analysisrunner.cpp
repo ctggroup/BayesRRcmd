@@ -33,7 +33,9 @@ public:
     {
 #ifdef MPI_ENABLED
         if (m_useMpi) {
-            MPI_Init(nullptr, nullptr);
+            int provided = 0;
+            MPI_Init_thread(nullptr, nullptr, MPI_THREAD_MULTIPLE, &provided);
+            std::cout << "Requested MPI thread support: " << MPI_THREAD_MULTIPLE << "; received: " << provided << std::endl;
             MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI::ERRORS_THROW_EXCEPTIONS);
         }
 #endif
