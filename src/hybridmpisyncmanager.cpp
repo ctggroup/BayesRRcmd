@@ -200,9 +200,6 @@ std::streamsize size(const ConstAsyncResultPtr &result)
 {
     return static_cast<std::streamsize>(sizeof (result->betaOld)
                                         + sizeof (result->beta)
-                                        + sizeof (result->v->rows())
-                                        + sizeof (result->v->cols())
-                                        + (result->v->size() * sizeof (double)) // v data
                                         + sizeof (result->component));
 }
 
@@ -219,22 +216,12 @@ void read(AsyncResultPtr &result, std::istream *inStream)
         inStream->read(reinterpret_cast<char *>(d), sizeof(double));
     };
 
-    auto readIndex = [&inStream](Eigen::Index *i) {
-        inStream->read(reinterpret_cast<char *>(i), sizeof(Eigen::Index));
-    };
 
     readDouble(&result->betaOld);
     readDouble(&result->beta);
 
-    Eigen::Index rows = 0;
-    readIndex(&rows);
 
-    Eigen::Index cols = 0;
-    readIndex(&cols);
 
-    result->v = std::make_unique<MatrixXd>(rows, cols);
-    inStream->read(reinterpret_cast<char *>(result->v->data()),
-                   static_cast<std::streamsize>(result->v->size() * sizeof (double)));
 
     readDouble(&result->component);
 }
@@ -250,21 +237,14 @@ void write(const ConstAsyncResultPtr &result, std::ostream *outStream)
         outStream->write(reinterpret_cast<const char *>(&d), sizeof(double));
     };
 
-    auto writeIndex = [&outStream](const Eigen::Index i) {
-        outStream->write(reinterpret_cast<const char *>(&i), sizeof(Eigen::Index));
-    };
 
     writeDouble(result->betaOld);
     writeDouble(result->beta);
-    writeIndex(result->v->rows());
-    writeIndex(result->v->cols());
-    outStream->write(reinterpret_cast<const char *>(result->v->data()),
-                     static_cast<std::streamsize>(result->v->size() * sizeof (double)));
     writeDouble(result->component);
 }
 
 auto asTuple(const AsyncResult &r) {
-    return std::tie(r.betaOld, r.beta, *(r.v), r.component);
+    return std::tie(r.betaOld, r.beta, r.component);
 };
 
 bool operator==(const AsyncResult &lhs, const AsyncResult &rhs)
