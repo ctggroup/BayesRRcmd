@@ -53,8 +53,12 @@ bool PreprocessedFileSplitter::split(const Options &options, const Data *data, c
     if (!canSplit(options, data))
         return false;
 
-    // auto markers = subset.toMarkerIndexList(data->numSnps);
-    auto markers = data->getMarkerIndexList();
+    MarkerIndexList markers;
+    if (options.splitPreprocessedData) // defaults to false
+        markers = subset.toMarkerIndexList(data->numSnps);
+    else
+        markers = data->getMarkerIndexList();
+
     if (markers.empty()) {
         std::cerr << "Invalid marker subset:" << subset << std::endl;
         return false;

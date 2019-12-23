@@ -67,6 +67,7 @@ public:
     bool useHybridMpi = false;
     filesystem::directory_entry workingDirectory;
     string splitDestination;
+    bool splitPreprocessedData = false;
 
 
     double v0E  = 0.0001;

@@ -141,6 +141,10 @@ void Options::inputOptions(const int argc, const char* argv[]){
             splitDestination = argv[++i];
             ss << "--split " << argv[i] << "\n";
         }
+        else if (!strcmp(argv[i], "--split-preprocessed-data")) {
+            splitPreprocessedData = true;
+            ss << "--split-preprocessed-data true\n";
+        }
         else if (!strcmp(argv[i], "--compress")) {
             compress = true;
             ss << "--compress " << "\n";
