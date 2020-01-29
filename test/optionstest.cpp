@@ -323,3 +323,31 @@ TEST(OptionsTest, WorkingDirectoryCommandLine) {
         ASSERT_STREQ(fs::canonical(rootTestDir).c_str(), options.workingDirectory.path().c_str());
     }
 }
+
+TEST(OptionsTest, FixedEffects) {
+    Options options;
+    ASSERT_TRUE(options.fixedFile.empty());
+    ASSERT_EQ(0, options.fixedEffectNumber);
+
+    {
+        const char *argv[] = {"test", "--fixed_effects", "fixedEffectsFile1.csv"};
+
+        options.inputOptions(3, argv);
+        ASSERT_EQ("fixedEffectsFile1.csv", options.fixedFile);
+    }
+
+    {
+        const char *argv[] = {"test", "--fixedEffectNumber", "2"};
+
+        options.inputOptions(3, argv);
+        ASSERT_EQ(2, options.fixedEffectNumber);
+    }
+
+    {
+        const char *argv[] = {"test", "--fixed_effects", "fixedEffectsFile2.csv", "--fixedEffectNumber", "3"};
+
+        options.inputOptions(5, argv);
+        ASSERT_EQ("fixedEffectsFile2.csv", options.fixedFile);
+        ASSERT_EQ(3, options.fixedEffectNumber);
+    }
+}

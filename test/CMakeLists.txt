@@ -35,6 +35,7 @@ add_executable(tests
     splittertest.cpp
     testhelpers.cpp
     syncmanagertest.cpp
+    fixedeffectstest.cpp
 )
 
 target_compile_definitions(tests PRIVATE TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/../test/data/")

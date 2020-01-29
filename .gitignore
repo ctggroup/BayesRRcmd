@@ -1,6 +1,6 @@
 *.csv
 !test/data/*
-
+!test/data/fixed-effects/*
 
 /Debug/
 *.o
