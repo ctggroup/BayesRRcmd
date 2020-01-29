@@ -172,10 +172,6 @@ bool preprocess(const Options &options) {
 }
 
 bool runBayesRAnalysis(const Options *options, Data *data, AnalysisGraph *graph) {
-    // If there is a file for fixed effects (model matrix), then read the data
-    if(!options->fixedFile.empty()) {
-        data->readCSV(options->fixedFile, options->fixedEffectNumber);
-    }
 
     auto markers = data->getMarkerIndexList();
 
@@ -206,11 +202,6 @@ bool runBayesRAnalysis(const Options *options, Data *data, AnalysisGraph *graph)
 }
 
 bool runBayesWAnalysis(const Options *options, Data *data, AnalysisGraph *graph) {
-    // If there is a file for fixed effects (model matrix), then read the data
-    if(!options->fixedFile.empty()) {
-        data->readCSV(options->fixedFile, options->fixedEffectNumber);
-    }
-
     // Read the failure indicator vector
     data->readFailureFile(options->failureFile);
 
@@ -295,6 +286,11 @@ bool runBayesAnalysis(const Options &options) {
 namespace AnalysisRunner {
 
 void readMetaData(Data &data, const Options &options) {
+    // If there is a file for fixed effects (model matrix), then read the data
+    if(!options.fixedFile.empty()) {
+        data.readCSV(options.fixedFile, options.fixedEffectNumber);
+    }
+
     switch (options.inputType) {
     case InputType::BED:
         data.readFamFile(fileWithSuffix(options.dataFile, ".fam"));
