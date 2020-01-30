@@ -288,7 +288,7 @@ namespace AnalysisRunner {
 void readMetaData(Data &data, const Options &options) {
     // If there is a file for fixed effects (model matrix), then read the data
     if(!options.fixedFile.empty()) {
-        data.readCSV(options.fixedFile, options.fixedEffectNumber);
+        data.readFixedEffects(options.fixedFile, options.fixedEffectNumber);
     }
 
     switch (options.inputType) {

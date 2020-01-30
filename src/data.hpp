@@ -89,7 +89,8 @@ public:
     PpBedIndex ppbedIndex;
 
     // Original data
-    MatrixXf X;              // coefficient matrix for fixed effects
+    std::shared_ptr<std::vector<float>> m_fixedEffectsData = nullptr;
+    Map<MatrixXf> X;         // coefficient matrix for fixed effects
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
     VectorXf y;              // phenotypes
@@ -149,7 +150,7 @@ public:
     void mapPreprocessBedFile(const Options &options);
     void unmapPreprocessedBedFile();
 
-    void readCSV(const string &filename, int cols);
+    void readFixedEffects(const string &filename, unsigned int cols);
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);

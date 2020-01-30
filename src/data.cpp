@@ -19,6 +19,7 @@ Data::Data()
 , ppBedMap(nullptr)
 , mappedZ(nullptr, 1, 1)
 , ppbedIndex()
+, X(nullptr, 0, 0)
 {
 }
 
@@ -367,40 +368,63 @@ void Data::readPhenotypeFile(const string &phenFile) {
 
 //Copied from
 //https://gist.github.com/infusion/43bd2aa421790d5b4582
-void Data::readCSV(const string &filename, int cols) {
+void Data::readFixedEffects(const string &filename, unsigned int cols) {
 
-	std::ifstream in(filename);
+    // Clear the existing map;
+    numFixedEffects = 0;
+    new (&X) Map<MatrixXf>(nullptr, 0, 0);
+    m_fixedEffectsData = std::make_shared<std::vector<float>>();
 
-	std::string line;
+    std::ifstream in(filename);
+    if (!in.is_open()) {
+        cout << "Failed to open fixed effects file: " << filename << std::endl;
+        return;
+    }
 
-	int row = 0;
-	int col = 0;
+    m_fixedEffectsData->reserve(numInds * static_cast<unsigned int>(cols));
+    auto rowStartItr = m_fixedEffectsData->end();
 
-	X.resize(numInds,cols);
+    std::string line;
+    int row = 0;
 
-	if (in.is_open()) {
+    auto isNA = [](const char* str) {
+        static const char* na = "NA";
+        return strncmp(str, na, 2) == 0;
+    };
 
-		while (std::getline(in, line)) {
-			char *ptr = (char *) line.c_str();
-			int len = line.length();
+    while (std::getline(in, line)) {
 
-			col = 0;
+        auto emplaceItr = rowStartItr;
+        const char *ptr = line.c_str();
+        size_t len = line.length();
+        bool naFound = false;
 
-			char *start = ptr;
-			for (int i = 0; i < len; i++) {
-				if (ptr[i] == ',') {
-					X(row, col++) = atof(start);
-					start = ptr + i + 1;
-				}
-			}
-			X(row, col) = atof(start);
-			row++;
-		}
+        char *start = const_cast<char *>(ptr);
+        for (size_t i = 0; i < len; i++) {
+            if (ptr[i] == ',') {
+                if (isNA(start)) {
+                    naFound = true;
+                    break;
+                }
+                m_fixedEffectsData->emplace(emplaceItr++, atof(start));
+                start = const_cast<char *>(ptr) + i + 1;
+            }
+        }
 
-		in.close();
-	}
-	numFixedEffects=cols;
+        if (naFound || isNA(start)) {
+            m_fixedEffectsData->erase(rowStartItr, m_fixedEffectsData->end());
+            continue;
+        }
 
+        m_fixedEffectsData->emplace(emplaceItr++, atof(start));
+        rowStartItr = m_fixedEffectsData->end();
+        row++;
+    }
+
+    in.close();
+
+    new (&X) Map<MatrixXf>(m_fixedEffectsData->data(), row, cols);
+    numFixedEffects = cols;
 }
 
 
