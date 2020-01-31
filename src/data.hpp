@@ -166,6 +166,8 @@ public:
 
 private:
     MarkerSubset m_markerSubset = {0, 0}; // start, size
+
+    size_t preprocessedDataMapSize() const;
 };
 
 #endif /* data_hpp */

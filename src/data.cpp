@@ -53,18 +53,13 @@ void Data::mapPreprocessBedFile(const Options &options)
     indexStream.read(reinterpret_cast<char *>(ppbedIndex.data()),
                      numSnps * 3 * sizeof(unsigned long));
 
-    const auto lastIndex = ppbedIndex[m_markerSubset.last()];
-
-    // Calculate the expected file sizes - cast to size_t so that we don't overflow the unsigned int's
-    // that we would otherwise get as intermediate variables!
-    const size_t ppBedSize = size_t(lastIndex.pos + lastIndex.compressedSize);
-
     // Open and mmap the preprocessed bed file
     const auto preprocessedBedFile = ppFileForType(options);
     ppBedFd = open(preprocessedBedFile.c_str(), O_RDONLY);
     if (ppBedFd == -1)
         throw("Error: Failed to open preprocessed bed file [" + preprocessedBedFile + "]");
 
+    const size_t ppBedSize = preprocessedDataMapSize();
     ppBedMap = reinterpret_cast<double *>(mmap(nullptr, ppBedSize, PROT_READ, MAP_SHARED, ppBedFd, 0));
     if (ppBedMap == MAP_FAILED)
         throw("Error: Failed to mmap preprocessed bed file");
@@ -78,7 +73,8 @@ void Data::unmapPreprocessedBedFile()
     // Unmap the data from the Eigen accessors
     new (&mappedZ) Map<MatrixXd>(nullptr, 1, 1);
 
-    const size_t ppBedSize = size_t(ppbedIndex.back().pos + ppbedIndex.back().compressedSize);
+    // Unmap the preprocessed data
+    const size_t ppBedSize = preprocessedDataMapSize();
     munmap(ppBedMap, ppBedSize);
     ppBedMap = nullptr;
 
@@ -424,6 +420,15 @@ void Data::readFailureFile(const string &failureFile){
 	}
 	input.close();
 	fail = Eigen::VectorXd::Map(tmp.data(), tmp.size());
+}
+
+size_t Data::preprocessedDataMapSize() const
+{
+    // Calculate the expected file sizes - return size_t so that we don't
+    // overflow the unsigned int's that we would otherwise get as intermediate
+    // variables!
+    const auto lastIndex = ppbedIndex[m_markerSubset.last()];
+    return lastIndex.pos + lastIndex.compressedSize;
 }
 
 void Data::readGroupFile(const string& groupFile) {
