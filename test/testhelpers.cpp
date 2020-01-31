@@ -48,41 +48,18 @@ testing::AssertionResult testing::IsValidPreprocessOutPut(const Options &options
         return testing::AssertionFailure() << "Marker index list should not be empty" << std::endl;
 
     // Test that the index entries in the subset are valid
-    for (const auto marker : subset) {
-        const auto index = data.ppbedIndex[marker];
-        if (marker == subset.front()) {
-            if (index.pos != 0)
-                return testing::AssertionFailure() << "First index position should be 0" << std::endl;
-        } else {
-            if (index.pos <= 0)
-                return testing::AssertionFailure() << "Index position should be greater than 0" << std::endl;
+    for (size_t i = 0; i < data.numSnps; ++i) {
+        const auto index = data.ppbedIndex[i];
+        if (i == 0 && index.pos != 0) {
+            return testing::AssertionFailure() << "First index position should be 0" << std::endl;
+        } else if (i > 0 && index.pos <= 0) {
+            return testing::AssertionFailure() << "Index position should be greater than 0" << std::endl;
         }
 
         if (index.originalSize <= 0)
             return testing::AssertionFailure() << "Index size should be greater than 0" << std::endl;
     }
 
-    if (subset.size() == data.numSnps)
-        return testing::AssertionSuccess();
-
-    // Test that the index entries outside the subset are valid
-    auto isInvalidIndexEntry = [](const IndexEntry& index) {
-        return index.pos == 0 && index.originalSize == 0;
-    };
-
-    for (unsigned int i = 0; i < subset.front(); ++i) {
-        if (!isInvalidIndexEntry(data.ppbedIndex[i]))
-            return testing::AssertionFailure() << "Valid index entry before the subset (should be invalid):" << std::endl
-                                               << "Pos: " << data.ppbedIndex[i].pos << std::endl
-                                               << "Original size: " <<  data.ppbedIndex[i].originalSize << std::endl;
-    }
-
-    for (unsigned int i = subset.back() + 1; i < data.numSnps; ++i) {
-        if (!isInvalidIndexEntry(data.ppbedIndex[i]))
-            return testing::AssertionFailure() << "Valid index entry after the subset (should be invalid):" << std::endl
-                                               << "Pos: " << data.ppbedIndex[i].pos << std::endl
-                                               << "Original size: " <<  data.ppbedIndex[i].originalSize << std::endl;
-    }
 
     return testing::AssertionSuccess();
 }

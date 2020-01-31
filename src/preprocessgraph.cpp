@@ -209,7 +209,7 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
         return;
     }
 
-    // Write the MarkerSubset this preprocessed file contains
+    // Write the MarkerSubset to be worked on
     std::ofstream subsetStream = std::ofstream(ppSubsetFile.c_str(), ios::binary);
     if (subsetStream.fail()) {
         cerr << "Error: Unable to open the preprocessed bed subset file [" + ppSubsetFile + "] for writing." << endl;
@@ -219,21 +219,8 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
     subsetStream << data->markerSubset();
     subsetStream.close();
 
-    auto writeUnprocessedMarker = [this] () {
-        static const IndexEntry entry;
-        m_indexOutput->write(reinterpret_cast<const char *>(&entry),
-                             sizeof(entry));
-    };
-
-    const auto markers = data->getMarkerIndexList();
-
-    // Fill the front of the marker index
-    for (unsigned int i = 0; i < markers.front(); ++i) {
-        writeUnprocessedMarker();
-    }
-
-    // Preprocess the markers in the subset
-    const auto numSnps = markers.size();
+    // Preprocess all the markers
+    const auto numSnps = data->numSnps;
     size_t msgId = 0;
     for (size_t i = 0; i < numSnps; i += options.preprocessChunks, ++msgId) {
         size_t chunkSize = options.preprocessChunks;
@@ -243,13 +230,13 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
         Message msg {
             options.preprocessDataType,
             msgId,
-            markers[i],
+            i,
             chunkSize,
             options.compress,
             options.dataFile,
             data,
             {chunkSize, nullptr}, // snpData
-            {chunkSize, {nullptr, 0}}, // compressedData
+            {chunkSize, {nullptr, {}}}, // compressedData
         };
 
         m_ordering->try_put(msg);
@@ -260,11 +247,6 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
 
     // Wait for the graph to complete
     m_graph->wait_for_all();
-
-    // Fill the back of the marker index
-    for (unsigned int i = markers.back() + 1; i < data->numSnps; ++i) {
-        writeUnprocessedMarker();
-    }
 
     // Clean up
     m_output.reset();

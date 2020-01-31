@@ -28,7 +28,7 @@ protected:
     struct Message {
         PreprocessDataType type = PreprocessDataType::None;
         size_t id = 0;
-        std::streamsize startSnp = 0;
+        size_t startSnp = 0;
         size_t chunkSize = 0;
         bool compress = false;
 
