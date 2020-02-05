@@ -64,7 +64,7 @@ TEST_P(PreprocessedFileSplitterTest, SplitPreprocessedFile) {
     options.splitDestination = destination;
     options.preprocessSubset = std::get<3>(params);
 
-    if (destination.empty() || (destination == workingDirectory)) {
+    if (destination.empty() || (destination == workingDirectory.path())) {
         ASSERT_FALSE(AnalysisRunner::run(options));
         return;
     } else {
