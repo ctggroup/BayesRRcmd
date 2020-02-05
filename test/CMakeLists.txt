@@ -50,4 +50,17 @@ set_property(TARGET tests PROPERTY CXX_STANDARD 17)
 target_link_libraries(tests ${ZLIB_LIBRARIES})
 target_link_libraries(tests gtest_main bayes ${TBB_IMPORTED_TARGETS} )
 
+add_executable(mpi-check
+    mpitest.cpp
+)
+
+set_property(TARGET mpi-check PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET mpi-check PROPERTY CXX_STANDARD 17)
+
+if (ENABLE_MPI)
+    target_link_libraries(mpi-check ${MPI_LIBRARIES})
+    set_target_properties(mpi-check PROPERTIES COMPILE_FLAGS "${MPI_COMPILE_FLAGS}")
+    set_target_properties(mpi-check PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
+endif()
+
 add_test(NAME example_test COMMAND tests)
