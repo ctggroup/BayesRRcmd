@@ -141,7 +141,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     setAsynchronous(analysis->isAsynchronous());
 
     const unsigned int M(m_data->numSnps);
-    const unsigned int N(m_data->numInds);
+    const unsigned int N(m_data->activeIndividuals);
     const int K(int(m_cva.cols()) + 1);
     const unsigned int nGroups(m_data->numGroups);
     const unsigned int nF(m_opt->fixedEffectNumber);
@@ -370,7 +370,7 @@ void BayesRBase::processColumn(const KernelPtr &kernel)
     auto * bayesKernel = dynamic_cast<BayesRKernel*>(kernel.get());
     assert(bayesKernel);
 
-    const unsigned int N(m_data->numInds);
+    const unsigned int N(m_data->activeIndividuals);
     const double NM1 = double(N - 1);
     const int K(int(m_cva.cols()) + 1);
     const int km1 = K - 1;
@@ -498,7 +498,7 @@ AsyncResultPtr BayesRBase::processColumnAsync(const KernelPtr &kernel)
     // We compute the denominator in the variance expression to save computations
     const double sigmaEOverSigmaG = m_sigmaE / sigmaG;
 
-    const double NM1 = static_cast<double>(m_data->numInds) - 1.0;
+    const double NM1 = static_cast<double>(m_data->activeIndividuals) - 1.0;
     const int K(int(m_cva.cols()) + 1);
     const int km1 = K - 1;
 

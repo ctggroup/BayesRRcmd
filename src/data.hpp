@@ -54,26 +54,24 @@ using SnpInfoPtr = std::shared_ptr<SnpInfo>;
 
 class IndInfo {
 public:
-    const string famID;
-    const string indID;
-    const string catID;    // catenated family and individual ID
-    const string fatherID;
-    const string motherID;
-    const int famFileOrder; // original fam file order
-    const int sex;  // 1: male, 2: female
+    const string famID = "";
+    const string indID = "";
+    const string catID = "";    // catenated family and individual ID
+    const string fatherID = "";
+    const string motherID = "";
+    const int famFileOrder = -1; // original fam file order
+    const int sex = 0;  // 1: male, 2: female
 
-    int index;
-    bool kept;
+    int index = -1;
+    bool kept = true;
 
-    float phenotype;
+    float phenotype = -9;
 
-    VectorXf covariates;  // covariates for fixed effects
+    IndInfo(const int index)
+        : famFileOrder(index), index(index) {};
 
     IndInfo(const int idx, const string &fid, const string &pid, const string &dad, const string &mom, const int sex)
-    : famID(fid), indID(pid), catID(fid+":"+pid), fatherID(dad), motherID(mom), index(idx), famFileOrder(idx), sex(sex) {
-        phenotype = -9;
-        kept = true;
-    }
+    : famID(fid), indID(pid), catID(fid+":"+pid), fatherID(dad), motherID(mom), index(idx), famFileOrder(idx), sex(sex) {};
 };
 using IndInfoPtr = std::shared_ptr<IndInfo>;
 
@@ -135,7 +133,9 @@ public:
 
     unsigned numFixedEffects = 0;
     unsigned numSnps = 0;
-    unsigned numInds = 0;
+
+    unsigned int totalIndividuals = 0;
+    unsigned int activeIndividuals = 0;
 
     unsigned numGroups = 1; // number of groups
 
@@ -150,8 +150,7 @@ public:
     void unmapPreprocessedBedFile();
 
     void readFixedEffects(const string &filename, unsigned int cols);
-    void updateNaIndividualsForBED();
-    void updateNaIndividualsForCSV();
+    void updateNaIndividuals();
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);

@@ -102,7 +102,7 @@ void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCoun
 int BayesRRm::runGibbs()
 {
     const unsigned int M(data.numSnps);
-    const unsigned int N(data.numInds);
+    const unsigned int N(data.activeIndividuals);
     const double NM1 = double(N - 1);
     const int K(int(cva.size()) + 1);
     const int km1 = K - 1;
@@ -262,7 +262,7 @@ VectorXd BayesRRm::getSnpData(unsigned int marker) const
 
 void BayesRRm::printDebugInfo() const
 {
-    const unsigned int N(data.numInds);
+    const unsigned int N(data.activeIndividuals);
     cout << "inv scaled parameters " << v0G + m0 << "__" << (beta.squaredNorm() * m0 + v0G * s02G) / (v0G + m0);
     cout << "num components: " << opt.S.size();
     cout << "\nMixture components: " << cva[0] << " " << cva[1] << " " << cva[2] << "\n";

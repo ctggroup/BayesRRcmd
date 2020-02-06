@@ -47,7 +47,7 @@ void MarkerCache::populate(const Data *data, const Options *options)
     const auto start = std::chrono::steady_clock::now();
 
     std::for_each(beginItr, endItr, [&snp, &builder, &data, &options](ConstMarkerPtr &marker) {
-        builder->initialise(snp, data->numInds);
+        builder->initialise(snp, data->activeIndividuals);
         const auto index = data->ppbedIndex[snp];
         if (options->compress) {
             builder->decompress(reinterpret_cast<unsigned char*>(data->ppBedMap), index);

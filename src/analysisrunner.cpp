@@ -286,23 +286,24 @@ bool runBayesAnalysis(const Options &options) {
 namespace AnalysisRunner {
 
 void readMetaData(Data &data, const Options &options) {
+    auto readAndApplyFixedEffects = [](Data &data, const Options &options) {
+        if(!options.fixedFile.empty()) {
+            data.readFixedEffects(options.fixedFile, options.fixedEffectNumber);
+            data.updateNaIndividuals();
+        }
+    };
+
     switch (options.inputType) {
     case InputType::BED:
         data.readFamFile(fileWithSuffix(options.dataFile, ".fam"));
-        if(!options.fixedFile.empty()) {
-            data.readFixedEffects(options.fixedFile, options.fixedEffectNumber);
-            data.updateNaIndividualsForBED();
-        }
+        readAndApplyFixedEffects(data, options);
         data.readBimFile(fileWithSuffix(options.dataFile, ".bim"));
         data.readPhenotypeFile(options.phenotypeFile);
         break;
 
     case InputType::CSV:
         data.readCSVFile(options.dataFile);
-        if(!options.fixedFile.empty()) {
-            data.readFixedEffects(options.fixedFile, options.fixedEffectNumber);
-            data.updateNaIndividualsForCSV();
-        }
+        readAndApplyFixedEffects(data, options);
         data.readCSVPhenFile(options.phenotypeFile);
         break;
 

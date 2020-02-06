@@ -25,7 +25,7 @@ TEST_P(ReadFixedEffectsParamTest, ReadFixedEffects) {
     ASSERT_EQ(0, data.X.rows());
     ASSERT_EQ(0, data.X.cols());
 
-    data.numInds = individualCount;
+    data.totalIndividuals = individualCount;
     data.readFixedEffects(testDataDir + std::get<3>(params), fixedEffectCount);
 
     ASSERT_EQ(expectedIndividuals, data.X.rows());
@@ -74,13 +74,12 @@ TEST_P(ReadMetaDataParamTest, ReadMetaData) {
 
     AnalysisRunner::readMetaData(data, options);
 
-    ASSERT_EQ(data.X.rows(), data.numInds);
-    ASSERT_EQ(data.X.rows(), data.y.size());
+    ASSERT_EQ(data.totalIndividuals, data.indInfoVec.size());
+    if (options.inputType == InputType::BED)
+        ASSERT_EQ(data.totalIndividuals, data.indInfoMap.size());
 
-    if (options.inputType == InputType::BED) {
-        ASSERT_EQ(data.X.rows(), data.indInfoVec.size());
-        ASSERT_EQ(data.X.rows(), data.indInfoMap.size());
-    }
+    ASSERT_EQ(data.X.rows(), data.activeIndividuals);
+    ASSERT_EQ(data.X.rows(), data.y.size());
 }
 
 INSTANTIATE_TEST_SUITE_P(ReadMetaDataTests,

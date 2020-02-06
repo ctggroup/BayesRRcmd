@@ -103,9 +103,10 @@ void Data::readFamFile(const string &famFile){
         }
     }
     in.close();
-    numInds = (unsigned) indInfoVec.size();
+    totalIndividuals = static_cast<unsigned int>(indInfoVec.size());
+    activeIndividuals = totalIndividuals;
 
-    cout << numInds << " individuals to be included from [" + famFile + "]." << endl;
+    cout << totalIndividuals << " individuals to be included from [" + famFile + "]." << endl;
 }
 
 void Data::readBimFile(const string &bimFile) {
@@ -139,9 +140,9 @@ void Data::readBedFile_noMPI(const string &bedFile){
     unsigned i = 0, j = 0, k = 0;
 
     if (numSnps == 0) throw ("Error: No SNP is retained for analysis.");
-    if (numInds == 0) throw ("Error: No individual is retained for analysis.");
+    if (activeIndividuals == 0) throw ("Error: No individual is retained for analysis.");
 
-    Z.resize(numInds, numSnps);
+    Z.resize(activeIndividuals, numSnps);
     ZPZdiag.resize(numSnps);
     snp2pq.resize(numSnps);
 
@@ -163,15 +164,15 @@ void Data::readBedFile_noMPI(const string &bedFile){
         mean = 0.0;
         nmiss = 0;
         if (!snpInfo->included) {
-            for (i = 0; i < numInds; i += 4) BIT.read(ch, 1);
+            for (i = 0; i < totalIndividuals; i += 4) BIT.read(ch, 1);
             continue;
         }
-        for (i = 0, ind = 0; i < numInds;) {
+        for (i = 0, ind = 0; i < totalIndividuals && ind < activeIndividuals;) {
             BIT.read(ch, 1);
             if (!BIT) throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
             b = ch[0];
             k = 0;
-            while (k < 7 && i < numInds) {
+            while (k < 7 && i < totalIndividuals && ind < activeIndividuals) {
                 if (!indInfoVec[i]->kept) k += 2;
                 else {
                     allele1 = (!b[k++]);
@@ -188,11 +189,11 @@ void Data::readBedFile_noMPI(const string &bedFile){
         }
         // fill missing values with the mean
         float sum = mean;
-        mean /= float(numInds-nmiss);
+        mean /= float(activeIndividuals-nmiss);
 
 
         if (nmiss) {
-            for (i=0; i<numInds; ++i) {
+            for (i=0; i<activeIndividuals; ++i) {
                 if (Z(i,snp) == -9) Z(i,snp) = mean;
             }
         }
@@ -207,9 +208,9 @@ void Data::readBedFile_noMPI(const string &bedFile){
         //	Z.col(j).array() -= mean;
 
         //	float sqn = Z.col(j).squaredNorm();
-        float sqn = Z.col(j).squaredNorm() - numInds * mean * mean;
+        float sqn = Z.col(j).squaredNorm() - activeIndividuals * mean * mean;
         Z.col(j).array() -= mean;
-        float std_ = 1.f / (sqrt(sqn / float(numInds)));
+        float std_ = 1.f / (sqrt(sqn / float(activeIndividuals)));
 
         Z.col(j).array() *= std_;
 
@@ -224,14 +225,14 @@ void Data::readBedFile_noMPI(const string &bedFile){
         Z.col(i).array() -= Z.col(i).mean();
         ZPZdiag[i] = Z.col(i).squaredNorm();
     }
-    cout << "Genotype data for " << numInds << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
+    cout << "Genotype data for " << activeIndividuals << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
 }
 
 void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
     unsigned i = 0, j = 0, k = 0;
 
     if (numSnps == 0) throw ("Error: No SNP is retained for analysis.");
-    if (numInds == 0) throw ("Error: No individual is retained for analysis.");
+    if (activeIndividuals == 0) throw ("Error: No individual is retained for analysis.");
 
     Zones.resize(numSnps);
     Ztwos.resize(numSnps);
@@ -263,15 +264,15 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
         sqn = 0.0;
         nmiss = 0;
         if (!snpInfo->included) {
-            for (i = 0; i < numInds; i += 4) BIT.read(ch, 1);
+            for (i = 0; i < totalIndividuals; i += 4) BIT.read(ch, 1);
             continue;
         }
-        for (i = 0, ind = 0; i < numInds;) {
+        for (i = 0, ind = 0; i < totalIndividuals && ind < activeIndividuals;) {
             BIT.read(ch, 1);
             if (!BIT) throw ("Error: problem with the BED file ... has the FAM/BIM file been changed?");
             b = ch[0];
             k = 0;
-            while (k < 7 && i < numInds) {
+            while (k < 7 && i < totalIndividuals && ind < activeIndividuals) {
                 if (!indInfoVec[i]->kept) k += 2;
                 else {
                     allele1 = (!b[k++]);
@@ -302,7 +303,7 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
             }
         }
         // fill missing values with the mean
-        mean /= float(numInds-nmiss);
+        mean /= float(activeIndividuals-nmiss);
 
         //Assume non-missingness
 
@@ -318,9 +319,9 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
 
         // standardize genotypes
 
-        sqn -= numInds * mean * mean;
+        sqn -= activeIndividuals * mean * mean;
         means(j) = mean;
-        sds(j) = sqrt(sqn / float(numInds));
+        sds(j) = sqrt(sqn / float(activeIndividuals));
 
         mean_sd_ratio(j) = means(j)/sds(j);
 
@@ -329,7 +330,7 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
     BIT.clear();
     BIT.close();
 
-    cout << "Genotype data for " << numInds << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
+    cout << "Genotype data for " << activeIndividuals << " individuals and " << numSnps << " SNPs are included from [" + bedFile + "]." << endl;
 }
 
 
@@ -347,7 +348,7 @@ void Data::readPhenotypeFile(const string &phenFile) {
     string id;
     unsigned line=0;
     //correct loop to go through numInds
-    y = VectorXf::Zero(numInds);
+    y = VectorXf::Zero(activeIndividuals);
 
     while (getline(in,inputStr)) {
         colData.getTokens(inputStr, sep);
@@ -358,8 +359,10 @@ void Data::readPhenotypeFile(const string &phenFile) {
             ind = it->second;
             ind->phenotype = atof(colData[1+1].c_str());
             //fill in phenotype y vector
-            y[line] = ind->phenotype;
-            ++line;
+            if (ind->kept) {
+                y[line] = ind->phenotype;
+                ++line;
+            }
         }
     }
 
@@ -384,7 +387,7 @@ void Data::readFixedEffects(const string &filename, unsigned int cols) {
 
     cout << "Reading " << cols << " fixed effects from: " << filename << endl;
 
-    m_fixedEffectsData->reserve(numInds * static_cast<unsigned int>(cols));
+    m_fixedEffectsData->reserve(totalIndividuals * static_cast<unsigned int>(cols));
     auto rowStartItr = m_fixedEffectsData->end();
 
     std::string line;
@@ -396,7 +399,7 @@ void Data::readFixedEffects(const string &filename, unsigned int cols) {
         return strncmp(str, na, 2) == 0;
     };
 
-    while (std::getline(in, line) && row < numInds) {
+    while (std::getline(in, line) && row < totalIndividuals) {
 
         auto emplaceItr = rowStartItr;
         const char *ptr = line.c_str();
@@ -427,7 +430,7 @@ void Data::readFixedEffects(const string &filename, unsigned int cols) {
         ++individual;
     }
 
-    if (row >= numInds)
+    if (row >= totalIndividuals)
         cerr << "Warning: fixed effects data contains more individuals than the data set!" << endl;
 
     in.close();
@@ -439,44 +442,26 @@ void Data::readFixedEffects(const string &filename, unsigned int cols) {
          << m_removedIndividualIndexes->size() << " NA individuals." << endl;
 }
 
-void Data::updateNaIndividualsForBED()
+void Data::updateNaIndividuals()
 {
     if (!m_removedIndividualIndexes || m_removedIndividualIndexes->empty())
         return;
 
     cout << "Removing " << m_removedIndividualIndexes->size() << " NA individuals from the data set." << endl;
 
-    // Clean up the infInfoMap
-    for (const int index : *m_removedIndividualIndexes) {
-        const IndInfoPtr& individual = indInfoVec.at(static_cast<size_t>(index));
-        indInfoMap.erase(individual->catID);
-    }
-
-    // Remove NA individuals from the indInfoVec
-    auto isNaIndividual = [&naIndices = m_removedIndividualIndexes](const IndInfoPtr& individual) {
+    std::for_each(indInfoVec.begin(), indInfoVec.end(), [&naIndices = m_removedIndividualIndexes](const IndInfoPtr& individual){
         const auto findItr = std::find(naIndices->cbegin(), naIndices->cend(), individual->index);
-        return findItr != naIndices->cend();
-    };
+        individual->kept = findItr == naIndices->cend();
+    });
 
-    indInfoVec.erase(std::remove_if(indInfoVec.begin(), indInfoVec.end(), isNaIndividual), indInfoVec.end());
-    numInds = static_cast<unsigned int>(indInfoVec.size());
-}
-
-void Data::updateNaIndividualsForCSV()
-{
-    if (!m_removedIndividualIndexes || m_removedIndividualIndexes->empty())
-        return;
-
-    cout << "Removing " << m_removedIndividualIndexes->size() << " NA individuals from the data set." << endl;
-
-    numInds -= m_removedIndividualIndexes->size();
+    activeIndividuals -= m_removedIndividualIndexes->size();
 }
 
 
 void Data::readFailureFile(const string &failureFile){
     ifstream input(failureFile);
     vector<double> tmp;
-    tmp.reserve(numInds);
+    tmp.reserve(totalIndividuals);
 
     int col;
     if(!input.is_open()){
@@ -489,10 +474,8 @@ void Data::readFailureFile(const string &failureFile){
         input >> col ;
         if(input.eof()) break;
 
-        if (m_removedIndividualIndexes) {
-            const auto findItr = std::find(m_removedIndividualIndexes->cbegin(), m_removedIndividualIndexes->cend(), index++);
-            if (findItr != m_removedIndividualIndexes->cend())
-                continue;
+        if (!indInfoVec[index++]->kept) {
+            continue;
         }
 
         tmp.push_back(col);
@@ -545,14 +528,14 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
 {
     cout << "Preprocessing csv file:" << csvFile << ", Compress data =" << (compress ? "yes" : "no") << endl;
 
-    VectorXd snpData = VectorXd::Zero(numInds);
+    VectorXd snpData = VectorXd::Zero(activeIndividuals);
 
     std::ifstream indata;
     indata.open(csvFile);
     std::string line;
     uint rows = 0;
     uint cols =0;
-    int individual = 0;
+    unsigned int individual = 0;
     ofstream ppCSVOutput(preprocessedCSVFile.c_str(), ios::binary);
     if (!ppCSVOutput) {
         cerr << "Error: Unable to open the preprocessed bed file [" + preprocessedCSVFile + "] for writing." << endl;
@@ -565,7 +548,7 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
     }
 
     // How much space do we need to compress the data (if requested)
-    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(numInds) : 0;
+    const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(activeIndividuals) : 0;
     unsigned char *compressedBuffer = nullptr;
     unsigned long pos = 0;
     if (compress)
@@ -585,10 +568,8 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
                 throw("Error, there are missing values in the file");
             }
 
-            if (m_removedIndividualIndexes) {
-                const auto findItr = std::find(m_removedIndividualIndexes->cbegin(), m_removedIndividualIndexes->cend(), individual++);
-                if (findItr != m_removedIndividualIndexes->cend())
-                    continue;
+            if (!indInfoVec[individual++]->kept) {
+                continue;
             }
 
             snpData[cols++]=std::stod(cell);
@@ -596,7 +577,7 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
 
         if (!compress)
         {
-            writeUncompressedDataWithIndex(reinterpret_cast<unsigned char *>(&snpData[0]), numInds * sizeof(double), ppCSVOutput, ppCSVIndexOutput, pos);
+            writeUncompressedDataWithIndex(reinterpret_cast<unsigned char *>(&snpData[0]), activeIndividuals * sizeof(double), ppCSVOutput, ppCSVIndexOutput, pos);
         }
         else
         {
@@ -609,7 +590,7 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
     indata.clear();
     indata.close();
 
-    cout << "csv file for" << numInds << " individuals and " << numSnps << " Variables are included from [" +  csvFile + "]." << endl;
+    cout << "csv file for" << activeIndividuals << " individuals and " << numSnps << " Variables are included from [" +  csvFile + "]." << endl;
 }
 
 bool Data::setMarkerSubset(const MarkerSubset &subset)
@@ -654,17 +635,18 @@ void Data::readCSVFile( const string &csvFile)
 
             while (std::getline(lineStream, cell, ','))
             {
-                ++cols;
+                indInfoVec.emplace_back(std::make_shared<IndInfo>(cols++));
             }
         }
         ++rows;
     }
-    numInds = cols;
+    totalIndividuals = cols;
+    activeIndividuals = totalIndividuals;
     numSnps = rows;
     G = vector<int>(numSnps, 0);
     indata.clear();
     indata.close();
-    cout << numInds << " individuals to be included from [" + csvFile + "]." << endl;
+    cout << totalIndividuals << " individuals to be included from [" + csvFile + "]." << endl;
     cout << numSnps << " markers to be included from [" + csvFile + "]." << endl;
 }
 
@@ -676,23 +658,21 @@ void Data::readCSVPhenFile( const string &csvFile)
         throw("Error: Unable to open the CSV phenotype file [" + csvFile + "] for reading.");
     std::string line;
     uint cols = 0;
-    y = VectorXf::Zero(numInds);
+    y = VectorXf::Zero(activeIndividuals);
     std::getline(indata, line);
 
     std::stringstream lineStream(line);
     std::string cell;
 
-    int individual = 0;
+    unsigned int individual = 0;
 
-    while (std::getline(lineStream, cell, ',') && cols<numInds)
+    while (std::getline(lineStream, cell, ',') && cols<activeIndividuals)
     {
         if (cell.empty())
             throw("Error, there are missing values in the file");
 
-        if (m_removedIndividualIndexes) {
-            const auto findItr = std::find(m_removedIndividualIndexes->cbegin(), m_removedIndividualIndexes->cend(), individual++);
-            if (findItr != m_removedIndividualIndexes->cend())
-                continue;
+        if (!indInfoVec[individual++]->kept) {
+            continue;
         }
 
         y[cols++]= std::stof(cell);

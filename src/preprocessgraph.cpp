@@ -9,7 +9,7 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
     , m_graph(new graph)
 {
     auto processAndCompress = [] (Message msg) -> Message {
-        const auto columnSize = (msg.data->numInds + 3) >> 2;
+        const auto columnSize = (msg.data->totalIndividuals + 3) >> 2;
 
         ifstream inStream(msg.bedFile.c_str(), ios::binary);
         if (!inStream) {
@@ -30,9 +30,10 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
                 continue;
             }
 
-            builder->initialise(j, static_cast<double>(msg.data->numInds));
+            builder->initialise(j, static_cast<double>(msg.data->activeIndividuals));
 
-            for (unsigned int i = 0; i < msg.data->numInds;) {
+            unsigned int activeIndividuals = 0;
+            for (unsigned int i = 0; i < msg.data->totalIndividuals && activeIndividuals < msg.data->activeIndividuals;) {
                 char ch;
                 inStream.read(&ch, 1);
                 if (!inStream) {
@@ -44,14 +45,15 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
                 bitset<8> b = ch;
                 unsigned int k = 0;
 
-                while (k < 7 && i < msg.data->numInds) {
+                while (k < 7 && i < msg.data->totalIndividuals && activeIndividuals < msg.data->activeIndividuals) {
                     if (!msg.data->indInfoVec[i]->kept) {
                         k += 2;
                     } else {
                         const unsigned int allele1 = (!b[k++]);
                         const unsigned int allele2 = (!b[k++]);
 
-                        builder->processAllele(i, allele1, allele2);
+                        builder->processAllele(activeIndividuals, allele1, allele2);
+                        ++activeIndividuals;
                     }
                     i++;
                 }
@@ -170,7 +172,7 @@ void PreprocessGraph::preprocessBedFile(const Options &options, const Data *data
         cerr << "Error: No SNP is retained for analysis." << endl;
         return;
     }
-    if (data->numInds == 0) {
+    if (data->activeIndividuals == 0) {
         cerr << "Error: No individual is retained for analysis." << endl;
         return;
     }

@@ -752,7 +752,7 @@ int BayesWBase::runGibbs(AnalysisGraph *analysis, std::vector<unsigned int> &&ma
     }
 
     const unsigned int M(m_data->numSnps);
-    const unsigned int N(m_data->numInds);
+    const unsigned int N(m_data->activeIndividuals);
     const unsigned int numFixedEffects(m_data->numFixedEffects);
     const int km1 = m_K - 1;
 
