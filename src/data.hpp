@@ -124,15 +124,11 @@ public:
     map<string, SnpInfo*> snpInfoMap;
     map<string, IndInfo*> indInfoMap;
 
-    vector<SnpInfo*> incdSnpInfoVec;
-    vector<IndInfo*> keptIndInfoVec;
-
     vector<string> fixedEffectNames;
     vector<string> snpEffectNames;
 
 
     vector<bool> fullSnpFlag;
-    vector<vector<SnpInfo*> > mldmVec;
 
     unsigned numFixedEffects = 0;
     unsigned numSnps = 0;
