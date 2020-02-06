@@ -5,6 +5,7 @@
 #include "common.h"
 #include "markersubset.h"
 #include "options.hpp"
+#include "testhelpers.h"
 
 namespace fs = std::filesystem;
 
@@ -45,9 +46,11 @@ protected:
     }
 };
 
+using PpBayesBedParams = std::tuple<AnalysisType, PreprocessDataType, bool, bool, MarkerSubset, testing::FixedEffectsParams>;
+
 class PpBayesBed :
         public PpBayesBase,
-        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool, MarkerSubset>> {
+        public ::testing::WithParamInterface<PpBayesBedParams> {
 protected:
     void SetUp() {
         PpBayesBase::SetUp();
@@ -69,6 +72,13 @@ TEST_P(PpBayesBed, SmokeTests) {
     const auto subset = std::get<4>(params);
     options.preprocessSubset = subset;
     std::cout << "Using marker range " << subset.first()  << " to " << subset.last() << endl;
+
+    const auto fixedEffectsParams = std::get<5>(params);
+    if (fixedEffectsParams.fixedEffectNumber > 0) {
+        options.fixedEffectNumber = fixedEffectsParams.fixedEffectNumber;
+        const std::string testDataDir(TEST_DATA);
+        options.fixedFile = testDataDir + fixedEffectsParams.fixedFile;
+    }
 
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
@@ -92,12 +102,17 @@ INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
                              ::testing::Bool(), // compress
                              ::testing::Bool(), // useMarkerCache
                              ::testing::ValuesIn({ MarkerSubset {0, 0},
-                                                   MarkerSubset {100, 200}})
+                                                   MarkerSubset {100, 200}}),
+                             ::testing::ValuesIn({testing::FixedEffectsParams{0, ""},
+                                                  testing::FixedEffectsParams{5, "5FE-3642IND-3NA.csv"}}
+                                                 )
                              ));
+
+using PpBayesBedGroupsParams = std::tuple<AnalysisType, PreprocessDataType, bool, bool, testing::FixedEffectsParams>;
 
 class PpBayesBedGroups :
         public PpBayesBase,
-        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool>> {
+        public ::testing::WithParamInterface<PpBayesBedGroupsParams> {
 protected:
     void SetUp() override {
         PpBayesBase::SetUp();
@@ -119,6 +134,13 @@ TEST_P(PpBayesBedGroups, SmokeTests) {
     options.compress = std::get<2>(params);
     options.useMarkerCache = std::get<3>(params);
 
+    const auto fixedEffectsParams = std::get<4>(params);
+    if (fixedEffectsParams.fixedEffectNumber > 0) {
+        options.fixedEffectNumber = fixedEffectsParams.fixedEffectNumber;
+        const std::string testDataDir(TEST_DATA);
+        options.fixedFile = testDataDir + fixedEffectsParams.fixedFile;
+    }
+
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
 
@@ -139,12 +161,16 @@ INSTANTIATE_TEST_SUITE_P(PpBayesBedGroups,
                                                   PreprocessDataType::SparseEigen,
                                                   PreprocessDataType::SparseRagged}),
                              ::testing::Bool(), // compress
-                             ::testing::Bool())); // useMarkerCache
+                             ::testing::Bool(), // useMarkerCache
+                             ::testing::ValuesIn({testing::FixedEffectsParams{0, ""},
+                                                  testing::FixedEffectsParams{5, "5FE-3642IND-3NA.csv"}}
+                                                 )));
 
+using PpBayesCsvParams = std::tuple<AnalysisType, bool, testing::FixedEffectsParams>;
 
 class PpBayesCsv :
         public PpBayesBase,
-        public ::testing::WithParamInterface<std::tuple<AnalysisType, bool>> {
+        public ::testing::WithParamInterface<PpBayesCsvParams> {
 protected:
     void SetUp() override {
         PpBayesBase::SetUp();
@@ -162,6 +188,13 @@ TEST_P(PpBayesCsv, SmokeTests) {
     const auto params = GetParam();
     options.compress = std::get<1>(params);
 
+    const auto fixedEffectsParams = std::get<2>(params);
+    if (fixedEffectsParams.fixedEffectNumber > 0) {
+        options.fixedEffectNumber = fixedEffectsParams.fixedEffectNumber;
+        const std::string testDataDir(TEST_DATA);
+        options.fixedFile = testDataDir + fixedEffectsParams.fixedFile;
+    }
+
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
 
@@ -178,4 +211,7 @@ INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
                          ::testing::Combine(
                              ::testing::ValuesIn({AnalysisType::PpBayes,
                                                   AnalysisType::AsyncPpBayes}),
-                             ::testing::Bool()));
+                             ::testing::Bool(),
+                             ::testing::ValuesIn({testing::FixedEffectsParams{0, ""},
+                                                  testing::FixedEffectsParams{5, "5FE-500IND-3NA.csv"}}
+                                                 )));

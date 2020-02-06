@@ -1,6 +1,7 @@
 *.csv
 !test/data/*
 !test/data/fixed-effects/*
+!test.gauss/*
 
 /Debug/
 *.o

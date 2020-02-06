@@ -9,7 +9,10 @@
 
 namespace fs = std::filesystem;
 
-class PreprocessBed : public ::testing::TestWithParam<std::tuple<PreprocessDataType, bool, fs::directory_entry, MarkerSubset, int>> {};
+// preprocess data type, compress, working directory, marker subset, preprocess chunks, fixed effects params
+using PreprocessBedParams = std::tuple<PreprocessDataType, bool, fs::directory_entry, MarkerSubset, int, testing::FixedEffectsParams>;
+
+class PreprocessBed : public ::testing::TestWithParam<PreprocessBedParams> {};
 
 TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     const auto params = GetParam();
@@ -29,6 +32,12 @@ TEST_P(PreprocessBed, WithAndWithoutCompressionForEachPreprocessDataType) {
     ASSERT_TRUE(options.validWorkingDirectory());
     options.preprocessSubset = std::get<3>(params);
     options.preprocessChunks = std::get<4>(params);
+
+    const auto fixedEffectsParams = std::get<5>(params);
+    if (fixedEffectsParams.fixedEffectNumber > 0) {
+        options.fixedEffectNumber = fixedEffectsParams.fixedEffectNumber;
+        options.fixedFile = testDataDir + fixedEffectsParams.fixedFile;
+    }
 
     // Clean up old files
     fs::path ppFile(ppFileForType(options));
@@ -55,9 +64,14 @@ INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                              ::testing::ValuesIn({fs::directory_entry(),
                                                   fs::directory_entry(WORKING_DIRECTORY)}),
                              ::testing::ValuesIn({MarkerSubset{0, 0}, MarkerSubset{100, 100}}),
-                             ::testing::ValuesIn({1, 3, 7})));
+                             ::testing::ValuesIn({1, 3, 7}),
+                             ::testing::ValuesIn({testing::FixedEffectsParams{0, ""},
+                                                  testing::FixedEffectsParams{5, "5FE-3642IND-3NA.csv"}}
+                                                 )));
 
-class PreprocessCsvDense : public ::testing::TestWithParam<std::tuple<bool, fs::directory_entry>> {};
+using PreprocessCsvDenseParams = std::tuple<bool, fs::directory_entry, testing::FixedEffectsParams>;
+
+class PreprocessCsvDense : public ::testing::TestWithParam<PreprocessCsvDenseParams> {};
 
 TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
     const std::string testDataDir(TEST_DATA);
@@ -73,6 +87,12 @@ TEST_P(PreprocessCsvDense, WithAndWithoutCompression) {
     options.workingDirectory = std::get<1>(params);
     options.populateWorkingDirectory();
     ASSERT_TRUE(options.validWorkingDirectory());
+
+    const auto fixedEffectsParams = std::get<2>(params);
+    if (fixedEffectsParams.fixedEffectNumber > 0) {
+        options.fixedEffectNumber = fixedEffectsParams.fixedEffectNumber;
+        options.fixedFile = testDataDir + fixedEffectsParams.fixedFile;
+    }
 
     // Clean up old files
     fs::path ppFile(ppFileForType(options));
@@ -94,7 +114,10 @@ INSTANTIATE_TEST_SUITE_P(PreprocessTests,
                          ::testing::Combine(
                              ::testing::Bool(), // compress
                              ::testing::ValuesIn({fs::directory_entry(),
-                                                  fs::directory_entry(WORKING_DIRECTORY)})));
+                                                  fs::directory_entry(WORKING_DIRECTORY)}),
+                             ::testing::ValuesIn({testing::FixedEffectsParams{0, ""},
+                                                  testing::FixedEffectsParams{5, "5FE-500IND-3NA.csv"}}
+                                                 )));
 
 class PreprocessCsvSparse : public ::testing::TestWithParam<std::tuple<PreprocessDataType, fs::directory_entry>> {};
 

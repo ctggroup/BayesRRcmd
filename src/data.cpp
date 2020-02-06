@@ -374,6 +374,7 @@ void Data::readFixedEffects(const string &filename, unsigned int cols) {
     numFixedEffects = 0;
     new (&X) Map<MatrixXf>(nullptr, 0, 0);
     m_fixedEffectsData = std::make_shared<std::vector<float>>();
+    m_removedIndividualIndexes = std::make_shared<std::vector<int>>();
 
     std::ifstream in(filename);
     if (!in.is_open()) {
@@ -381,18 +382,21 @@ void Data::readFixedEffects(const string &filename, unsigned int cols) {
         return;
     }
 
+    cout << "Reading " << cols << " fixed effects from: " << filename << endl;
+
     m_fixedEffectsData->reserve(numInds * static_cast<unsigned int>(cols));
     auto rowStartItr = m_fixedEffectsData->end();
 
     std::string line;
-    int row = 0;
+    unsigned int row = 0;
+    int individual = 0;
 
     auto isNA = [](const char* str) {
         static const char* na = "NA";
         return strncmp(str, na, 2) == 0;
     };
 
-    while (std::getline(in, line)) {
+    while (std::getline(in, line) && row < numInds) {
 
         auto emplaceItr = rowStartItr;
         const char *ptr = line.c_str();
@@ -413,33 +417,84 @@ void Data::readFixedEffects(const string &filename, unsigned int cols) {
 
         if (naFound || isNA(start)) {
             m_fixedEffectsData->erase(rowStartItr, m_fixedEffectsData->end());
+            m_removedIndividualIndexes->emplace_back(individual++);
             continue;
         }
 
         m_fixedEffectsData->emplace(emplaceItr++, atof(start));
         rowStartItr = m_fixedEffectsData->end();
-        row++;
+        ++row;
+        ++individual;
     }
+
+    if (row >= numInds)
+        cerr << "Warning: fixed effects data contains more individuals than the data set!" << endl;
 
     in.close();
 
     new (&X) Map<MatrixXf>(m_fixedEffectsData->data(), row, cols);
     numFixedEffects = cols;
+
+    cout << "Read " << numFixedEffects << " fixed effects and found "
+         << m_removedIndividualIndexes->size() << " NA individuals." << endl;
+}
+
+void Data::updateNaIndividualsForBED()
+{
+    if (!m_removedIndividualIndexes || m_removedIndividualIndexes->empty())
+        return;
+
+    cout << "Removing " << m_removedIndividualIndexes->size() << " NA individuals from the data set." << endl;
+
+    // Clean up the infInfoMap
+    for (const int index : *m_removedIndividualIndexes) {
+        const IndInfoPtr& individual = indInfoVec.at(static_cast<size_t>(index));
+        indInfoMap.erase(individual->catID);
+    }
+
+    // Remove NA individuals from the indInfoVec
+    auto isNaIndividual = [&naIndices = m_removedIndividualIndexes](const IndInfoPtr& individual) {
+        const auto findItr = std::find(naIndices->cbegin(), naIndices->cend(), individual->index);
+        return findItr != naIndices->cend();
+    };
+
+    indInfoVec.erase(std::remove_if(indInfoVec.begin(), indInfoVec.end(), isNaIndividual), indInfoVec.end());
+    numInds = static_cast<unsigned int>(indInfoVec.size());
+}
+
+void Data::updateNaIndividualsForCSV()
+{
+    if (!m_removedIndividualIndexes || m_removedIndividualIndexes->empty())
+        return;
+
+    cout << "Removing " << m_removedIndividualIndexes->size() << " NA individuals from the data set." << endl;
+
+    numInds -= m_removedIndividualIndexes->size();
 }
 
 
 void Data::readFailureFile(const string &failureFile){
     ifstream input(failureFile);
     vector<double> tmp;
+    tmp.reserve(numInds);
+
     int col;
     if(!input.is_open()){
         cout << "Error opening the file" << endl;
         return;
     }
 
+    unsigned int index = 0;
     while(true){
         input >> col ;
         if(input.eof()) break;
+
+        if (m_removedIndividualIndexes) {
+            const auto findItr = std::find(m_removedIndividualIndexes->cbegin(), m_removedIndividualIndexes->cend(), index++);
+            if (findItr != m_removedIndividualIndexes->cend())
+                continue;
+        }
+
         tmp.push_back(col);
     }
     input.close();
@@ -490,21 +545,24 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
 {
     cout << "Preprocessing csv file:" << csvFile << ", Compress data =" << (compress ? "yes" : "no") << endl;
 
-    VectorXd snpData(numInds);
-    snpData.setZero();
+    VectorXd snpData = VectorXd::Zero(numInds);
 
     std::ifstream indata;
     indata.open(csvFile);
     std::string line;
-    std::vector<double> values;
     uint rows = 0;
     uint cols =0;
+    int individual = 0;
     ofstream ppCSVOutput(preprocessedCSVFile.c_str(), ios::binary);
-    if (!ppCSVOutput)
+    if (!ppCSVOutput) {
+        cerr << "Error: Unable to open the preprocessed bed file [" + preprocessedCSVFile + "] for writing." << endl;
         throw("Error: Unable to open the preprocessed bed file [" + preprocessedCSVFile + "] for writing.");
+    }
     ofstream ppCSVIndexOutput(preprocessedCSVIndexFile.c_str(), ios::binary);
-    if (!ppCSVIndexOutput)
+    if (!ppCSVIndexOutput) {
+        cerr << "Error: Unable to open the preprocessed bed index file [" + preprocessedCSVIndexFile + "] for writing." << endl;
         throw("Error: Unable to open the preprocessed bed index file [" + preprocessedCSVIndexFile + "] for writing.");
+    }
 
     // How much space do we need to compress the data (if requested)
     const auto maxCompressedOutputSize = compress ? maxCompressedDataSize<double>(numInds) : 0;
@@ -517,13 +575,23 @@ void Data::preprocessCSVFile(const string&csvFile,const string &preprocessedCSVF
         std::stringstream lineStream(line);
         std::string cell;
         cols=0;
+        individual = 0;
+
 
         while (std::getline(lineStream, cell, ','))
         {
-            if (!cell.empty())
-                snpData[++cols]=std::stod(cell);
-            else
+            if (cell.empty()) {
+                cerr << "Error, there are missing values in the file" << endl;
                 throw("Error, there are missing values in the file");
+            }
+
+            if (m_removedIndividualIndexes) {
+                const auto findItr = std::find(m_removedIndividualIndexes->cbegin(), m_removedIndividualIndexes->cend(), individual++);
+                if (findItr != m_removedIndividualIndexes->cend())
+                    continue;
+            }
+
+            snpData[cols++]=std::stod(cell);
         }
 
         if (!compress)
@@ -607,22 +675,27 @@ void Data::readCSVPhenFile( const string &csvFile)
     if (!indata)
         throw("Error: Unable to open the CSV phenotype file [" + csvFile + "] for reading.");
     std::string line;
-    std::vector<double> values;
-    uint rows = 0;
     uint cols = 0;
-    y.resize(numInds);
+    y = VectorXf::Zero(numInds);
     std::getline(indata, line);
 
     std::stringstream lineStream(line);
     std::string cell;
 
+    int individual = 0;
+
     while (std::getline(lineStream, cell, ',') && cols<numInds)
     {
-        if (!cell.empty())
-            y[++cols]= std::stof(cell);
-        else
+        if (cell.empty())
             throw("Error, there are missing values in the file");
 
+        if (m_removedIndividualIndexes) {
+            const auto findItr = std::find(m_removedIndividualIndexes->cbegin(), m_removedIndividualIndexes->cend(), individual++);
+            if (findItr != m_removedIndividualIndexes->cend())
+                continue;
+        }
+
+        y[cols++]= std::stof(cell);
     }
 
     indata.clear();

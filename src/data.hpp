@@ -92,6 +92,7 @@ public:
 
     // Original data
     std::shared_ptr<std::vector<float>> m_fixedEffectsData = nullptr;
+    std::shared_ptr<std::vector<int>> m_removedIndividualIndexes = nullptr;
     Map<MatrixXf> X;         // coefficient matrix for fixed effects
     MatrixXf Z;              // coefficient matrix for SNP effects
     VectorXf D;              // 2pqn
@@ -149,6 +150,8 @@ public:
     void unmapPreprocessedBedFile();
 
     void readFixedEffects(const string &filename, unsigned int cols);
+    void updateNaIndividualsForBED();
+    void updateNaIndividualsForCSV();
 
     void readFamFile(const string &famFile);
     void readBimFile(const string &bimFile);

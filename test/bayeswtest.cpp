@@ -4,6 +4,7 @@
 #include "analysisrunner.h"
 #include "common.h"
 #include "options.hpp"
+#include "testhelpers.h"
 
 namespace fs = std::filesystem;
 
@@ -44,9 +45,11 @@ protected:
     }
 };
 
+using BayesWTestParams = std::tuple<AnalysisType, PreprocessDataType, bool, bool, testing::FixedEffectsParams>;
+
 class BayesWTest :
         public BayesWBaseTest,
-        public ::testing::WithParamInterface<std::tuple<AnalysisType, PreprocessDataType, bool, bool>> {
+        public ::testing::WithParamInterface<BayesWTestParams> {
 protected:
     void SetUp() {
         BayesWBaseTest::SetUp();
@@ -70,6 +73,13 @@ TEST_P(BayesWTest, SmokeTests) {
     options.compress = std::get<2>(params);
     options.useMarkerCache = std::get<3>(params);
 
+    const auto fixedEffectsParams = std::get<4>(params);
+    if (fixedEffectsParams.fixedEffectNumber > 0) {
+        options.fixedEffectNumber = fixedEffectsParams.fixedEffectNumber;
+        const std::string testDataDir(GAUSS_TEST_DATA);
+        options.fixedFile = testDataDir + fixedEffectsParams.fixedFile;
+    }
+
     // Preprocess
     ASSERT_TRUE(AnalysisRunner::run(options));
 
@@ -89,4 +99,7 @@ INSTANTIATE_TEST_SUITE_P(AnalysisSmokeTests,
                              ::testing::ValuesIn({PreprocessDataType::Dense,
                                                   PreprocessDataType::SparseRagged}),
                              ::testing::Bool(), // compress
-                             ::testing::Bool())); // useMarkerCache
+                             ::testing::Bool(), // useMarkerCache
+                             ::testing::ValuesIn({testing::FixedEffectsParams{0, ""},
+                                                  testing::FixedEffectsParams{1, "1FE-1000IND-1NA.csv"}}
+                                                 )));
