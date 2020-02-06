@@ -96,9 +96,9 @@ void Data::readFamFile(const string &famFile){
     string fid, pid, dad, mom, sex, phen;
     unsigned idx = 0;
     while (in >> fid >> pid >> dad >> mom >> sex >> phen) {
-        IndInfo *ind = new IndInfo(idx++, fid, pid, dad, mom, atoi(sex.c_str()));
+        auto ind = std::make_shared<IndInfo>(idx++, fid, pid, dad, mom, atoi(sex.c_str()));
         indInfoVec.push_back(ind);
-        if (indInfoMap.insert(pair<string, IndInfo*>(ind->catID, ind)).second == false) {
+        if (indInfoMap.insert(pair<string, IndInfoPtr>(ind->catID, ind)).second == false) {
             throw ("Error: Duplicate individual ID found: \"" + fid + "\t" + pid + "\".");
         }
     }
@@ -121,9 +121,9 @@ void Data::readBimFile(const string &bimFile) {
     float genPos;
     unsigned idx = 0;
     while (in >> chr >> id >> genPos >> physPos >> allele1 >> allele2) {
-        SnpInfo *snp = new SnpInfo(idx++, id, allele1, allele2, chr, genPos, physPos);
+        auto snp = std::make_shared<SnpInfo>(idx++, id, allele1, allele2, chr, genPos, physPos);
         snpInfoVec.push_back(snp);
-        if (snpInfoMap.insert(pair<string, SnpInfo*>(id, snp)).second == false) {
+        if (snpInfoMap.insert(pair<string, SnpInfoPtr>(id, snp)).second == false) {
             throw ("Error: Duplicate SNP ID found: \"" + id + "\".");
         }
     }
@@ -153,7 +153,7 @@ void Data::readBedFile_noMPI(const string &bedFile){
     if (!BIT) throw ("Error: can not open the file [" + bedFile + "] to read.");
     cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
     for (i = 0; i < 3; i++) BIT.read(ch, 1); // skip the first three bytes
-    SnpInfo *snpInfo = NULL;
+    SnpInfoPtr snpInfo = nullptr;
     unsigned snp = 0, ind = 0;
     unsigned nmiss = 0;
     float mean = 0.0;
@@ -251,7 +251,7 @@ void Data::readBedFile_noMPI_unstandardised(const string &bedFile){
     if (!BIT) throw ("Error: can not open the file [" + bedFile + "] to read.");
     cout << "Reading PLINK BED file from [" + bedFile + "] in SNP-major format ..." << endl;
     for (i = 0; i < 3; i++) BIT.read(ch, 1); // skip the first three bytes
-    SnpInfo *snpInfo = NULL;
+    SnpInfoPtr snpInfo = nullptr;
     unsigned snp = 0, ind = 0;
     unsigned nmiss = 0;
     float mean = 0.0;
@@ -339,8 +339,8 @@ void Data::readPhenotypeFile(const string &phenFile) {
     if (!in) throw ("Error: can not open the phenotype file [" + phenFile + "] to read.");
 
     cout << "Reading phenotypes from [" + phenFile + "]." << endl;
-    map<string, IndInfo*>::iterator it, end=indInfoMap.end();
-    IndInfo *ind = NULL;
+    map<string, IndInfoPtr>::iterator it, end=indInfoMap.end();
+    IndInfoPtr ind = nullptr;
     Gadget::Tokenizer colData;
     string inputStr;
     string sep(" \t");

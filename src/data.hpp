@@ -50,6 +50,7 @@ public:
 
     void resetWindow(void) {windStart = -1; windSize = 0;};
 };
+using SnpInfoPtr = std::shared_ptr<SnpInfo>;
 
 class IndInfo {
 public:
@@ -74,6 +75,7 @@ public:
         kept = true;
     }
 };
+using IndInfoPtr = std::shared_ptr<IndInfo>;
 
 using PpBedIndex = std::vector<IndexEntry>;
 
@@ -118,11 +120,11 @@ public:
     VectorXf b;              // beta from GWAS summary data
     VectorXf n;              // sample size for each SNP in GWAS
 
-    vector<SnpInfo*> snpInfoVec;
-    vector<IndInfo*> indInfoVec;
+    vector<SnpInfoPtr> snpInfoVec;
+    vector<IndInfoPtr> indInfoVec;
 
-    map<string, SnpInfo*> snpInfoMap;
-    map<string, IndInfo*> indInfoMap;
+    map<string, SnpInfoPtr> snpInfoMap;
+    map<string, IndInfoPtr> indInfoMap;
 
     vector<string> fixedEffectNames;
     vector<string> snpEffectNames;

@@ -23,7 +23,7 @@ PreprocessGraph::PreprocessGraph(size_t maxParallel)
         inStream.seekg(offset);
 
         for (size_t j = msg.startSnp, chunk = 0; j < msg.data->numSnps && chunk < msg.chunkSize; ++j, ++chunk ) {
-            SnpInfo *snpInfo = msg.data->snpInfoVec[j];
+            const SnpInfoPtr &snpInfo = msg.data->snpInfoVec[j];
 
             if (!snpInfo->included) {
                 inStream.ignore(columnSize);
