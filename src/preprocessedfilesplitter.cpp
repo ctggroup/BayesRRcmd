@@ -72,7 +72,8 @@ bool PreprocessedFileSplitter::split(const Options &options, const Data *data, c
     std::cout << rank << " Splitting preprocessed data:" << std::endl
               << " - source: " << ppFileForType(options) << std::endl
               << " - destination: " << ppFileForType(options, options.splitDestination) << std::endl
-              << " - markers: " << markers.front() << " to " << markers.back() << " of " << data->numSnps << std::endl;
+              << " - copying markers: " << markers.front() << " to " << markers.back() << " of " << data->numSnps << std::endl
+              << " - writing subset: " << subset.first() << " to " << subset.last() << ". Size: " << subset.size() << std::endl;
 
     if (!splitPpFile(options, data, markers))
         return false;

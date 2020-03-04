@@ -72,7 +72,7 @@ MarkerSubset getMarkerSubset(const Options *options, const Data *data) {
 
         const auto subset = subsets.at(rank);
         if (subset.isValid(data->numSnps)) {
-            printf("Rank %d working markers %d to %lo\n", rank, subset.first(), subset.last());
+            printf("Rank %d working markers %u to %lu\n", rank, subset.first(), subset.last());
         } else {
             cerr << "Rank " << rank << " has invalid marker subset: " << subset.first() << " to " << subset.last()
                  << " for " << data->numSnps << " markers" << endl;
