@@ -30,7 +30,6 @@ public:
     double norm_rng(double mu, double sigma2);
     double component_probs(double b,Eigen::VectorXd pi);
     double categorical(Eigen::VectorXd probs);
-    double beta_rng(double a, double b);
     double exp_rng(double a);
     double unif_rng();
 };

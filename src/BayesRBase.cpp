@@ -59,7 +59,7 @@ void BayesRBase::init(int K, unsigned int markerCount, unsigned int individualCo
     m_mu = 0.0;       // mean or intercept
     m_sigmaG.resize(groupCount);
     std::generate(m_sigmaG.begin(), m_sigmaG.end(), [&dist = m_dist]() {
-        return dist.beta_rng(1,1);
+        return dist.unif_rng();
     });
 
     m_sigmaE = 0.0;   // residuals variance

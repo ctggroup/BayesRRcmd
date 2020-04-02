@@ -11,7 +11,6 @@
 #include "boost/random.hpp"
 #include "boost/generator_iterator.hpp"
 #include <boost/random/normal_distribution.hpp>
-#include <boost/random/beta_distribution.hpp>
 #include <boost/random/uniform_01.hpp>
 
 Distributions_boost::Distributions_boost(unsigned int pseed):seed(pseed){
@@ -85,8 +84,3 @@ double Distributions_boost::component_probs(double b2,Eigen::VectorXd pi){
 
 
 
-double Distributions_boost::beta_rng(double a,double b){
-    boost::random::beta_distribution<double> mybeta(a, b);
-    boost::random::variate_generator<boost::mt19937&, boost::random::beta_distribution<> > rand_beta(rng, mybeta);
-    return rand_beta();
-}

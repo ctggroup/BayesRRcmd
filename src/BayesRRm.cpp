@@ -83,7 +83,7 @@ void BayesRRm::init(int K, unsigned int markerCount, unsigned int individualCoun
     beta.setZero();
 
     //sample from beta distribution
-    sigmaG = dist.beta_rng(1,1);
+    sigmaG = dist.unif_rng();
 
     pi = priorPi;
 
