@@ -806,7 +806,7 @@ int BayesWBase::runGibbs(AnalysisGraph* analysis)
                 (double)(m_beta_sigma + 0.5 * (M - m_v[0]+1) * m_beta.squaredNorm()));
 
 		// 5. Sample prior mixture component probability from Dirichlet distribution
-        m_pi_L = m_dist.dirichilet_rng(m_v.array());
+        m_pi_L = m_dist.dirichlet_rng(m_v.array());
 
 		// Write the result to file
         if (iteration >= m_burn_in && iteration % m_thinning == 0) {

@@ -222,7 +222,7 @@ int BayesRRm::runGibbs()
         //sample residual variance sigmaE from inverse gamma
         sigmaE = dist.inv_scaled_chisq_rng(v0E + N, (epsilonSqNorm + v0E * s02E) / (v0E + N));
         //sample hyperparameter pi from dirichlet
-        pi = dist.dirichilet_rng(v.array() + 1.0);
+        pi = dist.dirichlet_rng(v.array() + 1.0);
 
         if (showDebug)
             printDebugInfo();

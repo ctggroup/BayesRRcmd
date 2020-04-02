@@ -33,7 +33,7 @@ double Distributions_boost::unif_rng(){
 
 }
 
-Eigen::VectorXd Distributions_boost::dirichilet_rng(Eigen::VectorXd alpha) {
+Eigen::VectorXd Distributions_boost::dirichlet_rng(Eigen::VectorXd alpha) {
     int len;
     len=alpha.size();
     Eigen::VectorXd result(len);

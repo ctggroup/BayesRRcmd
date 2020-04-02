@@ -243,7 +243,7 @@ int BayesRBase::runGibbs(AnalysisGraph *analysis)
         for (int i = 0; i < nGroups; i++) {
             m_m0 = m_v.row(i).sum() - m_v.row(i)(0);
             m_sigmaG[i] = m_dist.inv_scaled_chisq_rng(m_v0G + m_m0, (m_betasqnG(i) * m_m0 + m_v0G * m_s02G) / (m_v0G + m_m0));
-            m_pi.row(i) = m_dist.dirichilet_rng(m_v.row(i).array() + 1.0);
+            m_pi.row(i) = m_dist.dirichlet_rng(m_v.row(i).array() + 1.0);
         }
         const auto sGendTime = std::chrono::high_resolution_clock::now();
 
