@@ -1,4 +1,4 @@
-# BayesRRcmd
+# BayesRPlus
 
 Software for performing Bayesian penalized regression for complex trait analysis.
 
@@ -17,6 +17,7 @@ eigen (http://eigen.tuxfamily.org/index.php?title=Main_Page)
 boost (https://www.boost.org/)   
 ZLIB  (https://www.zlib.net/)	
 cmake (https://cmake.org/)   
+Optional:
 ninja (https://ninja-build.org/manual.html)   
 
 these can be easily installed in Linux:
@@ -76,13 +77,26 @@ You should obtain the executable brr in src folder.
 
 ### 4. Test run
 
-You can do a test run within the BayesRRcmd directory on a small provided dataset as follows:
+You can do a test run within the BayesRRcmd directory on a small provided dataset as follows in the command line:
+
+First we have to preprocess the dataset in order to compute necessary statistics to accelerate computations
 
 ```
 dataset=uk10k_chr1_1mb
 
-src/brr --bayes bayesMmap --bfile test/data/$dataset --pheno test/data/test.phen --chain-length 10 --burn-in 0 --thin 1 --mcmc-samples ./bayesOutput.csv --S 0.01,0.001,0.0001
+src/brr --preprocess --bfile test/data/$dataset --pheno test/data/test.phen 
 
 ```
 
+Once preprocessing is finished we can sample the effects, the output samples to be written in the file bayesOutput.csv, for a chain of 10 iterations, with no burn in and thinning of one, with slab mixtures 0.01, 0.001, and 0.0001, the command would be as follows:
+
+```
+src/brr --analysis-type ppbayes --bfile test/data/$dataset --pheno test/data/test.phen --chain-length 10 --burn-in 0 --thin 1 --mcmc-samples ./bayesOutput.csv --S 0.01,0.001,0.0001
+```
+
 You should get messages in standard output for the reading of the dataset files, the running of Gibbs sampling, time taken for each iteration and finishing with "Analysis finished" message and the time taken to run.
+
+We can also deal with data in csv format (samples in rows, biomarkers in columns, separated by commas):
+```
+src/brr --analysis-type ppbayes --bfile test/data/dataset.csv --pheno test/data/test.phen --chain-length 10 --burn-in 0 --thin 1 --mcmc-samples ./bayesOutput.csv --S 0.01,0.001,0.0001
+```
